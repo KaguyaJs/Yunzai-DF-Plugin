@@ -3,6 +3,11 @@
     src: url("../font/InconsolataNerdFontPropo-Bold.ttf");
 }
 
+@font-face {
+  font-family: "Orbitron-Bold";
+  src: url("../font/Orbitron-Bold.woff2") format("woff2");
+}
+
 * {
     // margin: 0;
     font-family: "font";
@@ -38,7 +43,7 @@ body {
         font-size: 30px;
         font-weight: bold;
         text-align: left;
-        font-weight: bold;
+        font-family: "Orbitron-Bold";
     }
 }
 
@@ -228,4 +233,90 @@ body {
 
 .deletions {
     color: #d92b2f;
+}
+
+.commit-prefix {
+    display: inline-block;
+    padding: 3px 9px;
+    margin-right: 8px;
+    border-radius: 12px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: "font", Consolas, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", monospace;
+    color: #fff;
+    text-transform: uppercase;
+    line-height: 1.2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    vertical-align: middle;
+}
+
+.prefix-feat,
+.prefix-fix,
+.prefix-docs,
+.prefix-style,
+.prefix-refactor,
+.prefix-perf,
+.prefix-test,
+.prefix-build,
+.prefix-ci,
+.prefix-chore,
+.prefix-revert {
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%);
+}
+
+.prefix-feat {
+    background-color: #28a745;
+    color: white;
+}
+
+.prefix-fix {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.prefix-docs {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+.prefix-style {
+    background-color: #a855f7;
+    color: #ffffff;
+}
+
+.prefix-refactor {
+    background-color: #ff9800;
+    color: #1f2937;
+}
+
+.prefix-perf {
+    background-color: #dc2626;
+    color: #ffffff;
+}
+
+.prefix-test {
+    background-color: #ec4899;
+    color: #1f2937;
+}
+
+.prefix-build {
+    background-color: #06b6d4;
+    color: #1f2937;
+}
+
+.prefix-ci {
+    background-color: #60a5fa;
+    color: #1e3a8a;
+}
+
+.prefix-chore {
+    background-color: #d1d5db;
+    color: #1f2937;
+}
+
+.prefix-revert {
+    background-color: #1f2937;
+    color: #ffffff;
 }

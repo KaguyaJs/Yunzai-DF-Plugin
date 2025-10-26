@@ -39,9 +39,30 @@ export function formatCommitInfo(data, source, repo, branch) {
 }
 
 export function formatMessage(message) {
-  const msgMap = message.split("\n")
-  msgMap[0] = "<span class='head'>" + msgMap[0] + "</span>"
-  return msgMap.join("<br>")
+  const lines = message.split('\n');
+  const firstLine = lines[0];
+
+  const conventionalCommitRegex = /^([^\w\s]+(?:\s*))?(\w+)(?:\([^)]+\))?:\s*(.*)/;
+  const match = firstLine.match(conventionalCommitRegex);
+
+  let formattedFirstLine;
+
+  if (match) {
+    const emoji = match[1] || '';
+    const type = match[2].toLowerCase();
+    const subject = match[3];
+
+    const badgeContent = `${emoji}${type}`;
+
+    const badge = `<span class="commit-prefix prefix-${type}">${badgeContent}</span>`;
+    
+    formattedFirstLine = `${badge} <span class='head'>${subject}</span>`;
+  } else {
+    formattedFirstLine = `<span class='head'>${firstLine}</span>`;
+  }
+
+  lines[0] = formattedFirstLine;
+  return lines.join('<br>');
 }
 
 export function formatReleaseInfo(data, source, repo) {
