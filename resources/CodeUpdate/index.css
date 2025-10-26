@@ -38,7 +38,6 @@ body {
 }
 .head_box .id_text {
   font-size: 30px;
-  font-weight: bold;
   text-align: left;
   font-family: "Orbitron-Bold";
 }
@@ -204,11 +203,10 @@ body {
 .commit-prefix {
   display: inline-block;
   padding: 3px 9px;
-  margin-right: 8px;
   border-radius: 12px 4px;
   font-size: 11px;
   font-weight: 700;
-  font-family: "font", Consolas, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", monospace;
+  font-family: "Orbitron-Bold", Consolas, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", monospace;
   color: #fff;
   text-transform: uppercase;
   line-height: 1.2;
