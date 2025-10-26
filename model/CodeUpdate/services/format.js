@@ -39,30 +39,30 @@ export function formatCommitInfo(data, source, repo, branch) {
 }
 
 export function formatMessage(message) {
-  const lines = message.split('\n');
-  const firstLine = lines[0];
+  const lines = message.split("\n")
+  const firstLine = lines[0]
 
-  const conventionalCommitRegex = /^([^\w\s]+(?:\s*))?(\w+)(?:\([^)]+\))?:\s*(.*)/;
-  const match = firstLine.match(conventionalCommitRegex);
+  const conventionalCommitRegex = /^([^\w\s]+(?:\s*))?(\w+)(?:\([^)]+\))?:\s*(.*)/
+  const match = firstLine.match(conventionalCommitRegex)
 
-  let formattedFirstLine;
+  let formattedFirstLine
 
   if (match) {
-    const emoji = match[1] || '';
-    const type = match[2].toLowerCase();
-    const subject = match[3];
+    const emoji = match[1] || ""
+    const type = match[2].toLowerCase()
+    const subject = match[3]
 
-    const badgeContent = `${emoji}${type}`;
+    const badgeContent = `${emoji}${type}`
 
-    const badge = `<span class="commit-prefix prefix-${type}">${badgeContent}</span>`;
-    
-    formattedFirstLine = `${badge} <span class='head'>${subject}</span>`;
+    const badge = `<span class="commit-prefix prefix-${type}">${badgeContent}</span>`
+
+    formattedFirstLine = `${badge} <span class='head'>${subject}</span>`
   } else {
-    formattedFirstLine = `<span class='head'>${firstLine}</span>`;
+    formattedFirstLine = `<span class='head'>${firstLine}</span>`
   }
 
-  lines[0] = formattedFirstLine;
-  return lines.join('<br>');
+  lines[0] = formattedFirstLine
+  return lines.join("<br>")
 }
 
 export function formatReleaseInfo(data, source, repo) {
