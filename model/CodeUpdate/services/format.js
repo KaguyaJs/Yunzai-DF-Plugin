@@ -52,9 +52,14 @@ export function formatMessage(message) {
     const type = match[2].toLowerCase()
     const subject = match[3]
 
+    let badgeClass = "commit-prefix"
+    if (emoji) {
+      badgeClass += " has-emoji"
+    }
+
     const badgeContent = `${emoji}${type}`
 
-    const badge = `<span class="commit-prefix prefix-${type}">${badgeContent}</span>`
+    const badge = `<span class="${badgeClass} prefix-${type}">${badgeContent}</span>`
 
     formattedFirstLine = `${badge} <span class='head'>${subject}</span>`
   } else {
