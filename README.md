@@ -14,9 +14,11 @@
 [![Miao-Yunzai V3](https://img.shields.io/github/package-json/v/yoimiya-kokomi/Miao-Yunzai?label=Miao-Yunzai&color=yellow)](https://github.com/yoimiya-kokomi/Miao-Yunzai)
 [![TRSS-Yunzai](https://img.shields.io/github/package-json/v/TimeRainStarSky/Yunzai?label=TRSS-Yunzai&color=blue)](https://github.com/TimeRainStarSky/Yunzai)
 
-> [Karin版](https://github.com/DenFengLai/karin-plugin-df)现已发布🎉, 欢迎Karin用户前来尝鲜
-
 ## 💡 安装教程
+
+> [!TIP]
+> 
+> TRSS-Yunzai用户请使用 `#安装DF`
 
 - Github
 
@@ -28,12 +30,6 @@ git clone --depth=1 https://github.com/DenFengLai/DF-Plugin.git ./plugins/DF-Plu
 
 ```sh
 git clone --depth=1 https://gitee.com/DenFengLai/DF-Plugin.git ./plugins/DF-Plugin
-```
-
-- Gitcode镜像 (可能更新不及时)
-
-```sh
-git clone --depth=1 https://gitcode.com/DenFengLai/DF-Plugin.git ./plugins/DF-Plugin
 ```
 
 ### 🔧 安装依赖
@@ -99,20 +95,10 @@ pnpm install -P
 
 > 配置文件位于 `Yz/config/DF-Plugin.yaml`
 
-## 📄 计划工程
-
-- [x] 能跑
-- [x] 能用
-- [x] 支持用户自定义配置
-- [x] 添加帮助信息和版本信息 [@kesally](https://gitee.com/kesally)
-- [ ] 丰富功能
-- [ ] 持续完善
-- [ ] ~~删库跑路~~
-
 ## ✨ 贡献者
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-9-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-10-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 感谢这些了不起的人 ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -134,6 +120,7 @@ pnpm install -P
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/Lovely-02"><img src="https://avatars.githubusercontent.com/u/83761116?v=4?s=100" width="100px;" alt="02"/><br /><sub><b>02</b></sub></a><br /><a href="https://github.com/DenFengLai/DF-Plugin/commits?author=Lovely-02" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/MapleLeaf2007"><img src="https://avatars.githubusercontent.com/u/122816807?v=4?s=100" width="100px;" alt="MapleLeaf"/><br /><sub><b>MapleLeaf</b></sub></a><br /><a href="https://github.com/DenFengLai/DF-Plugin/commits?author=MapleLeaf2007" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/GuGuNiu"><img src="https://avatars.githubusercontent.com/u/123828263?v=4?s=100" width="100px;" alt="MacacaTaurus"/><br /><sub><b>MacacaTaurus</b></sub></a><br /><a href="https://github.com/DenFengLai/DF-Plugin/commits?author=GuGuNiu" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>
@@ -179,10 +166,9 @@ pnpm install -P
 
 - [TRSS.me](https://TRSS.me)
 - [Yenai-Plugin](https://Yenai.TRSS.me)
-- [Fanji-plugin](http://gitee.com/adrae/Fanji-plugin)
-- [DF-Poke](https://gitea.eustia.fun/XY/poke.git)
+- [DF-Poke](https://cnb.cool/denfenglai/poke)
 
 ## 🎁 特别鸣谢
 
-- [XY-Api](https://ciallo.ciallo.pro)：提供戳一戳图片接口服务支持
+- [XY-Api](https://ciallo.hxxn.cc)：提供戳一戳图片接口服务支持
 - [素颜Api](https://api.suyanw.cn)：提供部分Api服务
