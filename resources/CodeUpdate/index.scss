@@ -237,7 +237,7 @@ body {
 
 .commit-prefix {
     display: inline-block;
-    padding: 2.6px 6px;
+    padding: 4px 7px 3px;
     margin-right: 0;
     border-radius: 12px 4px;
     font-size: 11px;
@@ -245,13 +245,17 @@ body {
     font-family: "Orbitron-Bold", Consolas, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", monospace;
     color: #fff;
     text-transform: uppercase;
-    line-height: 1.2;
+    line-height: 1;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     letter-spacing: 0.5px;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.5);
     vertical-align: middle;
     position: relative;
     top: -1.8px;
+}
+
+.commit-prefix.has-emoji {
+  padding-left: 8px;
 }
 
 .prefix-feat,
@@ -275,7 +279,7 @@ body {
 
 .prefix-fix {
     background-color: #fd7e14;
-    color: white;
+    color: #ffee00;
 }
 
 .prefix-docs {
@@ -300,7 +304,7 @@ body {
 
 .prefix-test {
     background-color: #ec4899;
-    color: #1f2937;
+    color: #ffa3a3;
 }
 
 .prefix-build {
