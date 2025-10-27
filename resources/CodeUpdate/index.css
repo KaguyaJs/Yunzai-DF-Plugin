@@ -11,6 +11,7 @@
   box-sizing: border-box;
   -webkit-user-select: none;
   -moz-user-select: none;
+   -ms-user-select: none;
        user-select: none;
 }
 
@@ -26,6 +27,7 @@ body {
 .container {
   max-width: 630px;
   min-width: 500px;
+  width: -webkit-max-content;
   width: -moz-max-content;
   width: max-content;
   padding: 20px 15px 10px 15px;
@@ -172,6 +174,7 @@ body {
   padding: 5px 10px;
   font-size: 13px;
   color: #c4c3c8;
+  width: -webkit-max-content;
   width: -moz-max-content;
   width: max-content;
 }
@@ -202,7 +205,7 @@ body {
 
 .commit-prefix {
   display: inline-block;
-  padding: 4px 7px 3px;
+  padding: 4px 7px 4px;
   margin-right: 0;
   border-radius: 12px 4px;
   font-size: 11px;
@@ -213,7 +216,7 @@ body {
   line-height: 1;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
   vertical-align: middle;
   position: relative;
   top: -1.8px;
@@ -267,6 +270,11 @@ body {
   color: #ffffff;
 }
 
+.prefix-pref {
+  background-color: #dc2626;
+  color: #f5f2f2;
+}
+
 .prefix-test {
   background-color: #ec4899;
   color: #ffa3a3;
@@ -290,4 +298,5 @@ body {
 .prefix-revert {
   background-color: #1f2937;
   color: #ffffff;
-}/*# sourceMappingURL=index.css.map */
+}
+/*# sourceMappingURL=index.css.map */

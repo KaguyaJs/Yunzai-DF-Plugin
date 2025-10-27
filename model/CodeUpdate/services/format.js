@@ -42,28 +42,39 @@ export function formatMessage(message) {
   const lines = message.split("\n")
   const firstLine = lines[0]
 
-  const conventionalCommitRegex = /^([^\w\s]+(?:\s*))?(\w+)(?:\([^)]+\))?:\s*(.*)/
-  const match = firstLine.match(conventionalCommitRegex)
+  const universalRegex = /^([^\w\s:]+|:[a-zA-Z_+-]+:)?(?:\s*)?(\w+)?(:)?(?:\s*)?(.*)/
+  const match = firstLine.match(universalRegex)
 
   let formattedFirstLine
 
   if (match) {
-    const emoji = match[1] || ""
-    const type = match[2].toLowerCase()
-    const subject = match[3]
+    const emojiCode = match[1] || ""
+    let type = match[2] || ""
+    const subject = match[4] || firstLine
 
-    let badgeClass = "commit-prefix"
-    if (emoji) {
-      badgeClass += " has-emoji"
+    if (emojiCode.startsWith(":") && emojiCode.endsWith(":")) {
+      type = emojiCode.replace(/:/g, "")
     }
 
-    const badgeContent = `${emoji}${type}`
+    if (type) {
+      const finalType = type.toLowerCase()
+      const hasEmoji = emojiCode && !(emojiCode.startsWith(":") && emojiCode.endsWith(":"))
+      const finalEmoji = hasEmoji ? emojiCode : ""
 
-    const badge = `<span class="${badgeClass} prefix-${type}">${badgeContent}</span>`
+      let badgeClass = "commit-prefix"
+      if (hasEmoji) {
+        badgeClass += " has-emoji"
+      }
 
-    formattedFirstLine = `${badge} <span class='head'>${subject}</span>`
+      const badgeContent = `${finalEmoji}${finalType}`
+      const badge = `<span class="${badgeClass} prefix-${finalType}">${badgeContent}</span>`
+
+      formattedFirstLine = `${badge} <span class="head">${subject}</span>`
+    } else {
+      formattedFirstLine = `<span class="head">${firstLine}</span>`
+    }
   } else {
-    formattedFirstLine = `<span class='head'>${firstLine}</span>`
+    formattedFirstLine = `<span class="head">${firstLine}</span>`
   }
 
   lines[0] = formattedFirstLine
