@@ -10,7 +10,9 @@
   font-family: "font";
   box-sizing: border-box;
   -webkit-user-select: none;
-  user-select: none;
+  -moz-user-select: none;
+   -ms-user-select: none;
+       user-select: none;
 }
 
 body {
@@ -25,6 +27,8 @@ body {
 .container {
   max-width: 630px;
   min-width: 500px;
+  width: -webkit-max-content;
+  width: -moz-max-content;
   width: max-content;
   padding: 20px 15px 10px 15px;
   background-color: rgba(35, 35, 35, 0.6980392157);
@@ -169,6 +173,8 @@ body {
   padding: 5px 10px;
   font-size: 13px;
   color: #c4c3c8;
+  width: -webkit-max-content;
+  width: -moz-max-content;
   width: max-content;
 }
 
@@ -209,7 +215,7 @@ body {
   line-height: 1;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   letter-spacing: 0.5px;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.5);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1);
   vertical-align: middle;
   position: relative;
   top: -1.8px;
@@ -292,24 +298,4 @@ body {
   background-color: #1f2937;
   color: #ffffff;
 }
-
-.prefix-pr {
-  background-color: #9370db;
-  color: #ffffff;
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%);
-}
-
-.pr-num {
-  display: inline-block;
-  padding: 3px 8px;
-  margin-left: 6px;
-  border-radius: 14px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #ffffff;
-  background-color: #6c5ce7;
-  border: 2px solid #5a4bd4;
-  vertical-align: middle;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
+/*# sourceMappingURL=index.css.map */

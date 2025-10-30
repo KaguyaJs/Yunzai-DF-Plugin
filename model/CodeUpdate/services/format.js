@@ -47,67 +47,45 @@ export function formatCommitInfo(data, source, repo, branch) {
 }
 
 export function formatMessage(message) {
-  if (!message) return "<span class=\"head\">无提交信息</span>"
+  const lines = message.split("\n")
+  const firstLine = lines[0]
+
+  const universalRegex = /^([^\w\s:]+|:[a-zA-Z_+-]+:)?(?:\s*)?(\w+)?(:)?(?:\s*)?(.*)/
+  const match = firstLine.match(universalRegex)
 
   const lines = message.split("\n")
   const parsedInfo = parseTitle(lines[0].trim())
   lines[0] = commitTitle(parsedInfo)
 
-  return lines.join("<br>")
-}
+  if (match) {
+    const emojiCode = match[1] || ""
+    let type = match[2] || ""
+    const subject = match[4] || firstLine
 
-function parseTitle(title) {
-  if (title.toLowerCase().startsWith("merge pull request")) {
-    const prMatch = title.match(/#(\d+) from (\S+)/i)
-    if (prMatch) {
-      return {
-        type: "pr",
-        subject: `合并 ${prMatch[2]}`,
-        prNum: prMatch[1],
-        isPr: true
-      }
+    if (emojiCode.startsWith(":") && emojiCode.endsWith(":")) {
+      type = emojiCode.replace(/:/g, "")
     }
   }
 
-  const convRegex = /^(?:(\p{Emoji}|:[a-zA-Z0-9_]+:))?\s*(\w+)(?:\(([^)]+)\))?:\s*(.+)$/iu
-  const parts = title.match(convRegex)
-  if (parts) {
-    const [ , rawEmoji, type, scope, subject ] = parts
-    const emoji = EMOJI_MAP[rawEmoji] || rawEmoji
-    if (COMMIT_TYPES.has(type.toLowerCase())) {
-      return {
-        type: type.toLowerCase(),
-        scope: scope || undefined,
-        subject,
-        emoji,
-        isPr: false
+    if (type) {
+      const finalType = type.toLowerCase()
+      const hasEmoji = emojiCode && !(emojiCode.startsWith(":") && emojiCode.endsWith(":"))
+      const finalEmoji = hasEmoji ? emojiCode : ""
+
+      let badgeClass = "commit-prefix"
+      if (hasEmoji) {
+        badgeClass += " has-emoji"
       }
+
+      const badgeContent = `${finalEmoji}${finalType}`
+      const badge = `<span class="${badgeClass} prefix-${finalType}">${badgeContent}</span>`
+
+      formattedFirstLine = `${badge} <span class="head">${subject}</span>`
+    } else {
+      formattedFirstLine = `<span class="head">${firstLine}</span>`
     }
-  }
-
-  return {
-    type: "unknown",
-    subject: title,
-    isPr: false
-  }
-}
-
-function commitTitle(info) {
-  let badge = ""
-  let headContent = ""
-
-  if (info.isPr) {
-    const prNumHtml = info.prNum ? `<span class="pr-num">#${info.prNum}</span>` : ""
-    badge = "<span class=\"commit-prefix prefix-pr\">PR</span>"
-    headContent = `<strong>${info.subject}</strong> ${prNumHtml}`
-  } else if (info.type && info.type !== "unknown") {
-    const typeClass = `prefix-${info.type}`
-    const emojiClass = info.emoji ? " has-emoji" : ""
-    badge = `<span class="commit-prefix ${typeClass}${emojiClass}">${info.emoji || ""}${info.type}</span>`
-    const scopeText = info.scope ? `(${info.scope}) ` : ""
-    headContent = `${scopeText}${info.subject}`
   } else {
-    headContent = info.subject
+    formattedFirstLine = `<span class="head">${firstLine}</span>`
   }
 
   return `${badge} <span class="head">${headContent}</span>`.trim()
