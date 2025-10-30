@@ -1,9 +1,17 @@
 import { marked } from "marked"
 import { timeAgo } from "../utils/index.js"
-import { Res_Path, Config } from "#components"
+import { Res_Path, Config, Data } from "#components"
 import fs from "node:fs"
 import path from "node:path"
 import { imagePoke } from "#model"
+
+const COMMIT_TYPES = new Set([
+  "pr", "feat", "fix", "docs", "style",
+  "refactor", "perf", "test", "build",
+  "ci", "chore", "revert"
+])
+
+const EMOJI_MAP = Data.getJSON("Emoji.json", "json") || {}
 
 export function formatCommitInfo(data, source, repo, branch) {
   const { author, committer, commit, stats, files, sha } = data
@@ -39,59 +47,82 @@ export function formatCommitInfo(data, source, repo, branch) {
 }
 
 export function formatMessage(message) {
+  if (!message) return "<span class=\"head\">无提交信息</span>"
+
   const lines = message.split("\n")
-  const firstLine = lines[0]
+  const parsedInfo = parseTitle(lines[0].trim())
+  lines[0] = commitTitle(parsedInfo)
 
-  const universalRegex = /^([^\w\s:]+|:[a-zA-Z_+-]+:)?(?:\s*)?(\w+)?(:)?(?:\s*)?(.*)/
-  const match = firstLine.match(universalRegex)
+  return lines.join("<br>")
+}
 
-  let formattedFirstLine
-
-  if (match) {
-    const emojiCode = match[1] || ""
-    let type = match[2] || ""
-    const subject = match[4] || firstLine
-
-    if (emojiCode.startsWith(":") && emojiCode.endsWith(":")) {
-      type = emojiCode.replace(/:/g, "")
-    }
-
-    if (type) {
-      const finalType = type.toLowerCase()
-      const hasEmoji = emojiCode && !(emojiCode.startsWith(":") && emojiCode.endsWith(":"))
-      const finalEmoji = hasEmoji ? emojiCode : ""
-
-      let badgeClass = "commit-prefix"
-      if (hasEmoji) {
-        badgeClass += " has-emoji"
+function parseTitle(title) {
+  if (title.toLowerCase().startsWith("merge pull request")) {
+    const prMatch = title.match(/#(\d+) from (\S+)/i)
+    if (prMatch) {
+      return {
+        type: "pr",
+        subject: `合并 ${prMatch[2]}`,
+        prNum: prMatch[1],
+        isPr: true
       }
-
-      const badgeContent = `${finalEmoji}${finalType}`
-      const badge = `<span class="${badgeClass} prefix-${finalType}">${badgeContent}</span>`
-
-      formattedFirstLine = `${badge} <span class="head">${subject}</span>`
-    } else {
-      formattedFirstLine = `<span class="head">${firstLine}</span>`
     }
-  } else {
-    formattedFirstLine = `<span class="head">${firstLine}</span>`
   }
 
-  lines[0] = formattedFirstLine
-  return lines.join("<br>")
+  const convRegex = /^(?:(\p{Emoji}|:[a-zA-Z0-9_]+:))?\s*(\w+)(?:\(([^)]+)\))?:\s*(.+)$/iu
+  const parts = title.match(convRegex)
+  if (parts) {
+    const [ , rawEmoji, type, scope, subject ] = parts
+    const emoji = EMOJI_MAP[rawEmoji] || rawEmoji
+    if (COMMIT_TYPES.has(type.toLowerCase())) {
+      return {
+        type: type.toLowerCase(),
+        scope: scope || undefined,
+        subject,
+        emoji,
+        isPr: false
+      }
+    }
+  }
+
+  return {
+    type: "unknown",
+    subject: title,
+    isPr: false
+  }
+}
+
+function commitTitle(info) {
+  let badge = ""
+  let headContent = ""
+
+  if (info.isPr) {
+    const prNumHtml = info.prNum ? `<span class="pr-num">#${info.prNum}</span>` : ""
+    badge = "<span class=\"commit-prefix prefix-pr\">PR</span>"
+    headContent = `<strong>${info.subject}</strong> ${prNumHtml}`
+  } else if (info.type && info.type !== "unknown") {
+    const typeClass = `prefix-${info.type}`
+    const emojiClass = info.emoji ? " has-emoji" : ""
+    badge = `<span class="commit-prefix ${typeClass}${emojiClass}">${info.emoji || ""}${info.type}</span>`
+    const scopeText = info.scope ? `(${info.scope}) ` : ""
+    headContent = `${scopeText}${info.subject}`
+  } else {
+    headContent = info.subject
+  }
+
+  return `${badge} <span class="head">${headContent}</span>`.trim()
 }
 
 export function formatReleaseInfo(data, source, repo) {
   const { tag_name, name, body, author, published_at } = data
   const authorName = `<span>${author?.login || author?.name}</span>`
-  const authorAvatar = author?.avatar_url
   const authorTime = `<span>${timeAgo(published_at)}</span>`
   const timeInfo = authorName ? `${authorName} 发布于 ${authorTime}` : `${authorTime}`
   const icon = getIcon(source)
 
   return {
     release: true,
-    avatar: authorAvatar,
+    avatar: author?.avatar_url,
     icon,
     name: {
       source,
@@ -100,7 +131,7 @@ export function formatReleaseInfo(data, source, repo) {
       authorStart: author?.login?.[0] || author?.name?.[0] || "?"
     },
     time_info: timeInfo,
-    text: "<span class='head'>" + name + "</span>\n" + marked(body)
+    text: `<span class='head'>${name}</span><br/>${marked(body)}`
   }
 }
 

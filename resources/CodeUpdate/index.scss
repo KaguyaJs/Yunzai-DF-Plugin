@@ -242,7 +242,7 @@ body {
     border-radius: 12px 4px;
     font-size: 11px;
     font-weight: 700;
-    font-family: "Orbitron-Bold", Consolas, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", monospace;
+    font-family: "Orbitron-Bold";
     color: #fff;
     text-transform: uppercase;
     line-height: 1;
@@ -330,4 +330,24 @@ body {
 .prefix-revert {
     background-color: #1f2937;
     color: #ffffff;
+}
+
+.prefix-pr {
+    background-color: #9370db;
+    color: #ffffff;
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%);
+}
+
+.pr-num {
+    display: inline-block;
+    padding: 3px 8px;
+    margin-left: 6px;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ffffff;
+    background-color: #6c5ce7;
+    border: 2px solid #5a4bd4;
+    vertical-align: middle;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
