@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "~/*": [
+        "./src/*"
+      ],
+      "@CodeUpdate/*": [
+        "./src/modules/CodeUpdate/*"
+      ],
+      "@CodeUpdate": [
+        "./src/modules/CodeUpdate"
+      ]
+    },
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "strict": true,
+    "skipLibCheck": true,
+    // "allowJs": true
+  },
+  "include": [
+    "src"
+  ],
+  "tsc-alias": {
+    "resolveFullPaths": true
+  }
+}

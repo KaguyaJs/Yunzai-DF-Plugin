@@ -1,0 +1,87 @@
+name: Build and Push to lib Branch
+
+on:
+  push:
+    branches:
+      - main # 只有 main 分支有新的 push 时才触发
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 必须设置此权限，才能允许 Actions 往仓库推送内容
+
+    steps:
+      - name: Checkout Yunzai code
+        uses: actions/checkout@v5
+        with:
+          repository: KaguyaJs/TRSS-Yunzai
+
+      # 1. 检出 main 分支代码 (包括完整历史记录)
+      - name: Checkout Plugin code
+        uses: actions/checkout@v5
+        with:
+          path: plugins/temp-plugin
+          fetch-depth: 0
+
+      # 2. 设置 Node.js 环境
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # 3. 安装 pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: |
+            - args: ["--registry=https://registry.npmjs.org"]
+
+      # 4. 运行构建命令
+      - name: Run pnpm build
+        run: |
+          cd plugins/temp-plugin
+          pnpm run build
+
+      # 5. 准备要提交到 lib 分支的文件
+      - name: Prepare Files for lib Branch
+        run: |
+          cd plugins/temp-plugin
+
+          mkdir -p temp_lib_content
+
+          for f in $(jq -r '.files[]' package.json); do
+            if [ -e "$f" ]; then
+              dest="temp_lib_content/$f"
+              mkdir -p "$(dirname "$dest")"
+              cp -R "$f" "$dest"
+              echo "[copy] $f"
+            else
+              echo "[skip] $f not exists"
+            fi
+          done
+
+          echo "node_modules/" > temp_lib_content/.gitignore
+
+      # 删除开发依赖避免用户安装开发依赖增加体积
+      - name: Delete devDependencies
+        run: |
+          cd plugins/temp-plugin/temp_lib_content
+          pnpm pkg delete devDependencies
+
+      # 6. 推送构建产物到 lib 分支 (使用 action-gh-pages)
+      # 这个 Action 的关键在于它不会使用 git push --force, 而是创建一个新的提交
+      - name: Deploy to lib branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          # 这是 GitHub 默认提供的 Token，具有写入权限
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # 要推送到的目标分支
+          publish_branch: preview
+          # 包含要推送文件/目录的文件夹
+          publish_dir: plugins/temp-plugin/temp_lib_content
+          # 每次提交时保留历史记录
+          force_orphan: false
+          # 自定义提交信息
+          commit_message: "Build: ${{ github.event.head_commit.message }}"

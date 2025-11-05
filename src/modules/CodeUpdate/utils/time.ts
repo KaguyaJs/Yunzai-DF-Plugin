@@ -1,0 +1,1 @@
+export { timeAgo } from '@/utils'

@@ -1,0 +1,17 @@
+{
+  "name": "minify",
+  "version": "0.0.1",
+  "description": "",
+  "main": "minify.js",
+  "bin": {
+    "minify": "minify.js"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.22.0",
+  "devDependencies": {
+    "terser": "^5.44.1"
+  }
+}
