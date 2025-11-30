@@ -125,7 +125,7 @@ export class SendMasterMsgs extends plugin {
       const { bot, group, id, message_id } = JSON.parse(data)
       const _ = common.Replace(e, isInput ? /#?回复(\S+)\s?/ : /#?回复/g)
       const message = common.parseTemplate(Config.sendMaster.replyMsgTemplate, {
-        nickname: e.nickname,
+        nickname: e.nickname || e.sender?.nickname || "未知",
         id: String(e.user_id),
         msg: _
       })
