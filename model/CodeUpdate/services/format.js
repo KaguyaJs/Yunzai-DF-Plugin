@@ -129,9 +129,10 @@ function commitTitle(info) {
   } else if (info.type && info.type !== "unknown") {
     const typeClass = `prefix-${info.type}`
     const emojiClass = info.emoji ? " has-emoji" : ""
-    badge = `<span class="commit-prefix ${typeClass}${emojiClass}">${info.emoji || ""}${info.type}</span>`
-    const scopeText = info.scope ? `(${info.scope}) ` : ""
-    headContent = `${scopeText}${info.subject}`
+    badge = `<span class="commit-prefix ${typeClass}${emojiClass} ${info.scope ? "haveScope" : ""}">${info.emoji || ""}${info.type}</span>`
+    const scopeText = info.scope ? `<span class="scope commit-prefix">${info.scope}</span> ` : ""
+    badge += scopeText
+    headContent = info.subject
   } else {
     headContent = info.subject
   }

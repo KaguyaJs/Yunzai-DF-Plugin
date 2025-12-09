@@ -63,7 +63,7 @@ body {
         display: flex;
         align-items: center;
 
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+        background: linear-gradient(135deg, rgba(112, 112, 112, 0.2), rgba(255, 255, 255, 0.05));
         backdrop-filter: blur(12px) saturate(150%);
 
         border-radius: 16px;
@@ -255,7 +255,7 @@ body {
 }
 
 .commit-prefix.has-emoji {
-  padding-left: 8px;
+    padding-left: 8px;
 }
 
 .prefix-feat,
@@ -306,7 +306,7 @@ body {
     background-color: #dc2626;
     color: #f5f2f2;
 }
- 
+
 .prefix-test {
     background-color: #ec4899;
     color: #ffa3a3;
@@ -350,4 +350,16 @@ body {
     border: 2px solid #5a4bd4;
     vertical-align: middle;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.scope {
+    z-index: -1;
+    background: #8A6C52;
+    border-radius: 0px 4px 12px 0px;
+    box-shadow: inset 6px 0px 4px rgba(0, 0, 0, 0.1);
+    left: -1px;
+}
+
+.commit-prefix.haveScope {
+    border-radius: 12px 0px 2px 4px;
 }
