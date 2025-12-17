@@ -1,4 +1,4 @@
-name: Release and Push to Build
+name: Release and Push
 on:
   workflow_dispatch:
   push:
@@ -86,7 +86,7 @@ jobs:
           # 这是 GitHub 默认提供的 Token，具有写入权限
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # 要推送到的目标分支
-          publish_branch: build
+          publish_branch: release
           # 包含要推送文件/目录的文件夹
           publish_dir: plugins/temp-plugin/temp_lib_content
           # 每次提交时保留历史记录
