@@ -81,7 +81,7 @@ export async function isGitRepo (dir: string): Promise<boolean> {
   }
 }
 
-/** 执行命令，返回输出字符串（去掉多余包装） */
+/** 执行命令，返回输出字符串 */
 export async function execCmd (cwd: string, cmd: string): Promise<string> {
   try {
     const out = await exec(cmd, cwd, true)
@@ -156,7 +156,6 @@ export async function traverse (dir: string, result: RepoMap): Promise<void> {
 /** 收集单个仓库信息（branch + remote url），尽量简单可靠 */
 export async function collectRepoInfo (repoDir: string, result: RepoMap): Promise<void> {
   try {
-    // 获取 branch，先尝试常用命令
     let branch = 'HEAD'
     try {
       const out = await execCmd(repoDir, 'git rev-parse --abbrev-ref HEAD')
@@ -168,11 +167,16 @@ export async function collectRepoInfo (repoDir: string, result: RepoMap): Promis
       } catch { /* 忽略 */ }
     }
 
-    // 获取 remote url，优先 origin
+    let remoteName = 'origin'
+    try {
+      const configured = await execCmd(repoDir, `git config branch.${branch}.remote`)
+      if (configured) remoteName = configured
+    } catch {
+    }
+
     let url = ''
     try {
-      // 优先 origin
-      url = (await execCmd(repoDir, 'git remote get-url origin')).trim()
+      url = (await execCmd(repoDir, `git remote get-url ${remoteName}`)).trim()
     } catch {
       try {
         const remotes = await execCmd(repoDir, 'git remote -v')
@@ -181,7 +185,6 @@ export async function collectRepoInfo (repoDir: string, result: RepoMap): Promis
           if (m) { url = m[2]; break }
         }
       } catch {
-        // 无法获得 remote
       }
     }
 
