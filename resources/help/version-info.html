@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="shortcut icon" href="#"/>
+    <link rel="stylesheet" type="text/css" href="{{_res_path}}/help/version-info.css"/>
+    <title>DF-Plugin</title>
+  </head>
+  <body class="{{bodyClass}}" {{@sys.scale}}>
+    <div class="container" id="container">
+      {{each changelogs ds idx}}
+      <div class="log-cont">
+        <div class="cont">
+          {{if idx === 0 }}
+          <div class="cont-title current-version">当前版本 {{ds.version}}</div>
+          {{else}}
+          <div class="cont-title">DF版本 {{ds.version}}</div>
+          {{/if}}
+          <div class="cont-body">
+            <ul class="log-ul">
+              {{each ds.logs log}}
+              <li>
+                <p>{{@log.title}}</p>
+                {{if log.logs.length > 0}}
+                <ul class="sub-log-ul">
+                  {{each log.logs ls}}
+                  <li>{{@ls}}</li>
+                  {{/each}}
+                </ul>
+                {{/if}}
+              </li>
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+      <div class="copyright">{{@sys.copyright}}</div>
+    </div>
+  </body>
+</html>
