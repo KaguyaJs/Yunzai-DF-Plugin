@@ -41,6 +41,7 @@
     "./README.md",
     "./LICENSE",
     "./lib",
-    "./resources/"
+    "./resources/",
+    "./guoba.support.js"
   ]
 }

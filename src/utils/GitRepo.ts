@@ -16,7 +16,7 @@ export interface PluginItem {
   type: 'commit'
 }
 
-/** PluginPath 改为纯数组结构 */
+/** PluginPath */
 export const PluginPath: PluginItem[] = []
 
 /** 当前是否正在加载 */

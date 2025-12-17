@@ -1,0 +1,99 @@
+name: Release and Push to Build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write # 设置内容的权限为写
+  pull-requests: write # 设置拉取请求的权限为写
+  issues: write # 设置问题的权限为写
+jobs:
+  release-please:
+    # 设置工作流程运行环境为 Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📝 使用 release-please-action 发布检查
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          # 设置发布类型为 Node.js
+          release-type: node
+
+      - name: ⚙️ 检出 Yunzai 代码
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v5
+        with:
+          repository: KaguyaJs/TRSS-Yunzai
+
+      - name: 🔩 检出插件代码
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v5
+        with:
+          path: plugins/temp-plugin
+
+      - name: 🪛 设置 Node.js 环境
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-node@v4
+        with:
+          # 设置 Node.js 版本
+          node-version: 24
+
+      - name: 📦 配置 PNPM 环境并安装依赖
+        if: ${{ steps.release.outputs.release_created }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: |
+            - args: ["--registry=https://registry.npmjs.org"]
+
+      - name: 🔧 编译源代码
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          cd plugins/temp-plugin
+          pnpm run build
+
+      - name: 🧱 准备所需要的文件
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          cd plugins/temp-plugin
+
+          mkdir -p temp_lib_content
+
+          for f in $(jq -r '.files[]' package.json); do
+            if [ -e "$f" ]; then
+              dest="temp_lib_content/$f"
+              mkdir -p "$(dirname "$dest")"
+              cp -R "$f" "$dest"
+              echo "[copy] $f"
+            else
+              echo "[skip] $f not exists"
+            fi
+          done
+
+          echo "node_modules/" > temp_lib_content/.gitignore
+
+      - name: 🧹 删除开发依赖
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          cd plugins/temp-plugin/temp_lib_content
+          pnpm pkg delete devDependencies
+
+      - name: 📌 部署到分支
+        uses: peaceiris/actions-gh-pages@v4
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          # 这是 GitHub 默认提供的 Token，具有写入权限
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # 要推送到的目标分支
+          publish_branch: build
+          # 包含要推送文件/目录的文件夹
+          publish_dir: plugins/temp-plugin/temp_lib_content
+          # 每次提交时保留历史记录
+          force_orphan: false
+          # 保持原提交信息
+          full_commit_message: ${{ github.event.head_commit.message }}
+          # 设置提交用户名
+          user_name: "github-actions[bot]"
+          # 设置提交邮箱
+          user_email: "github-actions[bot]@users.noreply.github.com"

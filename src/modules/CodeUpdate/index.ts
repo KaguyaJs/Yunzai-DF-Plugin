@@ -5,7 +5,7 @@ import { fetchUpdate } from './services'
 import { pushTouser } from './services/push'
 import { generateScreenshot } from './services/screenshot'
 import GitRepo from '@/utils/GitRepo'
-import { redisHeler } from './utils'
+import { redisHeler, repoPath } from './utils'
 
 /**
  * 检查仓库更新并推送
@@ -67,7 +67,11 @@ function getListMap (data: typeof config.CodeUpdate.List) {
       ids.forEach(id => {
         map[id] ||= new Set()
         item.repos.forEach(r => map[id].add(r))
-        if (item.AutoPath) GitRepo.PluginPath.forEach(r => map[id].add(r))
+        if (item.AutoPath) {
+          GitRepo.PluginPath.forEach(r => {
+            if (!item.Exclude.includes(repoPath(r.repo, r.branch))) map[id].add(r)
+          })
+        }
       })
     }
     fill(acc.Group, item.Group)

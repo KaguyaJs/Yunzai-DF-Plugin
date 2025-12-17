@@ -7,13 +7,7 @@ import { logger } from '@/utils'
 
 export type ReposListType = Config['CodeUpdate']['List'][number]['repos']
 
-// export const fetchCommits = (source: string, repoList: string[], token: string | string[], isAuto: boolean) =>
-//   fetchUpdate(source, repoList, token, 'commits', isAuto)
-// export const fetchReleases = (source: string, repoList: string[], token: string | string[], isAuto: boolean) =>
-//   fetchUpdate(source, repoList, token, 'releases', isAuto)
-
 export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
-  // FIXME 适配AutoPath
   const content = new Map<ReposListType[number], CommitInfo | ReleaseInfo>()
   await Promise.all(repoList.map(async (item) => {
     let { provider, repo, branch, type } = item
