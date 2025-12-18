@@ -84,7 +84,7 @@ jobs:
           # 每次提交时保留历史记录
           force_orphan: false
           # 自定义提交信息
-          commit_message: ${{ github.event.head_commit.message }}
+          full_commit_message: ${{ github.event.head_commit.message }}
           # 设置提交用户名
           user_name: "github-actions[bot]"
           # 设置提交邮箱

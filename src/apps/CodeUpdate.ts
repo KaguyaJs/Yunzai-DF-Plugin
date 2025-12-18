@@ -2,6 +2,7 @@ import { CodeUpdate, getAllRedisKey } from '@CodeUpdate'
 import { Loading } from '@/utils'
 import common from '../../../../lib/common/common'
 import { CodeUpdateRedisKey } from '@/constants'
+import config from '@/config'
 
 export class Code extends plugin<'message'> {
   constructor () {
@@ -23,6 +24,14 @@ export class Code extends plugin<'message'> {
         }
       ]
     })
+
+    if (config.CodeUpdate.Auto) {
+      this.task = {
+        name: '[DF] Git仓库更新检查',
+        cron: config.CodeUpdate.Cron,
+        fnc: () => CodeUpdate(true)
+      }
+    }
   }
 
   async check (e = this.e) {
