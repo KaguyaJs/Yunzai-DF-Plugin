@@ -56,7 +56,7 @@ export class Poke extends plugin<'notice.group.poke'> {
     } else {
       let List: string[] = FaceList
       if (Array.isArray(imageBlack) && imageBlack.length > 0) {
-        List = FaceList.filter(i => imageBlack.includes(i))
+        List = FaceList.filter(i => !imageBlack.includes(i))
       }
       name = _.sample(List)
       logger.debug(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 表情随机选择 ${name}`)
