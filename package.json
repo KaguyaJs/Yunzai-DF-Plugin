@@ -19,7 +19,7 @@
     "@types/lodash": "^4.17.21",
     "@types/node": "^24.10.1",
     "@types/trss-yunzai": "npm:@kaguyajs/trss-yunzai-types",
-    "@typescript/native-preview": "*",
+    "@typescript/native-preview": "7.0.0-dev.20251217.1",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
     "neostandard": "^0.12.2",
