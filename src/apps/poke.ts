@@ -4,17 +4,18 @@ import { Data, logger } from '@/utils'
 import { FaceList, } from '@/data'
 import { FacePoke } from '@/modules'
 
-export class Poke extends plugin<'notice.group.poke'> {
+export class Poke extends plugin<'notice.*.poke'> {
   constructor () {
     super({
       name: 'DF:戳一戳',
       dsc: '戳一戳回复内容',
-      // @ts-ignore
       event: 'notice.*.poke',
       priority: -114,
-      rule: [{ fnc: 'poke', reg: '', log: false }]
+      rule: [{ fnc: 'poke', log: false }]
     })
   }
+
+  private LogText = `${Array.isArray(Bot.uin) ? logger.blue('[ DF-Plugin ]') : ''}${logger.green('[戳一戳]')}`
 
   async poke () {
     let { chuo, mode } = Config.Poke
@@ -22,21 +23,21 @@ export class Poke extends plugin<'notice.group.poke'> {
     if (this.e.target_id !== this.e.self_id) return false
     if (mode === 'random') {
       mode = _.sample(['image', 'text', 'mix'])
-      logger.debug(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 随机选择 ${mode}`)
+      logger.debug(`${this.LogText} 随机选择 ${mode}`)
     }
     switch (mode) {
-      case 'image' : {
-        logger.info(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 图片模式`)
+      case 'image': {
+        logger.info(`${this.LogText} 图片模式`)
         const img = await this.Image()
         return img ? this.e.reply(img) : false
       }
       case 'text': {
-        logger.info(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 文本模式`)
+        logger.info(`${this.LogText} 文本模式`)
         const text = this.Text()
         return text ? this.e.reply(text) : false
       }
       case 'mix': {
-        logger.info(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 混合模式`)
+        logger.info(`${this.LogText} 混合模式`)
         const msg = []; const img = await this.Image(); const txt = this.Text()
         if (txt) msg.push(txt)
         if (img) msg.push(img)
@@ -48,42 +49,58 @@ export class Poke extends plugin<'notice.group.poke'> {
     }
   }
 
+  /**
+   * 图片消息获取逻辑
+   * @returns 图片消息段或nul
+   */
   private async Image (): Promise<ReturnType<typeof segment['image']> | null> {
     const { imageType, imageBlack } = Config.Poke
     let name: string | undefined
-    if (imageType !== 'all') {
-      name = FaceList[imageType]
-    } else {
+    if (imageType === 'all') {
       let List: string[] = FaceList
       if (Array.isArray(imageBlack) && imageBlack.length > 0) {
         List = FaceList.filter(i => !imageBlack.includes(i))
       }
       name = _.sample(List)
-      logger.debug(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 表情随机选择 ${name}`)
+      logger.mark(`${this.LogText} 表情随机选择 ${name}`)
+    } else {
+      name = FaceList[imageType]
     }
     if (!name) {
-      logger.warn(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 获取表情包属性失败`)
+      logger.warn(`${this.LogText} 获取表情包属性失败`)
       return null
     }
-    logger.debug(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 获取 ${name} 图片`)
+    logger.debug(`${this.LogText} 获取 ${name} 图片`)
     const file = await FacePoke(name)
-    if (!file) return null
+    if (!file) {
+      logger.warn(`${this.LogText} 获取戳一戳图片失败，返回为空`)
+      return null
+    }
     return segment.image(file)
   }
 
+  /**
+   * 获取戳一戳文本
+   * @returns 文本或Null
+   */
   private Text (): string | null {
     const { textMode, textList } = Config.Poke
     if (textMode === 'hitokoto') {
-      const data = Data.getJSON<Array<string>>('json/PokeText.json', 'res')
-      if (data && Array.isArray(data) && data.length > 0) {
-        const text = _.sample(data)
-        logger.debug(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 获取一言文字:`, text)
-        return text || null
+      const data = Data.getJSON<Array<string>>('json/PokeText.json', 'res', true)
+      if (!(Array.isArray(data) && data.length > 0)) {
+        logger.warn(`${this.LogText} 获取一言文字失败，返回内容为空`)
+        return null
       }
+      const text = _.sample(data)
+      logger.debug(`${this.LogText} 获取一言文字:`, text)
+      return text || null
     } else if (textMode === 'list') {
-      if (_.isEmpty(textList)) return null
+      if (!(Array.isArray(textList) && textList.length > 0)) {
+        logger.warn(`${this.LogText} 获取自定义戳一戳文本失败，返回为空`)
+        return null
+      }
       const text = _.sample(textList)
-      logger.debug(`${logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')} 获取自定义文本:`, text)
+      logger.debug(`${this.LogText} 获取自定义文本:`, text)
       return text || null
     }
     return null

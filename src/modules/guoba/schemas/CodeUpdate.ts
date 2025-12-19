@@ -193,7 +193,7 @@ export const CodeUpdate: GuobaSchemas = [
                 required: true,
                 componentProps: {
                   options: [
-                    { label: '提交', value: 'commit' },
+                    { label: '提交', value: 'commits' },
                     { label: '发布', value: 'releases' }
                   ]
                 }

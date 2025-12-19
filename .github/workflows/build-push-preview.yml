@@ -85,7 +85,7 @@ jobs:
           force_orphan: false
           # 自定义提交信息
           full_commit_message: ${{ github.event.head_commit.message }}
-          # 设置提交用户名
-          user_name: "github-actions[bot]"
-          # 设置提交邮箱
-          user_email: "github-actions[bot]@users.noreply.github.com"
+          # # 设置提交用户名
+          # user_name: "github-actions[bot]"
+          # # 设置提交邮箱
+          # user_email: "github-actions[bot]@users.noreply.github.com"
