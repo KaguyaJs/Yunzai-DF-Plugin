@@ -2,6 +2,7 @@ import _ from 'lodash'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { Data } from '@/utils'
+import { FaceApiHostName } from '@/constants'
 import { FacePath } from '@/dir'
 
 export async function randomFile (dirPath: string): Promise<string | null> {
@@ -24,5 +25,5 @@ export async function FacePoke (name: string): Promise<string> {
   if (!name) throw new Error('表情属性为空，请检查表情黑名单或表情列表是否正确')
   const Path = path.join(FacePath, name)
   const file = await randomFile(Path)
-  return file ?? `https://ciallo.hxxn.cc/?name=${name}`
+  return file ?? `https://${FaceApiHostName}/?name=${name}`
 }
