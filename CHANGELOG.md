@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.5.3](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.5.2...v2.5.3) (2025-12-25)
+
+
+### Bug Fixes
+
+* **poke:** 替换已失效的api域名 ([987157c](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/987157c5add60c463adcc8c94bcb049f00de16bf))
+
 ## [2.5.2](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.5.1...v2.5.2) (2025-12-19)
 
 
