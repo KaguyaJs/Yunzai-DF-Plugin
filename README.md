@@ -3,7 +3,7 @@
 
 ## 安装插件
 
-1. 首先准备[Miao-Yunzai](https://github.com/yoimiya-kokomi/Miao-Yunzai)或[TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai)
+1. 准备[Miao-Yunzai](https://github.com/yoimiya-kokomi/Miao-Yunzai)或[TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai)
 
 2. 在 Yunzai 根目录**任选以下一条**运行
 
@@ -19,7 +19,9 @@ git clone --depth=1 --branch preview https://github.com/KaguyaJs/Yunzai-DF-Plugi
 git clone --depth=1 --branch release https://github.com/KaguyaJs/Yunzai-DF-Plugin.git ./plugins/Yunzai-DF-Plugin
 ```
 
-<details><summary>Gitee镜像仓库 (国内推荐)</summary>
+<details><summary>镜像仓库 (国内推荐)</summary>
+ 
+> 使用 Gitee 镜像仓库
 
 - 预览版 (即时更新)
 
