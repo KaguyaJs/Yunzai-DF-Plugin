@@ -68,6 +68,9 @@ Poke:
     random: 随机返回文本或图片
     mix: 同时显示图片+文字
   mode: image
+  imageApiTips: |-
+    戳一戳Api地址, 无特殊情况不需要填写
+  imageApi: ""
   imageTypeTips: |-
     戳一戳图片设置
     1: 柴郡
