@@ -1,0 +1,122 @@
+name: Bug 报告
+description: 创建一份报告来帮助我们改进
+title: "[bug]："
+labels: ["bug"]
+body:       
+  - type: checkboxes
+    attributes:
+      label: 这个问题是否已经存在？
+      options:
+        - label: 我已经搜索过[现有的问题](https://github.com/DenFengLai/DF-Plugin/issues)并未发现相同问题
+          required: true
+
+  - type: checkboxes
+    attributes:
+      label: DF-Plugin是否为当前最新版本？
+      description: 请确保您已使用最新版本的DF-Plugin，以避免已知问题。
+      options:
+        - label: 我最近已使用过`#DF更新`命令进行更新至最新版本
+          required: true
+          
+  - type: dropdown
+    attributes:
+      label: Yunzai 版本
+      options:
+        - Miao-Yunzai
+        - TRSS-Yunzai
+        - Yunzai-Bot
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Node.js 版本
+      description: 请运行 `node -v` 获取版本号
+      placeholder: 例如：v16.20.0
+
+  - type: dropdown
+    attributes:
+      label: 使用的协议端
+      options:
+        - ICQQ
+        - OneBotv11
+        - NapCat
+        - Philia
+        - ComWeChat
+        - GSUIDCore
+        - QQBot
+        - QQ频道
+        - 微信
+        - KOOK
+        - Telegram
+        - Discord
+        - OPQBot
+        - Lagrange
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: 操作系统
+      options:
+        - Windows
+        - Linux
+        - MacOS
+        - Android
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 问题描述
+      description: 请简要描述您遇到的问题
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 复现步骤
+      description: 请详细描述如何复现这个问题
+      placeholder: |
+        1. 发送「...」指令
+        2. 出现问题
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 期望行为
+      description: 描述您期望看到的结果
+
+  - type: textarea
+    attributes:
+      label: 实际行为
+      description: 描述实际发生的情况
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 错误日志
+      description: 请提供相关的错误日志（如果有）
+      render: shell
+
+  - type: dropdown
+    attributes:
+      label: 问题频率
+      options:
+        - 必现（100%）
+        - 经常（约75%）
+        - 偶尔（约50%）
+        - 较少（约25%）
+        - 随机（无规律）
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 补充说明
+      description: 其他需要补充的信息
