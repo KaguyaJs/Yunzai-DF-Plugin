@@ -29,7 +29,9 @@ export class GitRepoUpdate extends plugin<'message'> {
       this.task = {
         name: 'DF:Git仓库更新检查',
         cron: config.CodeUpdate.Cron,
-        fnc: () => CodeUpdate(true)
+        fnc: async () => {
+          await CodeUpdate(true)
+        }
       }
     }
   }

@@ -29,6 +29,7 @@ export interface Config {
   Poke: {
     chuo: boolean
     mode: 'image' | 'text' | 'random' | 'mix'
+    imageApi: string
     imageType: number | 'all'
     imageBlack: string[]
     textMode: 'hitokoto' | 'list'
