@@ -19,7 +19,7 @@ export class DFUpdate extends plugin<'message'> {
         },
         {
           reg: /^#?DF(安装|(强制)?更新)(戳一戳)?图库$/i,
-          fnc: 'up_img'
+          fnc: 'upImg'
         }
       ]
     })
