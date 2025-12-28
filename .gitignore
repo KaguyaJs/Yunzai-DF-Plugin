@@ -1,13 +1,1 @@
 node_modules/
-data/
-*_test.js
-*_dev.js
-test.*
-*.log
-.vscode/
-temp/
-*.css.map
-pnpm-lock.yaml
-package-lock.json
-yarn.lock
-resources/poke/

@@ -1,365 +1,343 @@
+// Define variables for common colors and fonts
+$font-family: "font";
+$orbitron-bold: "Orbitron-Bold";
+$font-roboto: "Roboto", sans-serif;
+$bg-color: #050505;
+$light-bg-color: #232323b2;
+$text-color: #faf8fc;
+$secondary-color: #c4c3c8;
+$highlight-color: #90d0e4;
+$version-color: #d3bc8e;
+$success-color: #00b400;
+$error-color: #d92b2f;
+$info-color: #3b82f6;
+$warning-color: #ff9800;
+$primary-color: #28a745;
+$alert-color: #fd7e14;
+
+// Font-face definitions
 @font-face {
-    font-family: "font";
-    src: url("../font/InconsolataNerdFontPropo-Bold.ttf");
+  font-family: $font-family;
+  src: url("../font/InconsolataNerdFontPropo-Bold.ttf");
 }
 
 @font-face {
-    font-family: "Orbitron-Bold";
-    src: url("../font/Orbitron-Bold.woff2") format("woff2");
+  font-family: $orbitron-bold;
+  src: url("../font/Orbitron-Bold.woff2") format("woff2");
 }
 
+// Global styles
 * {
-    // margin: 0;
-    font-family: "font";
-    box-sizing: border-box;
-    -webkit-user-select: none;
-    user-select: none;
+  font-family: $font-family;
+  box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
-    font-family: "Roboto", sans-serif;
-    font-size: 16px;
-    // width: 530px;
-    color: #faf8fc;
-    transform-origin: 0 0;
-    background-color: #050505;
-    transform: scale(2.5);
+  font-family: $font-roboto;
+  font-size: 16px;
+  color: $text-color;
+  transform-origin: 0 0;
+  background-color: $bg-color;
+  transform: scale(2.5);
 }
 
+// Container styles
 .container {
-    max-width: 630px;
-    min-width: 500px;
-    width: max-content;
-    padding: 20px 15px 10px 15px;
-    background-color: #232323b2;
+  max-width: 630px;
+  min-width: 500px;
+  width: max-content;
+  padding: 20px 15px 10px 15px;
+  background-color: $light-bg-color;
 }
 
+// Header box styles
 .head_box {
-    padding: 10px;
-    // color: rgb(0, 0, 0);
-    text-align: center;
+  padding: 10px;
+  text-align: center;
 
-    .id_text {
-        font-size: 30px;
-        //font-weight: bold;
-        text-align: left;
-        font-family: "Orbitron-Bold";
-    }
+  .id_text {
+    font-size: 30px;
+    font-family: $orbitron-bold;
+    text-align: left;
+  }
 }
 
+// Data box styles
 .data_box {
-    border-radius: 10px;
-    margin-top: -5px;
-    padding: 6px;
-    // box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  margin-top: -5px;
+  padding: 6px;
 }
 
+// List item styles
 .list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 
-    .item {
+  .item {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(112, 112, 112, 0.2), rgba(255, 255, 255, 0.05));
+    backdrop-filter: blur(12px) saturate(150%);
+    border-radius: 16px;
+    padding: 15px;
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.4),
+      inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    .title {
+      font-size: 16px;
+
+      .text {
+        font-weight: bold;
         display: flex;
         align-items: center;
 
-        background: linear-gradient(135deg, rgba(112, 112, 112, 0.2), rgba(255, 255, 255, 0.05));
-        backdrop-filter: blur(12px) saturate(150%);
-
-        border-radius: 16px;
-        padding: 15px;
-
-        box-shadow:
-            0 4px 20px rgba(0, 0, 0, 0.4),
-            inset 0 1px 1px rgba(255, 255, 255, 0.2);
-
-        border: 1px solid rgba(255, 255, 255, 0.15);
-
-        .title {
-            font-size: 16px;
-
-            .text {
-                font-weight: bold;
-                display: flex;
-                align-items: center;
-
-                .release {
-                    font-size: 11px;
-                    margin-left: 10px;
-                    color: #bbbbbb;
-                    border: 2px solid #bbbbbb;
-                    border-radius: 18px;
-                    padding: 3.5px 8px;
-                    display: inline-block;
-                }
-
-                .icon {
-                    width: 18px;
-                    height: 18px;
-                    margin-right: 5px;
-                }
-            }
-
-            .branch {
-                display: flex;
-                align-items: center;
-                font-size: 13px;
-                margin-top: 5px;
-                color: #c4c3c8;
-
-                img {
-                    width: 13px;
-                    height: 13px;
-                    margin-right: 1.5px;
-                }
-            }
-
-            .dec {
-                font-size: 13px;
-                color: #c4c3c8;
-                margin-top: 10px;
-                display: flex;
-                align-items: center;
-                white-space: pre;
-
-                span {
-                    color: #faf8fc;
-                }
-
-                .avatar {
-                    display: flex;
-                    align-items: center;
-                    margin-right: 5px;
-
-                    img {
-                        width: 16px;
-                        height: 16px;
-                        border-radius: 50%;
-                        margin-left: -4px;
-                        position: relative;
-
-                        &[src=""]::after {
-                            content: attr(data-nameStart);
-                            position: absolute;
-                            inset: 0;
-                            color: #faf8fc;
-                            background: #e67e22;
-                            font-family: "Verdana", "Arial";
-                            text-align: center;
-                            line-height: 16px;
-                            font-size: 11px;
-                            // z-index: 1;
-                        }
-
-                        &:first-child {
-                            z-index: 1;
-                        }
-                    }
-                }
-            }
-
-            .desc {
-                font-size: 12px;
-                color: #c4c3c8;
-                margin-top: 10px;
-                // white-space: pre-wrap;
-                // line-height: 10px;
-
-                img {
-                    max-width: 100%;
-                    height: auto;
-                    display: block;
-                }
-
-                .head {
-                    font-size: 14px;
-                    color: #faf8fc;
-                }
-
-                ul,
-                ol {
-                    padding-left: 13px;
-                    text-indent: -2px;
-                    // margin-left: 8px;
-                }
-
-                h1,
-                h2,
-                h3,
-                h4 {
-                    margin-top: 0.5em;
-                    margin-bottom: 0.8em;
-                }
-
-                a {
-                    color: #90d0e4;
-                    text-decoration: none;
-                }
-            }
-
-            .stats {
-                border-top: 1px solid rgba(255, 255, 255, 0.15);
-                border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-                margin-top: 10px;
-                padding: 5px 10px;
-                font-size: 13px;
-                color: #c4c3c8;
-                width: max-content;
-            }
+        .release {
+          font-size: 11px;
+          margin-left: 10px;
+          color: $secondary-color;
+          border: 2px solid $secondary-color;
+          border-radius: 18px;
+          padding: 3.5px 8px;
         }
+
+        .icon {
+          width: 18px;
+          height: 18px;
+          margin-right: 5px;
+        }
+      }
+
+      .branch {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        margin-top: 5px;
+        color: $secondary-color;
+
+        img {
+          width: 13px;
+          height: 13px;
+          margin-right: 1.5px;
+        }
+      }
+
+      .dec {
+        font-size: 13px;
+        color: $secondary-color;
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        white-space: pre;
+
+        span {
+          color: $text-color;
+        }
+
+        .avatar {
+          display: flex;
+          align-items: center;
+          margin-right: 5px;
+
+          img {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-left: -4px;
+            position: relative;
+
+            &[src=""]::after {
+              content: attr(data-nameStart);
+              position: absolute;
+              inset: 0;
+              color: $text-color;
+              background: #e67e22;
+              font-family: "Verdana", "Arial";
+              text-align: center;
+              line-height: 16px;
+              font-size: 11px;
+            }
+
+            &:first-child {
+              z-index: 1;
+            }
+          }
+        }
+      }
+
+      .desc {
+        font-size: 12px;
+        color: $secondary-color;
+        margin-top: 10px;
+
+        img {
+          max-width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .head {
+          font-size: 14px;
+          color: $text-color;
+        }
+
+        ul,
+        ol {
+          padding-left: 13px;
+          text-indent: -2px;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+          margin-top: 0.5em;
+          margin-bottom: 0.8em;
+        }
+
+        a {
+          color: $highlight-color;
+          text-decoration: none;
+        }
+      }
+
+      .stats {
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        margin-top: 10px;
+        padding: 5px 10px;
+        font-size: 13px;
+        color: $secondary-color;
+        width: max-content;
+      }
     }
+  }
 }
 
+// Copyright section
 .copyright {
-    font-size: 12px;
-    text-align: center;
-    color: #c3c4c4;
-    margin-top: 10px;
+  font-size: 12px;
+  text-align: center;
+  color: $secondary-color;
+  margin-top: 10px;
 
-    .version {
-        color: #d3bc8e;
-        display: inline-block;
-        padding: 0 3px;
-    }
+  .version {
+    color: $version-color;
+    display: inline-block;
+    padding: 0 3px;
+  }
 }
 
+// File count styles
 .file-count {
-    color: #ffffff;
+  color: $text-color;
 }
 
+// Additions and deletions
 .additions {
-    color: #00b400;
+  color: $success-color;
 }
 
 .deletions {
-    color: #d92b2f;
+  color: $error-color;
 }
 
+// Commit prefix styles
 .commit-prefix {
-    display: inline-block;
-    padding: 4px 7px 4px;
-    margin-right: 0;
-    border-radius: 12px 4px;
-    font-size: 11px;
-    font-weight: 700;
-    font-family: "Orbitron-Bold";
-    color: #fff;
-    text-transform: uppercase;
-    line-height: 1;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.5);
-    vertical-align: middle;
-    position: relative;
-    top: -1.8px;
-}
+  display: inline-block;
+  padding: 4px 7px 4px;
+  margin-right: 0;
+  border-radius: 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: $orbitron-bold;
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.5);
+  vertical-align: middle;
+  position: relative;
+  top: -1.8px;
 
-.commit-prefix.has-emoji {
+  &.has-emoji {
     padding-left: 8px;
-}
+  }
 
-.prefix-feat,
-.prefix-fix,
-.prefix-docs,
-.prefix-style,
-.prefix-refactor,
-.prefix-perf,
-.prefix-test,
-.prefix-build,
-.prefix-ci,
-.prefix-chore,
-.prefix-revert {
-    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%);
-}
+  &.prefix-feat {
+    background-color: $primary-color;
+  }
 
-.prefix-feat {
-    background-color: #28a745;
-    color: white;
-}
+  &.prefix-fix {
+    background-color: $alert-color;
+  }
 
-.prefix-fix {
-    background-color: #fd7e14;
-    color: white;
-}
+  &.prefix-docs {
+    background-color: $info-color;
+  }
 
-.prefix-docs {
-    background-color: #3b82f6;
-    color: #ffffff;
-}
-
-.prefix-style {
+  &.prefix-style {
     background-color: #a855f7;
     color: #ffffff;
-}
+  }
 
-.prefix-refactor {
-    background-color: #ff9800;
+  &.prefix-refactor {
+    background-color: $warning-color;
     color: #1f2937;
-}
+  }
 
-.prefix-perf {
+  &.prefix-perf {
     background-color: #dc2626;
     color: #ffffff;
-}
+  }
 
-.prefix-pref {
-    background-color: #dc2626;
-    color: #f5f2f2;
-}
-
-.prefix-test {
+  &.prefix-test {
     background-color: #ec4899;
     color: #ffa3a3;
-}
+  }
 
-.prefix-build {
+  &.prefix-build {
     background-color: #06b6d4;
     color: #1f2937;
-}
+  }
 
-.prefix-ci {
+  &.prefix-ci {
     background-color: #60a5fa;
     color: #1e3a8a;
-}
+  }
 
-.prefix-chore {
+  &.prefix-chore {
     background-color: #d1d5db;
     color: #1f2937;
-}
+  }
 
-.prefix-revert {
+  &.prefix-revert {
     background-color: #1f2937;
     color: #ffffff;
-}
+  }
 
-.prefix-pr {
+  &.prefix-pr {
     background-color: #9370db;
     color: #ffffff;
     background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%);
+  }
 }
 
-.pr-num {
-    display: inline-block;
-    padding: 3px 8px;
-    margin-left: 6px;
-    border-radius: 14px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #ffffff;
-    background-color: #6c5ce7;
-    border: 2px solid #5a4bd4;
-    vertical-align: middle;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
+// Scope styling for commit prefix
 .scope {
-    z-index: -1;
-    background: #8A6C52;
-    border-radius: 0px 4px 12px 0px;
-    box-shadow: inset 6px 0px 4px rgba(0, 0, 0, 0.1);
-    left: -1px;
+  z-index: -1;
+  background: #8a6c52;
+  border-radius: 0px 4px 12px 0px;
+  box-shadow: inset 6px 0px 4px rgba(0, 0, 0, 0.1);
+  left: -1px;
 }
 
 .commit-prefix.haveScope {
-    border-radius: 12px 0px 2px 4px;
+  border-radius: 12px 0px 2px 4px;
 }

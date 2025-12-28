@@ -38,8 +38,8 @@ body {
 }
 .head_box .id_text {
   font-size: 30px;
-  text-align: left;
   font-family: "Orbitron-Bold";
+  text-align: left;
 }
 
 .data_box {
@@ -75,11 +75,10 @@ body {
 .list .item .title .text .release {
   font-size: 11px;
   margin-left: 10px;
-  color: #bbbbbb;
-  border: 2px solid #bbbbbb;
+  color: #c4c3c8;
+  border: 2px solid #c4c3c8;
   border-radius: 18px;
   padding: 3.5px 8px;
-  display: inline-block;
 }
 .list .item .title .text .icon {
   width: 18px;
@@ -179,7 +178,7 @@ body {
 .copyright {
   font-size: 12px;
   text-align: center;
-  color: #c3c4c4;
+  color: #c4c3c8;
   margin-top: 10px;
 }
 .copyright .version {
@@ -189,7 +188,7 @@ body {
 }
 
 .file-count {
-  color: #ffffff;
+  color: #faf8fc;
 }
 
 .additions {
@@ -218,108 +217,59 @@ body {
   position: relative;
   top: -1.8px;
 }
-
 .commit-prefix.has-emoji {
   padding-left: 8px;
 }
-
-.prefix-feat,
-.prefix-fix,
-.prefix-docs,
-.prefix-style,
-.prefix-refactor,
-.prefix-perf,
-.prefix-test,
-.prefix-build,
-.prefix-ci,
-.prefix-chore,
-.prefix-revert {
-  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%);
-}
-
-.prefix-feat {
+.commit-prefix.prefix-feat {
   background-color: #28a745;
-  color: white;
 }
-
-.prefix-fix {
+.commit-prefix.prefix-fix {
   background-color: #fd7e14;
-  color: white;
 }
-
-.prefix-docs {
+.commit-prefix.prefix-docs {
   background-color: #3b82f6;
-  color: #ffffff;
 }
-
-.prefix-style {
+.commit-prefix.prefix-style {
   background-color: #a855f7;
   color: #ffffff;
 }
-
-.prefix-refactor {
+.commit-prefix.prefix-refactor {
   background-color: #ff9800;
   color: #1f2937;
 }
-
-.prefix-perf {
+.commit-prefix.prefix-perf {
   background-color: #dc2626;
   color: #ffffff;
 }
-
-.prefix-pref {
-  background-color: #dc2626;
-  color: #f5f2f2;
-}
-
-.prefix-test {
+.commit-prefix.prefix-test {
   background-color: #ec4899;
   color: #ffa3a3;
 }
-
-.prefix-build {
+.commit-prefix.prefix-build {
   background-color: #06b6d4;
   color: #1f2937;
 }
-
-.prefix-ci {
+.commit-prefix.prefix-ci {
   background-color: #60a5fa;
   color: #1e3a8a;
 }
-
-.prefix-chore {
+.commit-prefix.prefix-chore {
   background-color: #d1d5db;
   color: #1f2937;
 }
-
-.prefix-revert {
+.commit-prefix.prefix-revert {
   background-color: #1f2937;
   color: #ffffff;
 }
-
-.prefix-pr {
+.commit-prefix.prefix-pr {
   background-color: #9370db;
   color: #ffffff;
   background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 50%);
 }
 
-.pr-num {
-  display: inline-block;
-  padding: 3px 8px;
-  margin-left: 6px;
-  border-radius: 14px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #ffffff;
-  background-color: #6c5ce7;
-  border: 2px solid #5a4bd4;
-  vertical-align: middle;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 .scope {
   z-index: -1;
-  background: #8A6C52;
+  background: #8a6c52;
   border-radius: 0px 4px 12px 0px;
   box-shadow: inset 6px 0px 4px rgba(0, 0, 0, 0.1);
   left: -1px;

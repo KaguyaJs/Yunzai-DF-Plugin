@@ -1,0 +1,236 @@
+# 此配置文件为系统使用，请勿修改，否则可能无法正常使用
+# 用户配置已移动至 Yz/config/DF-Plugin.yaml
+
+# Git仓库更新推送
+CodeUpdate:
+  AutoTips: |-
+    自动检查仓库更新开关
+  Auto: false
+  AutoBranchTips: |-
+    是否自动给未配置分支的仓库添加默认分支
+  AutoBranch: true
+  FirstAddTips: |-
+    首次添加仓库(数据库不存在数据库)是否进行一次推送
+  FirstAdd: false
+  CronTips: |-
+    仓库更新检查Cron表达式
+    Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
+  Cron: "0 */30 * * * *"
+  RepoTips: |-
+    GitApi配置
+      provider: 仓库提供商，唯一标识符
+      token: 认证Token
+      ApiUrl: Api地址
+  repos:
+    - provider: "GitHub"
+      token: ""
+      ApiUrl: "https://api.github.com/repos"
+      icon: "GitHub"
+      tips: Github个人Token 获取地址 https://github.com/settings/tokens
+    - provider: "Gitee"
+      token: ""
+      ApiUrl: "https://gitee.com/api/v5/repos"
+      icon: "Gitee"
+      tips: Gitee个人Token 获取地址 https://gitee.com/profile/personal_access_tokens
+    - provider: "Gitcode"
+      token: ""
+      ApiUrl: "https://gitcode.com/api/v5/repos"
+      icon: "Gitcode"
+      tips: Gitcode个人Token 获取地址 https://gitcode.com/setting/token-classic
+    - provider: "CNB"
+      token: ""
+      ApiUrl: "https://api.cnb.cool"
+      icon: "CNB"
+
+  ListTips: |-
+    推送配置
+    Group: 推送的群聊列表
+    QQ: 推送的QQ列表
+    AutoPath: 是否自动获取已安装的插件地址并监听
+    Exclude: 排除的仓库路径(用于忽略一些不希望被监听的插件)
+    repos: 
+        provider: 仓库提供商，唯一标识符
+        repo: 仓库名
+        branch: 分支名 (commits时有效 为空自动获取)
+        type: commits 或 release
+    note: 备注
+  List: []
+
+# 戳一戳配置
+Poke:
+  chuoTips: |-
+    戳一戳开关
+  chuo: true
+  modeTips: |-
+    戳一戳模式
+    image: 返回图片消息
+    text: 返回文本消息
+    random: 随机返回文本或图片
+    mix: 同时显示图片+文字
+  mode: image
+  imageApiTips: |-
+    戳一戳Api地址, 无特殊情况不需要填写
+  imageApi: ""
+  imageTypeTips: |-
+    戳一戳图片设置
+    1: 柴郡
+    2: 丛雨
+    3: 诗歌剧 
+    4: 柚子厨 
+    5: 小南梁
+    6: 小鲨鱼古拉
+    7: 甘城猫猫
+    8: 龙图
+    9: 满穗
+    10: 猫猫虫
+    11: 纳西妲
+    12: 心海
+    13: fufu
+    14: ATRI
+    15: 绫地宁宁
+    16: 永雏塔菲
+    17: miku
+    18: 特蕾西娅
+    19: doro
+    20: 米塔
+    0: 自定义图片 (自行在resources/poke/default中添加)
+    all: 随机类型
+  imageType: 1
+  imageBlackTips: |-
+    戳一戳随机图片黑名单
+  imageBlack:
+    - default
+
+  textModeTips: |-
+    戳一戳文字设置
+    hitokoto: 一言
+    list: 自定义文本
+  textMode: hitokoto
+  textListTips: |-
+    戳一戳文字列表
+    此列表的文字将被随机
+  textList:
+    - 你干嘛哎呦
+
+# 随机图片配置
+Picture:
+  openTips: |-
+    随机图片开关
+  open: true
+  DirectTips: |-
+    是否去除 #来张/随机 前缀
+  Direct: false
+
+# 联系主人设置
+sendMaster:
+  openTips: |-
+    联系主人开关
+  open: true
+  cdTips: |-
+    联系主人CD 单位: 秒 填0关闭cd
+  cd: 30
+  MasterTips: |-
+    是否发送全部主人 0: 仅发送首个主人 1: 发送全部主人 
+    填主人账号可以指定发送某个主人
+  Master: 0
+  BotIdTips: |-
+    指定某个Bot发送 为0时为触发Bot
+  BotId: 0
+  MsgTemplateTips: |-
+    发送给主人的消息
+    支持变量:
+    key 消息标识，用于回复消息时调用，如果不需要回复可以删掉
+    avatar 发送者头像
+    platform 平台信息 如 QQ、微信等
+    user 触发者信息
+    gloup 群聊信息 私聊时显示私聊
+    bot 触发Bot信息
+    time 发送时间
+    msg 消息内容
+  MsgTemplate: |-
+    {{key}}
+    {{avatar}}
+    平台: {{platform}}
+    用户: {{user}}
+    来自: {{group}}
+    BOT: {{bot}}
+    时间: {{time}}
+    消息内容:
+    {{msg}}
+    -------------
+    引用该消息：#回复 <内容>
+
+  successMsgTemplateTips: |-
+    消息发送成功后返回的消息
+    可用参数:
+    masterQQ 主人的QQ
+  successMsgTemplate: |-
+    ✅ 消息已送达
+    主人的QQ: {{masterQQ}}
+
+  failsMsgTemplateTips: |-
+    失败时发送的消息
+    可用参数:
+    masterQQ 主人的QQ
+  failsMsgTemplate: |-
+    ❎ 消息发送失败，请尝试自行联系：{{masterQQ}}
+
+  replyMsgTemplateTips: |-
+    主人回复时发送的消息
+    可用参数:
+    nickname 主人昵称
+    id 进行回复操作的主人账号
+    msg 消息内容
+  replyMsgTemplate: |-
+    主人 {{nickname}}({{id}}) 回复:
+    {{msg}}
+
+  banWordsTips: |-
+    违禁词，当消息包含下列内容将不会发送给主人
+  banWords: []
+  banUserTips: |-
+    禁用的用户，不允许该用户联系主人
+  banUser: []
+  banGroupTips: |-
+    禁用的群聊，不允许通过该群联系主人
+  banGroup: []
+
+# 图片外显配置
+summary:
+  sumTips: |-
+    图片外显开关
+  sum: false
+  typeTips: |-
+    外显模式 (1: 自定义外显 2:  一言接口 3: 列表随机)
+  type: 2
+  textTips: |-
+    自定义外显
+  text: "Ciallo～(∠・ω< )⌒☆"
+  listTips: |-
+    自定义外显随机列表
+  list:
+    - 你干嘛~
+    - 我喜欢你
+
+  apiTips: |-
+    一言接口
+  api: "https://v1.hitokoto.cn/?encode=text"
+
+# 代理设置
+proxy:
+  openTips: |-
+    是否代理大部分请求
+  open: false
+  urlTips: |-
+    代理地址
+  url: "http://127.0.0.1:7890"
+
+# 其他配置
+other:
+  ysTips: |-
+    原神关键词发图
+  ys: true
+  renderScaleTips: |-
+    渲染精度
+    范围 50~200
+  renderScale: 100
