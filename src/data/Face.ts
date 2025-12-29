@@ -1,4 +1,4 @@
-import { Data } from '@/utils'
+import { Data, logger } from '@/utils'
 import { FacePath } from '@/dir'
 import fs from 'node:fs'
 
@@ -32,7 +32,7 @@ export const FaceAliasIndex: Record<string, string> = Object.fromEntries(
 )
 
 /** 载入用户自建表情文件夹 */
-if (fs.existsSync(FacePath)) {
+if (await Data.isDirectory(FacePath)) {
   try {
     (await fs.promises.readdir(FacePath, { withFileTypes: true }))
       .filter(dirent => dirent.isDirectory() && dirent.name !== '.git' && !dirent.name.startsWith('.'))
@@ -41,5 +41,7 @@ if (fs.existsSync(FacePath)) {
         if (!FaceList.includes(name)) FaceList.push(name)
         FaceAlias[name] ??= []
       })
-  } catch { }
+  } catch (err) {
+    logger.warn('载入自建表情文件夹时发生错误:', err)
+  }
 }
