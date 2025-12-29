@@ -32,8 +32,7 @@ export const FaceAliasIndex: Record<string, string> = Object.fromEntries(
 )
 
 /** 载入用户自建表情文件夹 */
-void (async () => {
-  if (!fs.existsSync(FacePath)) return
+if (fs.existsSync(FacePath)) {
   try {
     (await fs.promises.readdir(FacePath, { withFileTypes: true }))
       .filter(dirent => dirent.isDirectory() && dirent.name !== '.git' && !dirent.name.startsWith('.'))
@@ -43,4 +42,4 @@ void (async () => {
         FaceAlias[name] ??= []
       })
   } catch { }
-})()
+}
