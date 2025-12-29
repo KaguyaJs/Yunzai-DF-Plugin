@@ -14,8 +14,8 @@ export interface Config {
       tips: string
     }[]
     List: {
-      Group: (string | number)[]
-      QQ: (string | number)[]
+      Group?: (string | number)[]
+      QQ?: (string | number)[]
       AutoPath: boolean
       Exclude: string[]
       repos: {

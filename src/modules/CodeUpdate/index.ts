@@ -74,8 +74,8 @@ function getListMap (data: typeof config.CodeUpdate.List) {
         }
       })
     }
-    fill(acc.Group, item.Group)
-    fill(acc.QQ, item.QQ)
+    fill(acc.Group, item.Group ?? [])
+    fill(acc.QQ, item.QQ ?? [])
     return acc
   }, {
     Group: {} as Record<string | number, Set<Repo>>,
