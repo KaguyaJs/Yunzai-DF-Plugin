@@ -11,6 +11,7 @@
   "main": "index.js",
   "scripts": {
     "build": "rimraf lib && tsgo && tsc-alias && minify lib",
+    "build:noMinify": "rimraf lib && tsgo && tsc-alias",
     "build:watch": "rimraf lib && tsgo && (concurrently \"tsgo -w\" \"tsc-alias -w\")",
     "lint": "eslint ./src --fix"
   },
@@ -19,12 +20,12 @@
     "@types/lodash": "^4.17.21",
     "@types/node": "^24.10.1",
     "@types/trss-yunzai": "npm:@kaguyajs/trss-yunzai-types",
-    "@typescript/native-preview": "7.0.0-dev.20251217.1",
+    "@typescript/native-preview": "7.0.0-dev.20251230.1",
     "concurrently": "^9.2.1",
     "eslint": "^9.39.1",
+    "minify": "link:script/minify",
     "neostandard": "^0.12.2",
     "rimraf": "^6.1.2",
-    "minify": "link:script/minify",
     "tsc-alias": "^1.8.16",
     "typescript-eslint": "^8.48.1"
   },

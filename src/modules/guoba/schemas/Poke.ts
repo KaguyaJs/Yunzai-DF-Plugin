@@ -55,7 +55,7 @@ export const Poke: GuobaSchemas = [
       allowClear: true,
       mode: 'tags',
       get options () {
-        return FaceList.map((name) => ({ value: name }))
+        return FaceList.map(name => ({ value: name }))
       }
     }
   },

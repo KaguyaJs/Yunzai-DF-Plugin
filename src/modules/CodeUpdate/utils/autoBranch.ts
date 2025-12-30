@@ -12,8 +12,8 @@ async function getDefaultBranch (cfg: Config['CodeUpdate']['List'][number]['repo
     if (defaultBranch === false) return false
     if (!defaultBranch) throw new Error(`接口无效返回: ${defaultBranch}`)
 
-    defaultBranchMap.set(repo, branch)
     cfg.branch = defaultBranch
+    defaultBranchMap.set(repo, defaultBranch)
     return true
   } catch (error: any) {
     logger.warn(`获取 ${provider} 的默认分支失败 ${repo}: ${(error && error.message) || error}`)

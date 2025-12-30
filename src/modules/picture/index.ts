@@ -2,6 +2,8 @@ import { request } from '@/utils'
 import type { Sendable } from 'trss-yunzai/icqq'
 
 type HandlersType = {
+  /** 名称，唯一标识符 */
+  name: string
   /** 正则或命令匹配 */
   reg: string | RegExp,
   /** api处理方法，返回消息段 */
@@ -13,10 +15,12 @@ type HandlersType = {
  */
 export const apiHandlers: HandlersType = [
   {
+    name: 'jk',
     reg: 'jk(?:制服)?',
     fnc: () => segment.image('https://api.suyanw.cn/api/jk.php')
   },
   {
+    name: '黑丝',
     reg: '黑丝',
     fnc: () => [
       '唉嗨害，黑丝来咯',
@@ -24,6 +28,7 @@ export const apiHandlers: HandlersType = [
     ]
   },
   {
+    name: '白丝',
     reg: '白丝',
     fnc: async () => {
       const res = (await request.get<{ data: string }>('https://v2.api-m.com/api/baisi'))
@@ -35,6 +40,7 @@ export const apiHandlers: HandlersType = [
     }
   },
   {
+    name: 'cos',
     reg: 'cos',
     fnc: async () => {
       const res = (await request.get<{ text: string }>('https://api.suyanw.cn/api/cos.php?type=json'))
@@ -46,6 +52,7 @@ export const apiHandlers: HandlersType = [
     }
   },
   {
+    name: '看看腿',
     reg: '腿子?',
     fnc: async () => {
       const res = (await request.get<{ text: string }>('https://api.suyanw.cn/api/meitui.php?type=json'))

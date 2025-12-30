@@ -4,7 +4,7 @@ import fs from 'node:fs'
 
 /** 表情json数据 */
 export const FaceJsonData = Data.getJSON<Record<string, string>>('json/FaceList.json', 'res')
-/** 表情包类型列表 */
+/** 表情包名称列表 */
 export const FaceList: string[] = Object.keys(FaceJsonData)
 /**
  * 表情别名
@@ -19,16 +19,6 @@ export const FaceList: string[] = Object.keys(FaceJsonData)
 export const FaceAlias: Record<string, string[]> = Object.fromEntries(
   Object.entries(FaceJsonData)
     .map(([key, value]) => [key, value ? value.split(',') : []])
-)
-/**
- * 表情别名反向索引
- *
- * @example
- * { "别名1": "name", "别名2": "name" }
- */
-export const FaceAliasIndex: Record<string, string> = Object.fromEntries(
-  Object.entries(FaceAlias)
-    .flatMap(([k, a]) => a.map(v => [v, k]))
 )
 
 /** 载入用户自建表情文件夹 */
@@ -45,3 +35,17 @@ if (await Data.isDirectory(FacePath)) {
     logger.warn('载入自建表情文件夹时发生错误:', err)
   }
 }
+
+/**
+ * 表情别名反向索引
+ *
+ * @example
+ * { "别名1": "name", "别名2": "name" }
+ */
+export const FaceAliasIndex: Record<string, string> = Object.fromEntries(
+  Object.entries(FaceAlias)
+    .flatMap(([k, a]) => a.map(v => [v, k]))
+)
+
+/** 表情包名称 + 别名 */
+export const FaceNames = Object.entries(FaceAlias).flatMap(([key, arr]) => [key, ...arr])

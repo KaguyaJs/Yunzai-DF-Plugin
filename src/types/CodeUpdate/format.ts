@@ -7,7 +7,7 @@ export interface CommitInfo {
   name: {
     source: string
     repo: string
-    branch: string
+    branch?: string
     sha: string
     authorStart: string
     committerStart: string
@@ -29,7 +29,7 @@ export interface ReleaseInfo {
   name: {
     source: string
     repo: string
-    tag: string
+    tag?: string
     authorStart: string
   }
   time_info: string

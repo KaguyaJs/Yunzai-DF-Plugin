@@ -20,7 +20,7 @@ const COMMIT_TYPES = new Set([
 const EMOJI_MAP = Data.getJSON<Record<string, string>>('Emoji.json', 'json', false) || {}
 const PROVIDER_ICON_MAP: Record<string, string> = Config.CodeUpdate.repos
   .reduce((acc, item) => {
-    acc[item.provider.toLowerCase()] = item.icon
+    acc[item.provider.toLowerCase()] = item.icon || ''
     return acc
   }, {} as Record<string, string>)
 const ICON_DIR = path.resolve(`${ResPath}/CodeUpdate/icon`)
@@ -30,7 +30,7 @@ export async function formatCommitInfo (
   data: GitCommitDataType[number],
   source: string,
   repo: string,
-  branch: string
+  branch?: string
 ): Promise<CommitInfo> {
   const { author, committer, commit, stats, files, sha } = data
 

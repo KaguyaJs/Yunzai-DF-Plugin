@@ -8,20 +8,20 @@ export interface Config {
     Cron: string
     repos: {
       provider: string
-      token: string
+      token?: string
       ApiUrl: string
-      icon: string
-      tips: string
+      icon?: string
+      tips?: string
     }[]
     List: {
       Group?: (string | number)[]
       QQ?: (string | number)[]
-      AutoPath: boolean
+      AutoPath?: boolean
       Exclude: string[]
       repos: {
         provider: string
         repo: string
-        branch: string
+        branch?: string
         type: GitApiMethod | 'commit'
       }[]
     }[]
@@ -37,6 +37,10 @@ export interface Config {
   }
   Picture: {
     open: boolean
+    apiPicture: boolean
+    apiDisable: string[]
+    facePicture: boolean
+    faceDisable: string[]
     Direct: boolean
   }
   sendMaster: {
