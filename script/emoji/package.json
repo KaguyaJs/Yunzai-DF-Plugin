@@ -1,0 +1,9 @@
+{
+  "name": "emoji",
+  "version": "0.0.1",
+  "main": "convert-emoji.js",
+  "type": "module",
+  "bin": {
+    "up-emoji": "./convert-emoji.js"
+  }
+}

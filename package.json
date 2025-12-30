@@ -13,6 +13,7 @@
     "build": "rimraf lib && tsgo && tsc-alias && minify lib",
     "build:noMinify": "rimraf lib && tsgo && tsc-alias",
     "build:watch": "rimraf lib && tsgo && (concurrently \"tsgo -w\" \"tsc-alias -w\")",
+    "update:emoji": "up-emoji resources/json/Emoji.json",
     "lint": "eslint ./src --fix"
   },
   "devDependencies": {
@@ -22,6 +23,7 @@
     "@types/trss-yunzai": "npm:@kaguyajs/trss-yunzai-types",
     "@typescript/native-preview": "7.0.0-dev.20251230.1",
     "concurrently": "^9.2.1",
+    "emoji": "link:script/emoji",
     "eslint": "^9.39.1",
     "minify": "link:script/minify",
     "neostandard": "^0.12.2",
