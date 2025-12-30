@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.6.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.5.3...v2.6.0) (2025-12-30)
+
+
+### Features
+
+* **picture:** 新增随机图片功能的详细配置选项 ([34ad357](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/34ad357a6c11d911b1a14c6427380549b3c2045e))
+* **Poke:** 添加戳一戳图片API域名配置选项 ([ee1a960](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/ee1a9607344ce6bf126043e38e9a4831891ebb34))
+* 添加emoji更新脚本和依赖 ([5875ff1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/5875ff1ef0cf1f9337b33174e9cca80f12d1c365))
+
+
+### Bug Fixes
+
+* **CodeUpdate:** 修复可能未配置推送群组或QQ导致的错误 ([01f6a91](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/01f6a9137873c4e205256b5fc56e81e923a42b94))
+* **Face:** 修复随机表情自建图片类型不生效 ([3f13d6a](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/3f13d6a6b6080e6fe8cec576be41348f4b184586))
+* **update:** 方法名 ([19c0c73](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/19c0c7356df614160730000ca8decab4ec5207e6))
+
+
+### Performance Improvements
+
+* **data:** 优化表情载入 ([5852bc9](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/5852bc9082956dd09340ba511ce2e29196dbb36e))
+
 ## [2.5.3](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.5.2...v2.5.3) (2025-12-25)
 
 
