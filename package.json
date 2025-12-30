@@ -13,6 +13,7 @@
     "build": "rimraf lib && tsgo && tsc-alias && minify lib",
     "build:noMinify": "rimraf lib && tsgo && tsc-alias",
     "build:watch": "rimraf lib && tsgo && (concurrently \"tsgo -w\" \"tsc-alias -w\")",
+    "update:emoji": "up-emoji resources/json/Emoji.json",
     "lint": "eslint ./src --fix"
   },
   "dependencies": {
