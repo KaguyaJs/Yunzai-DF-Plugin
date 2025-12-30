@@ -47,7 +47,7 @@ export class RandomPictures extends plugin<'message'> {
     }
     const msg = await fnc()
     if (!msg) return false
-    await e.reply(msg)
+    await e.reply(msg, true)
     return true
   }
 
@@ -64,7 +64,7 @@ export class RandomPictures extends plugin<'message'> {
       logger.mark(`随机表情 ${name} 已禁用`)
       return false
     }
-    await e.reply(segment.image(await FacePoke(name)))
+    await e.reply(segment.image(await FacePoke(name)), true)
     return true
   }
 
@@ -74,7 +74,8 @@ export class RandomPictures extends plugin<'message'> {
         ...apiRegList,
         ...FaceNames
       ].join('、')
-      }\n\n使用 #来张 + 表情名称 使用`
+      }\n\n使用 #来张 + 表情名称 使用`,
+      true
     )
   }
 }
