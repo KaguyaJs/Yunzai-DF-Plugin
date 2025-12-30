@@ -68,6 +68,9 @@ Poke:
     random: 随机返回文本或图片
     mix: 同时显示图片+文字
   mode: image
+  imageApiTips: |-
+    戳一戳Api地址, 无特殊情况不需要填写
+  imageApi: ""
   imageTypeTips: |-
     戳一戳图片设置
     1: 柴郡
@@ -112,11 +115,20 @@ Poke:
 # 随机图片配置
 Picture:
   openTips: |-
-    随机图片开关
+    随机图片总开关
   open: true
-  DirectTips: |-
-    是否去除 #来张/随机 前缀
-  Direct: false
+  apiPictureTips: |-
+    随机Api图片开关
+  apiPicture: true
+  apiDisableTips: |-
+    api表情禁用列表
+  apiDisable: []
+  facePictureTips: |-
+    DF随机表情开关
+  facePicture: true
+  faceDisableTips: |-
+    随机表情禁用列表
+  faceDisable: []
 
 # 联系主人设置
 sendMaster:
