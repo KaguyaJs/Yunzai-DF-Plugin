@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.6.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.0...v2.6.1) (2026-01-03)
+
+
+### Bug Fixes
+
+* **picture:** 随机图片引用回复 ([162330a](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/162330a5c60f3edbdb494511ff47c26f0a6584ec))
+* **utils:** 修复版本检测中的引号问题 ([61fff2a](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/61fff2a5febf361f6b220f0f6f683e294bc8ede9))
+
 ## [2.6.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.5.3...v2.6.0) (2025-12-30)
 
 
