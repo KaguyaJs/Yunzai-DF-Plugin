@@ -14,7 +14,7 @@ let isMiao: boolean = false
 if (Array.isArray(Bot.uin)) {
   yunzaiName = 'TRSS-Yunzai'
   isTRSS = true
-} else if (yunzaiPackage.name === '"miao-yunzai"') {
+} else if (yunzaiPackage.name === 'miao-yunzai') {
   yunzaiName = 'Miao-Yunzai'
   isMiao = true
 } else {
