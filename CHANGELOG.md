@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.2](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.1...v2.6.2) (2026-01-04)
+
+
+### Bug Fixes
+
+* **guoba:** 代码更新配置添加hideYear属性 ([edba7ea](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/edba7eadc08dec60bd2f6e4f32097f2cd91ca0b0))
+
 ## [2.6.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.0...v2.6.1) (2026-01-03)
 
 
