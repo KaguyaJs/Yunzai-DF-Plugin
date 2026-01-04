@@ -32,7 +32,8 @@ export const CodeUpdate: GuobaSchemas = [
     bottomHelpMessage: '自动检查Cron表达式',
     component: 'EasyCron',
     componentProps: {
-      placeholder: '请输入Cron表达式'
+      placeholder: '请输入Cron表达式',
+      hideYear: true
     }
   },
   {
