@@ -98,12 +98,21 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Leyanshi",
+      "name": "Leyanshi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/237535251?v=4",
+      "profile": "https://github.com/Leyanshi",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7,
   "skipCi": true,
   "repoType": "github",
   "repoHost": "https://github.com",
-  "projectName": "DF-Plugin",
-  "projectOwner": "DenFengLai"
+  "projectName": "Yunzai-DF-Plugin",
+  "projectOwner": "KaguyaJs"
 }
