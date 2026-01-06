@@ -108,7 +108,7 @@ pnpm install
 ## 贡献者
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-18-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-19-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 感谢这些了不起的人 ([emoji-key](https://allcontributors.org/emoji-key/#natural-language-processing)):
@@ -141,6 +141,7 @@ pnpm install
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/qsm-mz-hn"><img src="https://avatars.githubusercontent.com/u/108866283?v=4?s=100" width="100px;" alt="⁡ ⁡"/><br /><sub><b>⁡ ⁡</b></sub></a><br /><a href="https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues?q=author%3Aqsm-mz-hn" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/scaking4"><img src="https://avatars.githubusercontent.com/u/115682439?v=4?s=100" width="100px;" alt="scaking4"/><br /><sub><b>scaking4</b></sub></a><br /><a href="https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues?q=author%3Ascaking4" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/2078764727"><img src="https://avatars.githubusercontent.com/u/180080544?v=4?s=100" width="100px;" alt="2078764727"/><br /><sub><b>2078764727</b></sub></a><br /><a href="#ideas-2078764727" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://about.sakurax.top/"><img src="https://avatars.githubusercontent.com/u/106215893?v=4?s=100" width="100px;" alt="Sakura1618"/><br /><sub><b>Sakura1618</b></sub></a><br /><a href="https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues?q=author%3ASakura1618" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>
