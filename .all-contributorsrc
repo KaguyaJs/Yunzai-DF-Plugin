@@ -170,6 +170,15 @@
       "contributions": [
         "ideas"
       ]
+    },
+    {
+      "login": "Sakura1618",
+      "name": "Sakura1618",
+      "avatar_url": "https://avatars.githubusercontent.com/u/106215893?v=4",
+      "profile": "https://about.sakurax.top/",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7,
