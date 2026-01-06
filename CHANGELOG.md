@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.3](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.2...v2.6.3) (2026-01-06)
+
+
+### Bug Fixes
+
+* **CodeUpdate:** 修复可能未配置AutoPath排除列表导致的错误 ([7a7968c](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/7a7968c8a0258e75c04ac64313cd8068e44e79a0)), closes [#44](https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues/44)
+
 ## [2.6.2](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.1...v2.6.2) (2026-01-04)
 
 
