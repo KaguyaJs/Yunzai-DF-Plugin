@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git仓库更新推送</title>
+  <link rel="stylesheet" type="text/css" href="{{pluResPath}}/CodeUpdate/index.css" />
+  <link rel="shortcut icon" href="#" />
+</head>
+
+<body {{@sys.scale}}>
+  <div class="container" id="container">
+    <div class="head_box">
+      <div class="id_text">Git仓库更新推送</div>
+    </div>
+
+    <div class="data_box">
+      <div class="list">
+        {{each lifeData item}}
+        <div class="item">
+          <div class="title">
+            <div class="text">
+              <img src="{{item.icon}}" class="icon">
+              {{item.name.repo}}
+              {{if item.release}}
+              <div class="release">Releases</div>
+              {{/if}}
+            </div>
+            {{if item.name.branch || item.name.tag || item.name.sha}}
+            <div class="branch">
+              {{if item.name.branch || item.name.tag}}
+                <img src="{{pluResPath}}/CodeUpdate/icon/{{item.name.branch ? "branch" : "tag"}}.svg"> {{item.name.branch ?? item.name.tag}}
+                &nbsp;
+              {{/if}}
+              {{if item.name.sha}}
+                <img src="{{pluResPath}}/CodeUpdate/icon/sha.svg"> {{item.name.sha}}
+              {{/if}}
+            </div>
+            {{/if}}
+            <div class="dec">
+              <div class="avatar">
+                <img src="{{item.avatar.author}}" data-nameStart="{{item.name.authorStart}}">
+                {{if item.avatar.is}}
+                <img src="{{item.avatar.committer}}" class="committer-avatar" data-nameStart="{{item.name.committerStart}}">
+                {{/if}}
+              </div>
+              {{@item.time_info}}
+            </div>
+            <div class="desc">{{@item.text}}</div>
+            {{if item.stats}}
+            <div class="stats">
+              <span class="file-count">{{item.stats.files}}</span> 个文件发生了变化 
+              {{if item.stats.additions || item.stats.deletions}}
+                ，影响行数：
+                <span class="additions">+{{item.stats.additions}}</span> 
+                <span class="deletions">-{{item.stats.deletions}}</span>
+              {{/if}}
+            </div>
+            {{/if}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    <div class="copyright">{{@sys.copyright}}</div>
+  </div>
+</body>
+
+</html>
