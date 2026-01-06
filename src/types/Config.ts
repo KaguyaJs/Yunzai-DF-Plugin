@@ -17,7 +17,7 @@ export interface Config {
       Group?: (string | number)[]
       QQ?: (string | number)[]
       AutoPath?: boolean
-      Exclude: string[]
+      Exclude?: string[]
       repos: {
         provider: string
         repo: string

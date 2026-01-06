@@ -69,7 +69,8 @@ function getListMap (data: typeof config.CodeUpdate.List) {
         item.repos.forEach(r => map[id].add(r))
         if (item.AutoPath) {
           GitRepo.PluginPath.forEach(r => {
-            if (!item.Exclude.includes(repoPath(r.repo, r.branch))) map[id].add(r)
+            if (Array.isArray(item.Exclude) && item.Exclude.includes(repoPath(r.repo, r.branch))) return
+            map[id].add(r)
           })
         }
       })
