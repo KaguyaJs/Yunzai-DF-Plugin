@@ -1,7 +1,7 @@
 import GitApi from '@/modules/GitApi'
 import { Commit, CommitInfo, Config, Release, ReleaseInfo } from '@/types'
 import { defaultBranchMap } from '../data'
-import { redisHeler, formatCommitInfo, formatReleaseInfo } from '@CodeUpdate/utils'
+import { redisHeler, formatCommitInfo, formatReleaseInfo, repoPath } from '@CodeUpdate/utils'
 import config from '@/config'
 import { logger } from '@/utils'
 
@@ -12,14 +12,13 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
   await Promise.all(repoList.map(async (item) => {
     let { provider, repo, branch, type } = item
     if (!repo) return
-    let logRepo = repo
+    const logRepo = repoPath(repo, branch)
     try {
       const path: string = repo
       if (type === 'commits' || type === 'commit') {
         type = 'commits'
         branch ||= defaultBranchMap.get(repo) ?? ''
       }
-      if (branch) logRepo += ':' + branch
       logger.debug(`请求 ${logger.magenta(provider)} ${type}: ${logger.cyan(logRepo)}`)
       let data = await GitApi.getRepositoryData(provider, repo, type, branch)
       if (data === false) return
