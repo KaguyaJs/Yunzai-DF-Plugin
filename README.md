@@ -143,6 +143,10 @@ pnpm install
 
 本段遵循 [all-contributors](https://github.com/all-contributors/all-contributors) 规范，欢迎任何形式的贡献！
 
+## 问题反馈
+
+如果您在使用过程中遇到了Bug或有好的功能建议以及其他问题可以[加入交流群反馈](#加入交流群)或者创建一个[issues](https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues/new/choose)。
+
 ## 加入交流群
 
 - [964193559](https://qm.qq.com/q/weRTbr0ye6)
