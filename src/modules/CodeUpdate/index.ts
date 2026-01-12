@@ -26,7 +26,7 @@ export async function CodeUpdate (isAuto: boolean = true, e?: MessageEvent): Pro
   if (!repos.length) return false
   const DataMap = await fetchUpdate(repos, isAuto)
   const num = DataMap.size
-  if (num === 0) {
+  if (!num) {
     logger.info(logger.yellow('未检测到仓库更新'))
     return num
   }
@@ -36,25 +36,31 @@ export async function CodeUpdate (isAuto: boolean = true, e?: MessageEvent): Pro
     const img = await generateScreenshot(Array.from(DataMap.values()), String(e.user_id))
     if (img) await e.reply(img)
     return num
-  }
-  for (const [type, value] of Object.entries(PashMap)) {
-    for (const [id, repo] of Object.entries(value)) {
-      let img
-      const Key = Data.getSetKey(repo)
-      if (imageCache.get(Key)) {
-        img = imageCache.get(Key)
-      } else {
-        img = await generateScreenshot((Array.from(repo).map(i => DataMap.get(i)).filter(i => i !== undefined)), String(id))
-        if (img) imageCache.set(Key, img)
+  } else {
+    for (const [type, value] of Object.entries(PashMap)) {
+      for (const [id, repo] of Object.entries(value)) {
+        let img
+        if (!repo.size) continue
+        const Key = Data.getSetKey(repo)
+        if (imageCache.get(Key)) {
+          img = imageCache.get(Key)
+        } else {
+          const repoInfo = Array.from(repo)
+            .map(i => DataMap.get(i))
+            .filter(i => i !== undefined)
+          if (!repoInfo.length) continue
+          img = await generateScreenshot(repoInfo, String(id))
+          if (img) imageCache.set(Key, img)
+        }
+        if (!img) {
+          logger.warn('[CodeUpdate] 截图失败')
+          continue
+        }
+        void pushTouser(type as 'QQ' | 'Group', id, img)
       }
-      if (!img) {
-        logger.warn('[CodeUpdate] 截图失败')
-        continue
-      }
-      void pushTouser(type as 'QQ' | 'Group', id, img)
     }
+    return num
   }
-  return num
 }
 
 function getListMap (data: typeof config.CodeUpdate.List) {
