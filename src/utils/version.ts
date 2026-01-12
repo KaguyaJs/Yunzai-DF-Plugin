@@ -1,4 +1,6 @@
-import Data from './data.js'
+import Data from './data'
+import { getRecentChangelogEntries } from './changelog'
+import { PluginPath } from '@/dir'
 
 const yunzaiPackage = await Data.readJSON<{ name: string; version: string }>('package.json', 'yunzai')
 const pluginPackage = await Data.readJSON<{ name: string; version: string }>('package.json', 'plugin')
@@ -27,6 +29,8 @@ if (Array.isArray(Bot.uin)) {
   throw new Error(`不支持的Yunzai版本: ${yunzaiName}`)
 }
 
+const changelogs = await getRecentChangelogEntries(`${PluginPath}/CHANGELOG.md`)
+
 export default {
   yunzaiName,
   pluginName,
@@ -37,6 +41,9 @@ export default {
   },
   isMiao,
   isTRSS,
+  get logs () {
+    return changelogs
+  },
   yunzaiPackage,
   pluginPackage
 }

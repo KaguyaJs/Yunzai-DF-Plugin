@@ -35,7 +35,9 @@ body {
   background-size: auto 100%;
   margin: 15px 0px;
   position: relative;
-  box-shadow: 0 0 1px 0 #ccc, 2px 2px 4px 0 rgba(50, 50, 50, 0.8);
+  box-shadow:
+    0 0 1px 0 #ccc,
+    2px 2px 4px 0 rgba(50, 50, 50, 0.8);
   overflow: hidden;
   color: #fff;
   font-size: 16px;
@@ -62,6 +64,9 @@ body {
   background-size: cover;
   margin: 5px 15px;
   border-radius: 10px;
+  a {
+    color: #d3bc8e;
+  }
 
   .cont-title {
     font-size: 16px;
@@ -75,12 +80,28 @@ body {
   ul {
     font-size: 14px;
     padding-left: 20px;
+    margin-top: 6px;
+
+    strong.scope {
+      display: inline-block;
+      padding: 0 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      font-weight: bold;
+
+      font-style: normal;
+    }
 
     li {
       margin: 3px 0;
     }
 
     &.sub-log-ul {
+      margin-top: 2px;
+
       li {
         margin: 1px 0;
       }
@@ -114,6 +135,31 @@ body {
     color: #d3bc8e;
     white-space: nowrap;
   }
+}
+
+.date-badge {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  color: #d3bc8e;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+
+  /* 把徽章往上微调 */
+  transform: translateY(-3px);
+
+  /* 增加一点左边距 */
+  margin-left: 8px;
 }
 
 .copyright {
