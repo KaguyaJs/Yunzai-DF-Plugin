@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.7.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.4...v2.7.0) (2026-01-12)
+
+
+### Features
+
+* **Version:** 迁移实现DF版本 ([0da1407](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/0da14072e8c98baac3fbebdefc1ee46bff3f7fbe))
+
+
+### Bug Fixes
+
+* **Version:** 修复CHANGELOG.md不存在 ([f43cdfb](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/f43cdfb94243f4c629a7fe724f5dd44cc2a421fa))
+
 ## [2.6.4](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.3...v2.6.4) (2026-01-12)
 
 
