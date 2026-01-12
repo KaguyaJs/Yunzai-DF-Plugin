@@ -29,7 +29,7 @@ if (Array.isArray(Bot.uin)) {
   throw new Error(`不支持的Yunzai版本: ${yunzaiName}`)
 }
 
-const changelogs = await getRecentChangelogEntries(`${PluginPath}/CHANGELOG.md`)
+const changelogs = await getRecentChangelogEntries(`${PluginPath}/CHANGELOG.md`, 5)
 
 export default {
   yunzaiName,
