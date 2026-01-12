@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.7.0...v2.7.1) (2026-01-12)
+
+
+### Bug Fixes
+
+* **Changelog:** 使用marked实例化 ([15f85ae](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/15f85ae52a0bebfe7edcae55b69a8b2de8190ffc))
+
 ## [2.7.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.4...v2.7.0) (2026-01-12)
 
 
