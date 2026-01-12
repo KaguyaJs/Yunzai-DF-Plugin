@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.4](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.3...v2.6.4) (2026-01-12)
+
+
+### Bug Fixes
+
+* **CodeUpdate:** 修复可能推送空仓库的问题 ([fec72e6](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/fec72e6a3ab496bc07e353e5c5a6c9483e0920b7))
+
 ## [2.6.3](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.6.2...v2.6.3) (2026-01-06)
 
 
