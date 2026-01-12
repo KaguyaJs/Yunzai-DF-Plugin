@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="shortcut icon" href="#" />
+  <link rel="stylesheet" type="text/css" href="{{_res_path}}/version-info/index.css" />
+</head>
+
+<body class="{{bodyClass}}" {{@sys.scale}}>
+  <div class="container" id="container">
+    {{each changelogs ds idx}}
+    <div class="log-cont">
+      <div class="cont">
+        {{if idx === 0 }}
+        <div class="cont-title current-version">当前版本 v{{ds.version}}
+          {{if ds.date }}
+          <span class="date-badge">{{ds.date}}</span>
+          {{/if}}
+        </div>
+        {{else}}
+        <div class="cont-title">版本 v{{ds.version}}
+          {{if ds.date }}
+          <span class="date-badge">{{ds.date}}</span>
+          {{/if}}
+        </div>
+        {{/if}}
+        <div class="cont-body">
+          {{@ds.html}}
+        </div>
+      </div>
+    </div>
+    {{/each}}
+    <div class="copyright">{{@sys.copyright}}</div>
+  </div>
+</body>
+
+</html>

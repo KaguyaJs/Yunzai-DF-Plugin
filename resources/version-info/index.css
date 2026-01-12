@@ -1,3 +1,4 @@
+@charset "UTF-8";
 @font-face {
   font-family: "font";
   src: url("../font/LXGWNeoXiHeiScreen.ttf");
@@ -57,6 +58,9 @@ body {
   margin: 5px 15px;
   border-radius: 10px;
 }
+.log-cont a {
+  color: #d3bc8e;
+}
 .log-cont .cont-title {
   font-size: 16px;
   padding: 10px 20px 6px;
@@ -67,9 +71,24 @@ body {
 .log-cont ul {
   font-size: 14px;
   padding-left: 20px;
+  margin-top: 6px;
+}
+.log-cont ul strong.scope {
+  display: inline-block;
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  font-weight: bold;
+  font-style: normal;
 }
 .log-cont ul li {
   margin: 3px 0;
+}
+.log-cont ul.sub-log-ul {
+  margin-top: 2px;
 }
 .log-cont ul.sub-log-ul li {
   margin: 1px 0;
@@ -99,6 +118,27 @@ body {
   white-space: nowrap;
 }
 
+.date-badge {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  color: #d3bc8e;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  /* 把徽章往上微调 */
+  transform: translateY(-3px);
+  /* 增加一点左边距 */
+  margin-left: 8px;
+}
+
 .copyright {
   font-size: 14px;
   text-align: center;
@@ -112,4 +152,4 @@ body {
   color: #d3bc8e;
   display: inline-block;
   padding: 0 3px;
-}/*# sourceMappingURL=version-info.css.map */
+}/*# sourceMappingURL=index.css.map */
