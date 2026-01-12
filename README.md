@@ -1,4 +1,4 @@
-![Yunzai-DF-Plugin](https://socialify.git.ci/KaguyaJs/Yunzai-DF-Plugin/image?description=1&font=Rokkitt&forks=1&issues=1&language=1&logo=https%3A%2F%2Fgithub.com%2FKaguyaJs.png&name=1&owner=1&pattern=Brick+Wall&pulls=1&stargazers=1&theme=Light)
+![Yunzai-DF-Plugin](https://socialify.git.ci/KaguyaJs/Yunzai-DF-Plugin/image?description=1&font=Rokkitt&forks=1&issues=1&language=1&logo=https%3A%2F%2Fgithub.com%2FKaguyaJs.png&name=1&owner=1&pattern=Brick+Wall&pulls=1&stargazers=1&theme=auto)
 
 
 ## 安装插件
