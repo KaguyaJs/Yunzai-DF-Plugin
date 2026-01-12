@@ -5,7 +5,12 @@ const pluginPackage = await Data.readJSON<{ name: string; version: string }>('pa
 
 const yunzaiVer: string = yunzaiPackage.version
 const pluginVer: string = pluginPackage.version
-const pluginName = pluginPackage.name
+
+let pluginName = pluginPackage.name
+
+if (pluginName === 'df-plugin' || pluginName === 'yunzai-df-plugin') {
+  pluginName = 'Yunzai-DF-Plugin'
+}
 
 let yunzaiName: string = 'Yunzai'
 let isTRSS: boolean = false

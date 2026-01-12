@@ -6,7 +6,7 @@ export const YunzaiPath = process.cwd()
 /** 插件路径 */
 export const PluginPath = join(dirname(fileURLToPath(import.meta.url)), '..')
 /** 源码目录 */
-export const SrcDir = join(PluginPath, 'src')
+// export const SrcDir = join(PluginPath, 'src')
 /** 编译输出目录 */
 export const libDir = join(PluginPath, 'lib')
 /** Apss目录 */
