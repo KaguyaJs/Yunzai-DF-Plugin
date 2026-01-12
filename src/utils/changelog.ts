@@ -1,5 +1,5 @@
 import fs from 'fs/promises'
-import { marked, Renderer, Tokens } from 'marked'
+import { Marked, Renderer, Tokens } from 'marked'
 import type { ChangelogEntry, ParseOptions } from '@/types'
 
 /**
@@ -56,6 +56,7 @@ export async function parseChangelog (
       return `<strong>${content}</strong>`
     }
   }
+  const marked = new Marked()
   marked.use({ renderer })
 
   for (let i = 0; i < lines.length; i++) {
