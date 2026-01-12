@@ -1,45 +1,48 @@
-name: Release and Push
+name: 🚀 发布并推送发布分支
+
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+
 permissions:
   contents: write # 设置内容的权限为写
   pull-requests: write # 设置拉取请求的权限为写
   issues: write # 设置问题的权限为写
+
 jobs:
   release-please:
     # 设置工作流程运行环境为 Ubuntu
     runs-on: ubuntu-latest
     steps:
-      - name: 📝 使用 release-please-action 发布检查
+      - name: 🧪 触发 release-please 发布检查
         uses: googleapis/release-please-action@v4
         id: release
         with:
           # 设置发布类型为 Node.js
           release-type: node
 
-      - name: ⚙️ 检出 Yunzai 代码
+      - name: 📥 检出 Yunzai 源码
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@v5
         with:
           repository: KaguyaJs/TRSS-Yunzai
 
-      - name: 🔩 检出插件代码
+      - name: 📂 检出插件代码（plugins/temp-plugin）
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@v5
         with:
           path: plugins/temp-plugin
 
-      - name: 🪛 设置 Node.js 环境
+      - name: ⚙️ 设置 Node.js 运行环境
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/setup-node@v4
         with:
           # 设置 Node.js 版本
           node-version: 24
 
-      - name: 📦 配置 PNPM 环境并安装依赖
+      - name: 📦 配置 PNPM 并安装依赖
         if: ${{ steps.release.outputs.release_created }}
         uses: pnpm/action-setup@v4
         with:
@@ -47,13 +50,13 @@ jobs:
           run_install: |
             - args: ["--registry=https://registry.npmjs.org"]
 
-      - name: 🔧 编译源代码
+      - name: 🛠️ 构建插件
         if: ${{ steps.release.outputs.release_created }}
         run: |
           cd plugins/temp-plugin
           pnpm run build
 
-      - name: 🧱 准备所需要的文件
+      - name: 📁 准备发布所需文件
         if: ${{ steps.release.outputs.release_created }}
         run: |
           cd plugins/temp-plugin
@@ -73,13 +76,13 @@ jobs:
 
           echo "node_modules/" > temp_lib_content/.gitignore
 
-      - name: 🧹 删除开发依赖
+      - name: 🧹 移除开发依赖（仅保留发布依赖）
         if: ${{ steps.release.outputs.release_created }}
         run: |
           cd plugins/temp-plugin/temp_lib_content
           pnpm pkg delete devDependencies
 
-      - name: 📌 部署到分支
+      - name: 📤 推送到 release 分支
         uses: peaceiris/actions-gh-pages@v4
         if: ${{ steps.release.outputs.release_created }}
         with:

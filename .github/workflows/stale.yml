@@ -1,0 +1,35 @@
+name: 🗑️ 自动关闭不活跃 Issue 和 PR
+
+# 定期触发（每天 UTC 时间 00:00）
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch: # 手动触发也可以用
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧠 标记 & 关闭不活跃 issue/PR
+        uses: actions/stale@v10
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # 标记 stale 前的无活动天数
+          days-before-stale: 30
+
+          # 标记 stale 的时候发一条通知评论
+          stale-issue-message: "这个 Issue 已经超过 30 天没有活动，将被标记为 stale。请回复以保持打开状态。"
+          stale-pr-message: "这个 PR 已经超过 30 天没有活动，将被标记为 stale。请回复以保持打开状态。"
+
+          # stale 后再无活动关闭的天数
+          days-before-close: 7
+
+          # 自动关闭时的评论
+          close-issue-message: "由于长时间没有活动，此 Issue 已被自动关闭。"
+          close-pr-message: "由于长时间没有活动，此 PR 已被自动关闭。"
