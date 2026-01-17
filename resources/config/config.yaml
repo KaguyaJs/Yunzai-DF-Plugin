@@ -225,17 +225,6 @@ summary:
     一言接口
   api: "https://v1.hitokoto.cn/?encode=text"
 
-whoAtme:
-  enableTips: |-
-    是否启用 谁艾特我
-  enable: false
-  atAllTips: |-
-    是否记录艾特全体消息，可能造成不必要的性能开支
-  atAll: false
-  expireTimeTips: |-
-    消息过期时间 单位: 秒
-  expireTime: 86400
-
 # 代理设置
 proxy:
   openTips: |-
