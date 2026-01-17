@@ -63,6 +63,11 @@ export interface Config {
     list: string[]
     api: string
   }
+  whoAtme: {
+    enable: boolean
+    atAll: boolean
+    expireTime: number
+  }
   proxy: {
     open: boolean
     url: string
