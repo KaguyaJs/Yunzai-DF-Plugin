@@ -80,6 +80,10 @@ class Config {
     return this.config.Picture
   }
 
+  get whoAtme () {
+    return this.config.whoAtme
+  }
+
   /** 代理配置 */
   get proxy () {
     return this.config.proxy

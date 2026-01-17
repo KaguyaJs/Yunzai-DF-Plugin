@@ -61,3 +61,37 @@ export function timeAgo (date: string) {
     return '刚刚'
   }
 }
+
+/**
+ * 判断指定时间戳是否已过期（按 TTL 计算）。
+ *
+ * @param {number} timestamp - 待判断的时间戳（秒或毫秒均可，函数会自动识别）。
+ * @param {number} ttlSeconds - 生存时间（TTL），单位为秒（必须是非负数）。
+ * @returns {boolean} 已过期返回 `true`，未过期返回 `false`。
+ *
+ * @throws {TypeError} 当任一参数不是有限数字时抛出。
+ * @throws {RangeError} 当 ttlSeconds 为负数时抛出。
+ *
+ * @example
+ * // 毫秒时间戳，5 秒之前的时间，ttl = 3 秒 -> 已过期
+ * isExpired(Date.now() - 5000, 3) // => true
+ *
+ * @example
+ * // 秒时间戳（自动识别），距现在 2 秒之前，ttl = 5 秒 -> 未过期
+ * isExpired(Math.floor(Date.now() / 1000) - 2, 5) // => false
+ */
+export function isExpired (timestamp: number, ttlSeconds: number): boolean {
+  if (!Number.isFinite(timestamp) || !Number.isFinite(ttlSeconds)) {
+    throw new TypeError('两个参数必须是有限数字（number）')
+  }
+  if (ttlSeconds < 0) {
+    throw new RangeError('ttlSeconds 必须是非负数')
+  }
+
+  // 自动识别秒/毫秒：如果绝对值小于 1e12（约 2001-09-09 的毫秒表示），认为是秒级时间戳
+  const tsMs = Math.abs(timestamp) < 1e12 ? timestamp * 1000 : timestamp
+  const expireAt = tsMs + ttlSeconds * 1000
+
+  // 当前时间大于等于到期时间则视为过期
+  return Date.now() >= expireAt
+}

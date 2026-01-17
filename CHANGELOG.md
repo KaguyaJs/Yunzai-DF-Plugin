@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.7.1...v2.8.0) (2026-01-17)
+
+
+### Features
+
+* **whoAtme:** 谁艾特我 ([7e19351](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/7e19351169216c8ccd0739607497383a6dc2f400))
+
 ## [2.7.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/v2.7.0...v2.7.1) (2026-01-12)
 
 
