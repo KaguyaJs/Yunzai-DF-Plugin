@@ -7,6 +7,12 @@ import { logger } from '@/utils'
 
 export type ReposListType = Config['CodeUpdate']['List'][number]['repos']
 
+/**
+ * 获取仓库更新
+ * @param repoList 仓库列表
+ * @param isAuto 是否自动
+ * @returns 请求结果 Map
+ */
 export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
   const content = new Map<ReposListType[number], CommitInfo | ReleaseInfo>()
   await Promise.all(repoList.map(async (item) => {

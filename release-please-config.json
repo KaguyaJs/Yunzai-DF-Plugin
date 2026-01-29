@@ -14,59 +14,73 @@
   "changelog-sections": [
     {
       "type": "feat",
-      "section": "✨ 新功能"
+      "section": "✨ 新功能",
+      "hidden": false
     },
     {
       "type": "fix",
-      "section": "🐛 Bug 修复"
+      "section": "🐛 Bug 修复",
+      "hidden": false
     },
     {
       "type": "perf",
-      "section": "⚡ 性能优化"
+      "section": "⚡ 性能优化",
+      "hidden": false
     },
     {
       "type": "docs",
-      "section": "📝 文档"
+      "section": "📝 文档",
+      "hidden": false
     },
     {
       "type": "style",
-      "section": "🎨 代码风格/格式"
+      "section": "🎨 代码风格/格式",
+      "hidden": false
     },
     {
       "type": "refactor",
-      "section": "♻️ 重构"
+      "section": "♻️ 重构",
+      "hidden": false
     },
     {
       "type": "test",
-      "section": "✅ 测试"
+      "section": "✅ 测试",
+      "hidden": false
     },
     {
       "type": "types",
-      "section": "🔤 类型定义"
+      "section": "🔤 类型定义",
+      "hidden": false
     },
     {
       "type": "deps",
-      "section": "📦 依赖更新"
+      "section": "📦 依赖更新",
+      "hidden": false
     },
     {
       "type": "build",
-      "section": "🏗️ 构建/打包"
+      "section": "🏗️ 构建/打包",
+      "hidden": false
     },
     {
       "type": "ci",
-      "section": "🤖 CI/CD 配置"
+      "section": "🤖 CI/CD 配置",
+      "hidden": false
     },
     {
       "type": "security",
-      "section": "🔐 安全修复"
+      "section": "🔐 安全修复",
+      "hidden": false
     },
     {
       "type": "revert",
-      "section": "⏪ 回滚"
+      "section": "⏪ 回滚",
+      "hidden": false
     },
     {
       "type": "release",
-      "section": "🚀 发布/版本"
+      "section": "🚀 发布/版本",
+      "hidden": false
     },
     {
       "type": "breaking",
@@ -74,7 +88,8 @@
     },
     {
       "type": "other",
-      "section": "🔎 其他变更"
+      "section": "🔎 其他变更",
+      "hidden": false
     }
   ]
 }

@@ -26,6 +26,28 @@ const PROVIDER_ICON_MAP: Record<string, string> = config.CodeUpdate.repos
 const ICON_DIR = path.resolve(`${ResPath}/CodeUpdate/icon`)
 const ICON_FILES = fs.readdirSync(ICON_DIR)
 
+/**
+ * 格式化提交信息
+ *
+ * 将 Git 提交数据转换为统一的提交信息格式，包括作者信息、提交时间、
+ * 文件变更统计等详细信息。
+ *
+ * @param data - Git 提交数据
+ * @param source - 代码源标识（如 GitHub、Gitee 等）
+ * @param repo - 仓库名称
+ * @param branch - 分支名称（可选）
+ * @returns 格式化后的提交信息对象
+ *
+ * @example
+ * ```typescript
+ * const commitInfo = await formatCommitInfo(
+ *   gitData,
+ *   'GitHub',
+ *   'my-repo',
+ *   'main'
+ * )
+ * ```
+ */
 export async function formatCommitInfo (
   data: GitCommitDataType[number],
   source: string,
@@ -67,6 +89,11 @@ export async function formatCommitInfo (
   }
 }
 
+/**
+ * 格式化提交信息
+ * @param message 原始提交信息
+ * @returns 处理完成后的提交信息
+ */
 export function formatMessage (message?: string): string {
   if (!message) return '<span class="head">无提交信息</span>'
 
@@ -97,6 +124,11 @@ export function formatMessage (message?: string): string {
     : lines.join('<br>')
 }
 
+/**
+ * 将文本中的 emoji 字符替换为对应的 emoji
+ * @param text 原始文本
+ * @returns 处理后的文本
+ */
 function replaceEmojiCodes (text: string): string {
   for (const [code, emoji] of Object.entries(EMOJI_MAP)) {
     const reg = new RegExp(code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
@@ -182,6 +214,15 @@ function commitTitle (info: ParsedTitle): string {
   return `${badge} <span class="head">${headContent}</span>`.trim()
 }
 
+/**
+ * 格式化 GitHub Release 信息为统一的发布信息对象
+ * @param data - GitHub Release 数据对象
+ * @param source - 数据源标识符
+ * @param repo - 仓库名称
+ * @returns 格式化后的发布信息对象
+ * @example
+ * const releaseInfo = await formatReleaseInfo(githubReleaseData, 'GitHub', 'Yunzai-DF-Plugin')
+ */
 export async function formatReleaseInfo (
   data: GitReleaseDataType[number],
   source: string,
@@ -191,6 +232,7 @@ export async function formatReleaseInfo (
 
   const authorName = author?.login || author?.name || '?'
   const authorTime = publishedAt ? `<span>${timeAgo(publishedAt)}</span>` : '未知'
+  const releaseText = marked(replaceEmojiCodes(body || ''))
 
   return {
     release: true,
@@ -203,10 +245,23 @@ export async function formatReleaseInfo (
       authorStart: authorName[0] ?? '?'
     },
     time_info: `<span>${authorName}</span> 发布于 ${authorTime}`,
-    text: `<span class='head'>${name}</span><br/>${marked(body || '')}`
+    text: `<span class='head'>${name}</span><br/>${releaseText}`
   }
 }
 
+/**
+ * 获取数据源对应的图标路径
+ * @param source - 数据源名称，用于映射到对应的图标
+ * @returns 返回图标的文件路径或 URL
+ * @description
+ * 该函数通过以下优先级获取图标：
+ * 1. 首先尝试从本地图标目录中查找匹配的图标文件
+ * 2. 如果传入的是绝对路径或 URL，直接返回
+ * 3. 如果上述都不匹配，返回默认的"从雨"图标
+ * @example
+ * const iconPath = await getIcon('github');
+ * // 返回本地图标路径或默认图标
+ */
 async function getIcon (source: string): Promise<string> {
   const iconName = PROVIDER_ICON_MAP[source.toLowerCase()] || 'git'
 
