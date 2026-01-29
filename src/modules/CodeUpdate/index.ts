@@ -63,6 +63,24 @@ export async function CodeUpdate (isAuto: boolean = true, e?: MessageEvent): Pro
   }
 }
 
+/**
+ * 将配置列表转换为分组映射对象
+ *
+ * @description 根据提供的配置数据，生成一个包含Group和QQ两个映射的对象。
+ * 每个映射将ID映射到对应的仓库集合。支持自动路径填充和排除项配置。
+ *
+ * @param data - 代码更新配置列表数据
+ * @returns 返回包含两个映射对象的结果：
+ *   - Group: 群组ID到仓库集合的映射
+ *   - QQ: QQ号到仓库集合的映射
+ *
+ * @example
+ * ```typescript
+ * const listMap = getListMap(config.CodeUpdate.List)
+ * // listMap.Group[123] // Set<Repo>
+ * // listMap.QQ[456789] // Set<Repo>
+ * ```
+ */
 function getListMap (data: typeof config.CodeUpdate.List) {
   type Repo = typeof data[number]['repos'][number]
   return data.reduce((acc, item) => {
@@ -90,15 +108,23 @@ function getListMap (data: typeof config.CodeUpdate.List) {
   })
 }
 
+/**
+ * 获取配置文件中的所有推送仓库（去重）
+ * @param toArray 是否转成数组
+ */
 export function getRepos (toArray: true): Array<typeof config.CodeUpdate.List[number]['repos'][number]>
 export function getRepos (toArray: false): Set<typeof config.CodeUpdate.List[number]['repos'][number]>
 export function getRepos (toArray: boolean) {
   const { List } = config.CodeUpdate
-  const repos = new Set(List.flatMap(i => i.repos))
-  if (config.AutoPath) GitRepo.PluginPath.forEach(r => repos.add(r))
+  const repos = new Set(List.flatMap(i => i.repos).filter(Boolean))
+  if (config.AutoPath) GitRepo.PluginPath.forEach(r => r && repos.add(r))
   return toArray ? Array.from(repos) : repos
 }
 
+/**
+ * 根据配置中获取所有仓库的 Redis Key
+ * @returns Redis Key 列表
+ */
 export function getAllRedisKey () {
   const repos = getRepos(true)
   return repos.map(({ provider, repo, branch, type }) => redisHeler.getRedisKey(provider, type === 'commit' ? 'commits' : type, repo, branch))
