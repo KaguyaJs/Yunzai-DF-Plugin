@@ -20,8 +20,8 @@ jobs:
         uses: googleapis/release-please-action@v4
         id: release
         with:
-          # 设置发布类型为 Node.js
-          release-type: node
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
 
       - name: 📥 检出 Yunzai 源码
         if: ${{ steps.release.outputs.release_created }}
