@@ -21,6 +21,10 @@ export interface Config {
      */
     FirstAdd: boolean
     /**
+     * 是否启用徽章样式
+     */
+    badgeStyle: boolean
+    /**
      * 仓库更新检查Cron表达式
      * Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
      *

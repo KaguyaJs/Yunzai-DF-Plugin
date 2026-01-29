@@ -14,6 +14,17 @@ export const CodeUpdate: GuobaSchemas = [
     component: 'Switch'
   },
   {
+    field: 'CodeUpdate.Cron',
+    label: '自动检查定时表达式',
+    helpMessage: '修改后重启生效',
+    bottomHelpMessage: '自动检查Cron表达式',
+    component: 'EasyCron',
+    componentProps: {
+      placeholder: '请输入Cron表达式',
+      hideYear: true
+    }
+  },
+  {
     field: 'CodeUpdate.AutoBranch',
     label: '自动获取远程默认分支',
     bottomHelpMessage: '在未指定分支的情况下，启动时自动获取远程仓库的默认分支',
@@ -26,15 +37,10 @@ export const CodeUpdate: GuobaSchemas = [
     component: 'Switch'
   },
   {
-    field: 'CodeUpdate.Cron',
-    label: '自动检查定时表达式',
-    helpMessage: '修改后重启生效',
-    bottomHelpMessage: '自动检查Cron表达式',
-    component: 'EasyCron',
-    componentProps: {
-      placeholder: '请输入Cron表达式',
-      hideYear: true
-    }
+    field: 'CodeUpdate.badgeStyle',
+    label: '是否启用徽章样式',
+    bottomHelpMessage: '是否启用提交信息中的徽章样式, fix、feat等字段字段替换。',
+    component: 'Switch'
   },
   {
     field: 'CodeUpdate.repos',
@@ -119,7 +125,7 @@ export const CodeUpdate: GuobaSchemas = [
         },
         {
           field: 'AutoPath',
-          label: '自动获取本地仓库和插件',
+          label: '自动扫描本地插件',
           component: 'Switch'
         },
         {

@@ -6,16 +6,19 @@ CodeUpdate:
   AutoTips: |-
     自动检查仓库更新开关
   Auto: false
+  CronTips: |-
+    仓库更新检查Cron表达式
+    Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
+  Cron: "0 */30 * * * *"
   AutoBranchTips: |-
     是否自动给未配置分支的仓库添加默认分支
   AutoBranch: true
   FirstAddTips: |-
     首次添加仓库(数据库不存在数据库)是否进行一次推送
   FirstAdd: false
-  CronTips: |-
-    仓库更新检查Cron表达式
-    Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
-  Cron: "0 */30 * * * *"
+  badgeStyleTips: |-
+    提交信息中是否启用徽章样式
+  badgeStyle: true
   RepoTips: |-
     GitApi配置
       provider: 仓库提供商，唯一标识符

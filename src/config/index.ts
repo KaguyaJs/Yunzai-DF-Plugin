@@ -13,7 +13,7 @@ class Config {
 
   /** 初始化配置 */
   async initCfg () {
-    this.config = YAML.parse(await fs.readFile(path.join(ResPath, 'config', 'config.yaml'), 'utf8'))
+    this.config = YAML.parse(await fs.readFile(path.join(ResPath, 'config', 'default_config.yaml'), 'utf8'))
 
     /** 保留注释 */
     const keep: Record<string, Record<string, any>> = {}
@@ -26,7 +26,6 @@ class Config {
       }
     }
 
-    // FIXME 启动时将配置的commit转成commits
     const { config, configSave } = await makeConfig(this.plugin_name, this.config, keep, {
       replacer: (i: any) => i.replace(/(\n.+?Tips:)/g, '\n$1')
     })

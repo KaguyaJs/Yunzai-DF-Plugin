@@ -1,6 +1,6 @@
 import { marked } from 'marked'
 import { timeAgo, Data } from '@/utils'
-import Config from '@/config'
+import config from '@/config'
 import { ResPath } from '@/dir'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -18,7 +18,7 @@ const COMMIT_TYPES = new Set([
   'ci', 'chore', 'revert'
 ])
 const EMOJI_MAP = Data.getJSON<Record<string, string>>('Emoji.json', 'json', false) || {}
-const PROVIDER_ICON_MAP: Record<string, string> = Config.CodeUpdate.repos
+const PROVIDER_ICON_MAP: Record<string, string> = config.CodeUpdate.repos
   .reduce((acc, item) => {
     acc[item.provider.toLowerCase()] = item.icon || ''
     return acc
@@ -73,8 +73,10 @@ export function formatMessage (message?: string): string {
   message = replaceEmojiCodes(message)
 
   const lines = message.split('\n')
-  const info = parseTitle(lines[0].trim())
-  lines[0] = commitTitle(info)
+  if (config.CodeUpdate.badgeStyle) {
+    const info = parseTitle(lines[0].trim())
+    lines[0] = commitTitle(info)
+  }
 
   const rest = lines.slice(1).join('\n').trim()
   if (!rest) return lines.join('<br>')
