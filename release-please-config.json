@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     ".": {
       "changelog-path": "CHANGELOG.md",
@@ -9,5 +10,70 @@
       "prerelease": false
     }
   },
-  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "✨ 新功能"
+    },
+    {
+      "type": "fix",
+      "section": "🐛 Bug 修复"
+    },
+    {
+      "type": "perf",
+      "section": "⚡ 性能优化"
+    },
+    {
+      "type": "docs",
+      "section": "📝 文档"
+    },
+    {
+      "type": "style",
+      "section": "🎨 代码风格/格式"
+    },
+    {
+      "type": "refactor",
+      "section": "♻️ 重构"
+    },
+    {
+      "type": "test",
+      "section": "✅ 测试"
+    },
+    {
+      "type": "types",
+      "section": "🔤 类型定义"
+    },
+    {
+      "type": "deps",
+      "section": "📦 依赖更新"
+    },
+    {
+      "type": "build",
+      "section": "🏗️ 构建/打包"
+    },
+    {
+      "type": "ci",
+      "section": "🤖 CI/CD 配置"
+    },
+    {
+      "type": "security",
+      "section": "🔐 安全修复"
+    },
+    {
+      "type": "revert",
+      "section": "⏪ 回滚"
+    },
+    {
+      "type": "release",
+      "section": "🚀 发布/版本"
+    },
+    {
+      "type": "breaking",
+      "section": "⚠️ 重大变更（破坏性变更）"
+    },
+    {
+      "type": "other",
+      "section": "🔎 其他变更"
+    }
+  ]
 }
