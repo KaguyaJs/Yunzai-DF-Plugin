@@ -10,6 +10,7 @@
       "prerelease": false
     }
   },
+  "pull-request-header": ":robot: Release Please 自动发布",
   "changelog-sections": [
     {
       "type": "feat",
