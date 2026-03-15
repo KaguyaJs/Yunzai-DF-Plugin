@@ -17,7 +17,7 @@ export default new class {
       if (config.summary.type === 2) this.getSummaryText(config.summary.type)
       segment.image = ((...args: any[]) => {
         const imgseg = rawFnc(...args)
-        imgseg.summary ??= this.getSummaryText(config.summary.type)
+        imgseg.summary = this.getSummaryText(config.summary.type)
         return imgseg
       }) as any
     } else {
