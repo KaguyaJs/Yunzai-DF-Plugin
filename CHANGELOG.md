@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.8.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.8.0...yunzai-df-plugin-v2.8.1) (2026-04-27)
+
+
+### 🐛 Bug 修复
+
+* 优化外显处理 ([a4a7857](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/a4a78577203ca5d166e3f5056efa390d38abfb3d))
+* 细节优化 ([7cb1f7f](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/7cb1f7f2c46b8133e40139e4ba29f7092d4a5f35))
+
 ## [2.8.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.7.1...yunzai-df-plugin-v2.8.0) (2026-01-29)
 
 
