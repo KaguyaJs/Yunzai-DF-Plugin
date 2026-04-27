@@ -10,16 +10,16 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "rimraf lib && tsgo && tsc-alias && minify lib",
-    "build:noMinify": "rimraf lib && tsgo && tsc-alias",
-    "build:watch": "rimraf lib && tsgo && (concurrently \"tsgo -w\" \"tsc-alias -w\")",
+    "build": "rimraf lib && tsc && tsc-alias && minify lib",
+    "build:noMinify": "rimraf lib && tsc && tsc-alias",
+    "build:watch": "rimraf lib && tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")",
     "update:emoji": "up-emoji resources/json/Emoji.json",
     "lint": "eslint ./src --fix"
   },
   "dependencies": {
     "https-proxy-agent": "^7.0.6",
-    "lodash": "^4.17.21",
-    "marked": "^17.0.1",
+    "lodash": "^4.18.1",
+    "marked": "^18.0.2",
     "node-fetch": "^3.3.2",
     "ulid": "^3.0.2"
   },
