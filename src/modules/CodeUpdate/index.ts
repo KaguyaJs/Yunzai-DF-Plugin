@@ -25,6 +25,7 @@ export async function CodeUpdate (isAuto: boolean = true, e?: MessageEvent): Pro
   const repos = getRepos(true)
   if (!repos.length) return false
   const DataMap = await fetchUpdate(repos, isAuto)
+  /** 获取到存在更新的仓库数量 */
   const num = DataMap.size
   if (!num) {
     logger.info(logger.yellow('未检测到仓库更新'))

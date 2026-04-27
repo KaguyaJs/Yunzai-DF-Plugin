@@ -5,10 +5,10 @@ import logger from './logger'
 
 interface OptionsType extends RequestInit {
   /**
-   * 是否打印日志
+   * 是否打印日志，默认打印 debug
    * @default true
    */
-  log?: boolean
+  log?: boolean | 'trace' | 'debug' | 'info' | 'mark' | 'warn' | 'error'
 }
 
 export class Request {
@@ -41,7 +41,7 @@ export class Request {
         ...fetchOptions
       })
       if (!response.ok && responseType !== 'raw') {
-        logger[log ? 'error' : 'debug'](`GET 请求失败：${response.status} ${response.statusText}`)
+        if (log) logger[typeof log === 'boolean' ? 'debug' : log](`GET 请求失败：${response.status} ${response.statusText}`)
         return false
       }
       switch (responseType) {
@@ -54,7 +54,7 @@ export class Request {
           return response.json() as T
       }
     } catch (error) {
-      logger[log ? 'error' : 'debug']('GET请求失败:', error)
+      if (log) logger[typeof log === 'boolean' ? 'error' : log]('GET请求失败:', error)
       return false
     }
   }
@@ -97,14 +97,14 @@ export class Request {
     }
 
     try {
-      if (log) logger.debug(`POST请求URL: ${logger.green(url)}`)
+      if (log) logger[typeof log === 'boolean' ? 'debug' : log](`POST请求URL: ${logger.green(url)}`)
       const response = await fetch(url, {
         method: 'POST',
         body: JSON.stringify(body),
         ...fetchOptions
       })
       if (!response.ok && responseType !== 'raw') {
-        logger[log ? 'error' : 'debug'](`POST 请求失败：${response.status} ${response.statusText}`)
+        if (log) logger[typeof log === 'boolean' ? 'error' : log](`POST 请求失败：${response.status} ${response.statusText}`)
         return false
       }
       switch (responseType) {
@@ -117,7 +117,7 @@ export class Request {
           return response.json() as T
       }
     } catch (error) {
-      logger[log ? 'error' : 'debug']('POST请求失败:', error)
+      if (log) logger[typeof log === 'boolean' ? 'error' : log]('POST请求失败:', error)
       return false
     }
   }

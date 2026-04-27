@@ -30,7 +30,7 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
       if (data === false) return
       if (!Array.isArray(data)) data = [data]
       if (data.length === 0 || (type === 'releases' && !data[0]?.tag_name)) {
-        logger.warn(`${logger.magenta(provider)}: ${logger.cyan(logRepo)} 数据为空`)
+        logger.warn(`[${logger.magenta(provider)}]: ${logger.cyan(logRepo)} 数据为空`)
         return
       }
       if (isAuto) {
@@ -39,12 +39,12 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
           : data[0]?.node_id
         const isUpdate = await redisHeler.isUpdate(provider, type, repo, branch, sha)
         if (isUpdate) {
-          logger.debug(`${logger.cyan(logRepo)} 暂无更新`)
+          logger.debug(`[${logger.magenta(provider)}]: ${logger.cyan(logRepo)} 暂无更新`)
           return
         }
         await redisHeler.updatesSha(provider, type, repo, branch, sha)
         if (isUpdate === null && !config.CodeUpdate.FirstAdd) return
-        logger.mark(`${logger.cyan(logRepo)} 检测到更新`)
+        logger.mark(`[${logger.magenta(provider)}]: ${logger.cyan(logRepo)} 检测到更新`)
       }
       const info = await (type === 'commits'
         ? formatCommitInfo(data[0] as Commit, provider, path, branch)

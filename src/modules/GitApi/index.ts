@@ -92,7 +92,7 @@ export default new class RepoService {
     }
     const headers = this.getHeaders(source, token)
     try {
-      logger.debug('请求 URL:', url.toString())
+      logger.trace('请求 URL:', url.toString())
       const data = await this.fetchData<GitCommitDataType | GitReleaseDataType>(
         url,
         headers,
@@ -171,7 +171,8 @@ export default new class RepoService {
   async fetchData<T = any> (url: Parameters<typeof request['get']>[0], headers: Record<string, string> = {}, repo?: string, source?: Provider): Promise<T | false> {
     try {
       const response = await request.get(url, 'raw', {
-        headers
+        headers,
+        log: 'trace'
       })
       if (!response) return false
 
