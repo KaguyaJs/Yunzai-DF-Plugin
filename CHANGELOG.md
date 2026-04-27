@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.8.1...yunzai-df-plugin-v2.9.0) (2026-04-27)
+
+
+### ✨ 新功能
+
+* **CodeUpdate:** 推送内容过多时支持分片截图发送 ([5259865](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/5259865532af3dd84e0c969080f8495dfbc4d702))
+
 ## [2.8.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.8.0...yunzai-df-plugin-v2.8.1) (2026-04-27)
 
 
