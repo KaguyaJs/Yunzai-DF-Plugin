@@ -4,6 +4,9 @@ import common from '../../../../lib/common/common'
 import { CodeUpdateRedisKey } from '@/constants'
 import config from '@/config'
 
+/** 锁 */
+let lock = false
+
 export class GitRepoUpdate extends plugin<'message'> {
   constructor () {
     super({
@@ -37,6 +40,8 @@ export class GitRepoUpdate extends plugin<'message'> {
   }
 
   async check (e = this.e) {
+    if (lock) return e.reply('前置流程未完成，请等待完成后再试')
+    lock = true
     const push = e.msg.includes('推送')
     await e.reply(`正在${push ? '推送' : '检查'}仓库更新，请稍等`)
     const ret = await CodeUpdate(!push, e)
@@ -46,6 +51,7 @@ export class GitRepoUpdate extends plugin<'message'> {
         ? `检查完成，共有${ret}个仓库有更新，正在按照你的配置进行推送哦~`
         : '检查完成，没有发现仓库有更新')
     }
+    lock = false
   }
 
   async clear (e: typeof this.e & { redisInvalidKeys: string[] }) {

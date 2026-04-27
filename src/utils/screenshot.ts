@@ -5,6 +5,7 @@ import version from './version'
 import config from '@/config'
 import { YunzaiPath, PluginName, ResPath } from '@/dir'
 import { CustomEvent, MessageRet } from 'trss-yunzai'
+import { ImageElem } from 'trss-yunzai/icqq'
 
 interface ScreenshotOptions {
   /**
@@ -24,7 +25,11 @@ interface ScreenshotOptions {
   /**
    * 是否返回消息的返回值
    */
-  retMsgId?: boolean
+  retMsgId?: boolean,
+  /**
+   * 是否分片截图
+   */
+  multiPage?: boolean
 }
 
 type Params = Omit<Parameters<typeof puppeteer['screenshot']>[1], 'tplFile'>
@@ -39,10 +44,11 @@ type Params = Omit<Parameters<typeof puppeteer['screenshot']>[1], 'tplFile'>
  * @param cfg.send 是否直接发送
  * @param cfg.retMsgId 是否返回消息id
  */
+export async function screenshot (path: string, params: Params, cfg?: ScreenshotOptions & { send?: false, multiPage: true }): Promise<Array<ImageElem> | false>
 export async function screenshot (path: string, params: Params, cfg: ScreenshotOptions & { send: true, retMsgId: true }): Promise<MessageRet>
 export async function screenshot (path: string, params: Params, cfg: ScreenshotOptions & { send: true, retMsgId?: false }): Promise<boolean>
-export async function screenshot (path: string, params: Params, cfg?: ScreenshotOptions & { send?: false }): ReturnType<typeof puppeteer.screenshot>
-export async function screenshot (path: string, params: Params, cfg: ScreenshotOptions = {}) {
+export async function screenshot (path: string, params: Params, cfg?: ScreenshotOptions & { send?: false }): Promise<ImageElem | false>
+export async function screenshot (path: string, params: Params, cfg: ScreenshotOptions = {}): Promise<boolean | ImageElem | ImageElem[] | MessageRet> {
   const [app, tpl] = path.split('/')
   const resPath = ResPath
   // const resPath = `../../../../../plugins/${PluginName}/resources`
@@ -73,7 +79,7 @@ export async function screenshot (path: string, params: Params, cfg: ScreenshotO
     const file = saveDir + tpl + '.json'
     await Data.writeJSON(file, { ...data, _app: app })
   }
-  const base64 = await puppeteer.screenshot(`${PluginName}/${app}/${tpl}`, data)
+  const base64 = await puppeteer[cfg.multiPage ? 'screenshots' : 'screenshot'](`${PluginName}/${app}/${tpl}`, data)
 
   if (cfg.send && base64 && cfg.e) {
     const ret = await cfg.e.reply(base64)

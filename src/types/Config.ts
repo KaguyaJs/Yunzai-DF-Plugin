@@ -25,6 +25,12 @@ export interface Config {
      */
     badgeStyle: boolean
     /**
+     * 单次推送截图的数据达到多少条时启用分片截图发送，-1 关闭
+     *
+     * @default 12
+     */
+    multiPage: number
+    /**
      * 仓库更新检查Cron表达式
      * Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
      *

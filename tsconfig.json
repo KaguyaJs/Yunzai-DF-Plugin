@@ -2,8 +2,7 @@
   "compilerOptions": {
     "target": "es2024",
     "module": "ESNext",
-    "moduleResolution": "Node",
-    "ignoreDeprecations": "6.0",
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": [
         "./src/*"

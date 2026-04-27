@@ -43,6 +43,18 @@ export const CodeUpdate: GuobaSchemas = [
     component: 'Switch'
   },
   {
+    field: 'CodeUpdate.multiPage',
+    label: '分片截图发送阈值',
+    bottomHelpMessage: '当单次推送达到多少条时使用分片截图发送，填 -1 关闭',
+    component: 'InputNumber',
+    componentProps: {
+      min: -1,
+      max: 20,
+      placeholder: '请输入数量，-1 关闭'
+    },
+    required: true,
+  },
+  {
     field: 'CodeUpdate.repos',
     label: 'GitApi配置',
     bottomHelpMessage: 'Git仓库的接口配置',

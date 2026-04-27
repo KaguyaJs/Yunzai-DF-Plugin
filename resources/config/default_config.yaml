@@ -19,6 +19,9 @@ CodeUpdate:
   badgeStyleTips: |-
     提交信息中是否启用徽章样式
   badgeStyle: true
+  multiPageTips: |-
+    当获取到的数据达到多少条时分片发送，填 -1 关闭
+  multiPage: 12
   RepoTips: |-
     GitApi配置
       provider: 仓库提供商，唯一标识符

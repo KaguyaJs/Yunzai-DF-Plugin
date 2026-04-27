@@ -24,15 +24,18 @@ export async function CodeUpdate (isAuto: boolean = true, e?: MessageEvent): Pro
 
   const repos = getRepos(true)
   if (!repos.length) return false
+  /** 获取到的数据 */
   const DataMap = await fetchUpdate(repos, isAuto)
   /** 获取到存在更新的仓库数量 */
   const num = DataMap.size
   if (!num) {
     logger.info(logger.yellow('未检测到仓库更新'))
     return num
+  } else {
+    logger.info(logger.green(`共获取到 ${num} 个仓库更新`))
   }
   const PashMap = getListMap(List)
-  const imageCache = new Map<string, icqq.ImageElem>()
+  const imageCache = new Map<string, icqq.ImageElem | icqq.ImageElem[]>()
   if (!isAuto && e) {
     const img = await generateScreenshot(Array.from(DataMap.values()), String(e.user_id))
     if (img) await e.reply(img)
