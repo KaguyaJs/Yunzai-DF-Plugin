@@ -46,12 +46,12 @@ export class GitRepoUpdate extends plugin<'message'> {
     await e.reply(`正在${push ? '推送' : '检查'}仓库更新，请稍等`)
     const ret = await CodeUpdate(!push, e)
     if (ret === false) return false
+    lock = false
     if (!push) {
       return e.reply(ret > 0
         ? `检查完成，共有${ret}个仓库有更新，正在按照你的配置进行推送哦~`
         : '检查完成，没有发现仓库有更新')
     }
-    lock = false
   }
 
   async clear (e: typeof this.e & { redisInvalidKeys: string[] }) {
