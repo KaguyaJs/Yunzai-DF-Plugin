@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.9.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.9.0...yunzai-df-plugin-v2.9.1) (2026-05-21)
+
+
+### 🐛 Bug 修复
+
+* **CodeUpdate:** 修复推送锁 ([6d40712](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/6d407129697a479a1d8d8428b02e26454c4eb5e0))
+
 ## [2.9.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.8.1...yunzai-df-plugin-v2.9.0) (2026-04-27)
 
 
