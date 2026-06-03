@@ -19,6 +19,18 @@ CodeUpdate:
   badgeStyleTips: |-
     提交信息中是否启用徽章样式
   badgeStyle: true
+  TranslateTips: |-
+    是否在渲染Git仓库更新推送前，将提交信息和Release内容翻译为简体中文
+    默认使用Google公共翻译接口，如网络无法访问可开启代理或修改TranslateApi
+  Translate: false
+  TranslateApiTips: |-
+    翻译接口地址
+    默认兼容Google公共翻译接口
+    也支持包含 {text} / {q} / {target} 占位符的GET接口模板
+  TranslateApi: "https://translate.googleapis.com/translate_a/single"
+  TranslateNameTips: |-
+    翻译后在推送图片中显示的提示名称
+  TranslateName: "Google 翻译"
   multiPageTips: |-
     当获取到的数据达到多少条时分片发送，填 -1 关闭
   multiPage: 12

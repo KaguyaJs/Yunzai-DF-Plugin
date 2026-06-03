@@ -48,6 +48,9 @@
               {{@item.time_info}}
             </div>
             <div class="desc">{{@item.text}}</div>
+            {{if item.translate}}
+            <div class="translate-tip" title="{{item.translate.title}}">{{item.translate.label}}</div>
+            {{/if}}
             {{if item.stats}}
             <div class="stats">
               <span class="file-count">{{item.stats.files}}</span> 个文件发生了变化 
