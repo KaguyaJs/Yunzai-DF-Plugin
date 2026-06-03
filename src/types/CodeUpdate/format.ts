@@ -15,6 +15,10 @@ export interface CommitInfo {
   time_info: string
   icon: string
   text: string
+  translate?: false | {
+    label: string
+    title: string
+  }
   stats: false | {
     files: number
     additions: number
@@ -34,4 +38,8 @@ export interface ReleaseInfo {
   }
   time_info: string
   text: string
+  translate?: false | {
+    label: string
+    title: string
+  }
 }

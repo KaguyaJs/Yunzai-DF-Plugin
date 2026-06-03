@@ -5,6 +5,7 @@ import { ResPath } from '@/dir'
 import fs from 'node:fs'
 import path from 'node:path'
 import { FacePoke } from '@/modules'
+import { getCodeUpdateTranslateName, translateCodeUpdateTextInfo } from './translate'
 import {
   GitCommitDataType,
   GitReleaseDataType,
@@ -20,7 +21,7 @@ const COMMIT_TYPES = new Set([
 const EMOJI_MAP = Data.getJSON<Record<string, string>>('Emoji.json', 'json', false) || {}
 const PROVIDER_ICON_MAP: Record<string, string> = config.CodeUpdate.repos
   .reduce((acc, item) => {
-    acc[item.provider.toLowerCase()] = item.icon || ''
+    if (item?.provider) acc[String(item.provider).toLowerCase()] = item.icon || ''
     return acc
   }, {} as Record<string, string>)
 const ICON_DIR = path.resolve(`${ResPath}/CodeUpdate/icon`)
@@ -55,6 +56,7 @@ export async function formatCommitInfo (
   branch?: string
 ): Promise<CommitInfo> {
   const { author, committer, commit, stats, files, sha } = data
+  const message = await formatMessageInfo(commit.message)
 
   const authorName = (commit.author?.name && `<span>${commit.author.name}</span>`) ?? ''
   const committerName = (commit.committer?.name && `<span>${commit.committer.name}</span>`) ?? ''
@@ -82,7 +84,8 @@ export async function formatCommitInfo (
     },
     time_info: timeInfo,
     icon: await getIcon(source),
-    text: formatMessage(commit.message),
+    text: message.text,
+    translate: getTranslateInfo(message.translated),
     stats: stats && files
       ? { files: files.length, additions: stats.additions ?? NaN, deletions: stats.deletions ?? NaN }
       : false
@@ -94,34 +97,54 @@ export async function formatCommitInfo (
  * @param message 原始提交信息
  * @returns 处理完成后的提交信息
  */
-export function formatMessage (message?: string): string {
-  if (!message) return '<span class="head">无提交信息</span>'
+export async function formatMessage (message?: string): Promise<string> {
+  return (await formatMessageInfo(message)).text
+}
+
+async function formatMessageInfo (message?: string): Promise<{ text: string, translated: boolean }> {
+  if (!message) return { text: '<span class="head">无提交信息</span>', translated: false }
 
   message = replaceEmojiCodes(message)
 
   const lines = message.split('\n')
+  let translated = false
+
   if (config.CodeUpdate.badgeStyle) {
     const info = parseTitle(lines[0].trim())
+    const title = await translateCodeUpdateTextInfo(info.subject)
+    info.subject = title.text
+    translated ||= title.translated
     lines[0] = commitTitle(info)
+  } else {
+    const title = await translateCodeUpdateTextInfo(lines[0])
+    lines[0] = title.text
+    translated ||= title.translated
   }
 
-  const rest = lines.slice(1).join('\n').trim()
-  if (!rest) return lines.join('<br>')
+  const rawRest = lines.slice(1).join('\n')
+  const rest = rawRest.trim()
+  if (!rest) return { text: lines.join('<br>'), translated }
+
+  const body = await translateCodeUpdateTextInfo(rawRest, { markdown: true })
+  const renderBody = body.text.trim()
+  translated ||= body.translated
 
   let tokens
   try {
-    tokens = marked.lexer(rest)
+    tokens = marked.lexer(renderBody)
   } catch {
-    return lines.join('<br>')
+    return { text: [lines[0], ...body.text.split('\n')].join('<br>'), translated }
   }
 
   const isMarkdown = tokens.some(
     token => token.type !== 'paragraph' || token.raw.includes('\n')
   )
 
-  return isMarkdown
-    ? `${lines[0]}<br>${marked(rest)}`
-    : lines.join('<br>')
+  const text = isMarkdown
+    ? `${lines[0]}<br>${marked(renderBody)}`
+    : [lines[0], ...body.text.split('\n')].join('<br>')
+
+  return { text, translated }
 }
 
 /**
@@ -232,7 +255,10 @@ export async function formatReleaseInfo (
 
   const authorName = author?.login || author?.name || '?'
   const authorTime = publishedAt ? `<span>${timeAgo(publishedAt)}</span>` : '未知'
-  const releaseText = marked(replaceEmojiCodes(body || ''))
+  const releaseName = await translateCodeUpdateTextInfo(name || tagName || '未命名发布')
+  const releaseBody = await translateCodeUpdateTextInfo(replaceEmojiCodes(body || ''), { markdown: true })
+  const releaseText = marked(releaseBody.text)
+  const translated = releaseName.translated || releaseBody.translated
 
   return {
     release: true,
@@ -245,8 +271,18 @@ export async function formatReleaseInfo (
       authorStart: authorName[0] ?? '?'
     },
     time_info: `<span>${authorName}</span> 发布于 ${authorTime}`,
-    text: `<span class='head'>${name}</span><br/>${releaseText}`
+    text: `<span class='head'>${releaseName.text}</span><br/>${releaseText}`,
+    translate: getTranslateInfo(translated)
   }
+}
+
+function getTranslateInfo (translated: boolean): false | { label: string, title: string } {
+  return translated
+    ? {
+        label: getCodeUpdateTranslateName(),
+        title: '已在渲染前自动翻译'
+      }
+    : false
 }
 
 /**
@@ -263,7 +299,7 @@ export async function formatReleaseInfo (
  * // 返回本地图标路径或默认图标
  */
 async function getIcon (source: string): Promise<string> {
-  const iconName = PROVIDER_ICON_MAP[source.toLowerCase()] || 'git'
+  const iconName = PROVIDER_ICON_MAP[String(source).toLowerCase()] || 'git'
 
   // find local file
   const found = ICON_FILES.find(file => path.parse(file).name.toLowerCase() === iconName.toLowerCase())

@@ -206,6 +206,18 @@ body {
         }
       }
 
+      .translate-tip {
+        width: max-content;
+        margin-top: 8px;
+        padding: 3px 7px;
+        border: 1px solid rgba($highlight-color, 0.35);
+        border-radius: 5px;
+        background: rgba($highlight-color, 0.12);
+        color: $highlight-color;
+        font-size: 11px;
+        line-height: 1.2;
+      }
+
       .stats {
         border-top: 1px solid rgba(255, 255, 255, 0.15);
         border-bottom: 1px solid rgba(255, 255, 255, 0.15);

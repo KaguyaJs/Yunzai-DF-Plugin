@@ -81,6 +81,7 @@ pnpm install
 
 - `#检查仓库更新`: 检查有没有仓库更新（相当于主动触发定时逻辑）
 - `#推送仓库更新`: 不管有没有更新都回复到当前会话，不会推送所有群组
+- 可在配置中开启 `CodeUpdate.Translate`，并通过 `TranslateApi` / `TranslateName` 自定义翻译接口和图片提示名称
 
 </details>
 
