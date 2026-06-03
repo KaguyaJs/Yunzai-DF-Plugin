@@ -25,6 +25,24 @@ export interface Config {
      */
     badgeStyle: boolean
     /**
+     * 是否在渲染仓库更新前翻译提交信息和 Release 内容
+     *
+     * @default false
+     */
+    Translate: boolean
+    /**
+     * 翻译接口地址
+     *
+     * @default "https://translate.googleapis.com/translate_a/single"
+     */
+    TranslateApi: string
+    /**
+     * 翻译结果提示名称
+     *
+     * @default "Google 翻译"
+     */
+    TranslateName: string
+    /**
      * 单次推送截图的数据达到多少条时启用分片截图发送，-1 关闭
      *
      * @default 12

@@ -43,6 +43,30 @@ export const CodeUpdate: GuobaSchemas = [
     component: 'Switch'
   },
   {
+    field: 'CodeUpdate.Translate',
+    label: '更新内容翻译',
+    bottomHelpMessage: '开启后会在截图渲染前将提交信息和Release内容翻译为简体中文。',
+    component: 'Switch'
+  },
+  {
+    field: 'CodeUpdate.TranslateApi',
+    label: '翻译接口地址',
+    bottomHelpMessage: '默认使用Google公共翻译接口；也支持包含 {text} / {q} / {target} 占位符的GET接口模板。',
+    component: 'Input',
+    componentProps: {
+      placeholder: '请输入翻译接口地址'
+    }
+  },
+  {
+    field: 'CodeUpdate.TranslateName',
+    label: '翻译提示名称',
+    bottomHelpMessage: '经过翻译的更新内容会在图片中显示此名称，例如：Google 翻译。',
+    component: 'Input',
+    componentProps: {
+      placeholder: '请输入翻译提示名称'
+    }
+  },
+  {
     field: 'CodeUpdate.multiPage',
     label: '分片截图发送阈值',
     bottomHelpMessage: '当单次推送达到多少条时使用分片截图发送，填 -1 关闭',
