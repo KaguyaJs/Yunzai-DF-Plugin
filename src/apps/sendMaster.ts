@@ -47,12 +47,12 @@ export class sendMasterMsg extends plugin {
     const cdTime = Number(cd) || 0
     if (!e.isMaster) {
       if (!open) return e.reply('❎ 该功能暂未开启，请先让主人开启才能用哦', true)
-      if (cdTime > 0 && await redis.get(REDISCDKEY)) {
+      if (cdTime > 0) {
         const ttl = await redis.ttl(REDISCDKEY)
-        if (ttl === -1) {
-          await redis.del(REDISCDKEY)
-        } else if (ttl > 0) {
+        if (ttl > 0) {
           return e.reply('❎ 操作频繁，请稍后再试', true)
+        } else if (ttl === -1) {
+          await redis.del(REDISCDKEY)
         }
       }
       if (banWords.some(item => e.msg.includes(item))) return e.reply('❎ 消息包含违禁词，请检查后重试', true)
