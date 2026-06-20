@@ -44,7 +44,8 @@ export class sendMasterMsg extends plugin {
     if (Sending) return e.reply('❎ 已有发送任务正在进行中，请等待上一条完成后重试')
     const { open, cd, BotId, banWords, banUser, banGroup, MsgTemplate, successMsgTemplate, failsMsgTemplate, Master } = Config.sendMaster
     const REDISCDKEY = `${REDISKEY}:cd`
-    const cdTime = Number(cd) || 0
+    const rawCd = Number(cd)
+    const cdTime = Number.isFinite(rawCd) ? Math.max(0, Math.trunc(rawCd)) : 0
     if (!e.isMaster) {
       if (!open) return e.reply('❎ 该功能暂未开启，请先让主人开启才能用哦', true)
       if (cdTime > 0) {
