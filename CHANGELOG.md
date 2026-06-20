@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.10.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.9.1...yunzai-df-plugin-v2.10.0) (2026-06-20)
+
+
+### ✨ 新功能
+
+* Git推送 翻译 ([#63](https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues/63)) ([1c0ca86](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/1c0ca869deace1064dd152bdfa84cb04cfbaa94f))
+
+
+### 🐛 Bug 修复
+
+* 联系主人 冷却时间 ([#65](https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues/65)) ([22457c5](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/22457c5b1da30865e5c9010e3cd1923bb88dc68b))
+
+
+### ♻️ 重构
+
+* **cooldown:** 支持通过 0 禁用冷却机制并修复 Redis 脏数据拦截问题 ([22457c5](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/22457c5b1da30865e5c9010e3cd1923bb88dc68b))
+
 ## [2.9.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.9.0...yunzai-df-plugin-v2.9.1) (2026-05-21)
 
 
