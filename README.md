@@ -81,6 +81,7 @@ pnpm install
 
 - `#检查仓库更新`: 检查有没有仓库更新（相当于主动触发定时逻辑）
 - `#推送仓库更新`: 不管有没有更新都回复到当前会话，不会推送所有群组
+- 可在配置中开启 `CodeUpdate.Translate`，并通过 `TranslateApi` / `TranslateName` 自定义翻译接口和图片提示名称
 
 </details>
 
@@ -108,7 +109,7 @@ pnpm install
 ## 贡献者
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-20-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-21-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 感谢这些了不起的人 ([emoji-key](https://allcontributors.org/emoji-key/#natural-language-processing)):
@@ -143,6 +144,7 @@ pnpm install
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/2078764727"><img src="https://avatars.githubusercontent.com/u/180080544?v=4?s=100" width="100px;" alt="2078764727"/><br /><sub><b>2078764727</b></sub></a><br /><a href="#ideas-2078764727" title="Ideas, Planning, & Feedback">🤔</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://about.sakurax.top/"><img src="https://avatars.githubusercontent.com/u/106215893?v=4?s=100" width="100px;" alt="Sakura1618"/><br /><sub><b>Sakura1618</b></sub></a><br /><a href="https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues?q=author%3ASakura1618" title="Bug reports">🐛</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/lilibsxz"><img src="https://avatars.githubusercontent.com/u/159024210?v=4?s=100" width="100px;" alt="濁"/><br /><sub><b>濁</b></sub></a><br /><a href="https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues?q=author%3Alilibsxz" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/haanxuan"><img src="https://avatars.githubusercontent.com/u/120633018?v=4?s=100" width="100px;" alt="XxxX"/><br /><sub><b>XxxX</b></sub></a><br /><a href="https://github.com/KaguyaJs/Yunzai-DF-Plugin/commits?author=haanxuan" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

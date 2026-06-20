@@ -164,6 +164,18 @@ body {
   color: #90d0e4;
   text-decoration: none;
 }
+.list .item .title .translate-tip {
+  width: -moz-max-content;
+  width: max-content;
+  margin-top: 8px;
+  padding: 3px 7px;
+  border: 1px solid rgba(144, 208, 228, 0.35);
+  border-radius: 5px;
+  background: rgba(144, 208, 228, 0.12);
+  color: #90d0e4;
+  font-size: 11px;
+  line-height: 1.2;
+}
 .list .item .title .stats {
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
