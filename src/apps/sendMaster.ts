@@ -44,9 +44,18 @@ export class sendMasterMsg extends plugin {
     if (Sending) return e.reply('❎ 已有发送任务正在进行中，请等待上一条完成后重试')
     const { open, cd, BotId, banWords, banUser, banGroup, MsgTemplate, successMsgTemplate, failsMsgTemplate, Master } = Config.sendMaster
     const REDISCDKEY = `${REDISKEY}:cd`
+    const rawCd = Number(cd)
+    const cdTime = Number.isFinite(rawCd) ? Math.max(0, Math.trunc(rawCd)) : 0
     if (!e.isMaster) {
       if (!open) return e.reply('❎ 该功能暂未开启，请先让主人开启才能用哦', true)
-      if (cd !== 0 && await redis.get(REDISCDKEY)) return e.reply('❎ 操作频繁，请稍后再试', true)
+      if (cdTime > 0) {
+        const ttl = await redis.ttl(REDISCDKEY)
+        if (ttl > 0) {
+          return e.reply('❎ 操作频繁，请稍后再试', true)
+        } else if (ttl === -1) {
+          await redis.del(REDISCDKEY)
+        }
+      }
       if (banWords.some(item => e.msg.includes(item))) return e.reply('❎ 消息包含违禁词，请检查后重试', true)
       if (banUser.includes(e.user_id)) return e.reply('❎ 对不起，您不可用', true)
       if (e.isGroup && banGroup.includes(e.group_id)) return e.reply('❎ 该群暂不可用该功能', true)
@@ -80,7 +89,7 @@ export class sendMasterMsg extends plugin {
       const Ret = await utils.sendMasterMsg(msg, Bot[BotId]?.uin || e.self_id, mode, Master)
       const successMsg = utils.parseTemplate(successMsgTemplate, { masterQQ: Object.values(Ret).flatMap(group => Object.keys(group)).toString() })
       await e.reply(successMsg)
-      if (REDISCDKEY) await redis.set(REDISCDKEY, '1')
+      if (!e.isMaster && cdTime > 0) await redis.set(REDISCDKEY, '1', { EX: cdTime })
       await redis.set(`${REDISKEY}:${msgId}`, JSON.stringify(redisData), { EX: 86400 })
     } catch (err) {
       const msg = utils.parseTemplate(failsMsgTemplate, { masterQQ: String(Config.masterQQ[0]) })

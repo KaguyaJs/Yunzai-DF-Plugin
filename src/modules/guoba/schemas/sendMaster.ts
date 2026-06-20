@@ -19,7 +19,7 @@ export const sendMaster: GuobaSchemas = [
     component: 'InputNumber',
     required: true,
     componentProps: {
-      min: 1,
+      min: 0,
       placeholder: '请输入冷却时间'
     }
   },
