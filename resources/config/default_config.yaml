@@ -6,6 +6,13 @@ CodeUpdate:
   AutoTips: |-
     自动检查仓库更新开关
   Auto: false
+  AutoUpdateTips: |-
+    是否自动更新本地已安装的插件
+    只更新 plugins 目录内的 Git 插件，推送配置中排除的仓库不会更新
+  AutoUpdate: false
+  AutoRestartTips: |-
+    自动更新插件后是否自动重启
+  AutoRestart: false
   CronTips: |-
     仓库更新检查Cron表达式
     Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
