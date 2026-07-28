@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.10.0...yunzai-df-plugin-v2.11.0) (2026-07-28)
+
+
+### ✨ 新功能
+
+* **poke:** 支持自定义表情包接口地址格式 ([dcbaff2](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/dcbaff2607096334cecde7d96103a985c27f2f19))
+
 ## [2.10.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.9.1...yunzai-df-plugin-v2.10.0) (2026-06-20)
 
 
