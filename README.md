@@ -102,6 +102,12 @@ pnpm install
 
 </details>
 
+> [!NOTE] 关于随机表情包图片口格式  
+> 接口请求格式为 `GET https://example.com/?name=[图片名称]`  
+> 因此理论上只要允许通过 name 参数指定类型的接口均可填入配置中使用(无视掉的也行)  
+> 返回格式需要是纯图片 
+> 如果需要自建图片接口省事可以参考使用我用ai写的一个小项目 👉 [点击此处](https://github.com/DenFengLai/DF-Poke-Api)
+
 ## 修改配置
 
 本插件各配置项已支持[锅巴插件](https://gitee.com/guoba-yunzai/guoba-plugin.git)，推荐使用锅巴插件进行配置修改。
