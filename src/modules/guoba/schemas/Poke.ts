@@ -62,7 +62,7 @@ export const Poke: GuobaSchemas = [
   {
     field: 'Poke.imageApi',
     label: '戳一戳图片Api域名',
-    bottomHelpMessage: '戳一戳api域名, 无特殊情况建议留空',
+    bottomHelpMessage: '戳一戳api地址,需要包含http://或https://前缀, 无特殊情况建议留空',
     component: 'Input'
   },
   {
