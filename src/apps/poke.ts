@@ -15,7 +15,7 @@ export class Poke extends plugin<'notice.*.poke'> {
     })
   }
 
-  private LogText = `${Array.isArray(Bot.uin) ? logger.blue('[ DF-Plugin ]') : ''}${logger.green('[戳一戳]')}`
+  private LogText = `${Array.isArray(Bot.uin) ? '' : logger.blue('[ DF-Plugin ]')}${logger.green('[戳一戳]')}`
 
   async poke () {
     let { chuo, mode } = Config.Poke
