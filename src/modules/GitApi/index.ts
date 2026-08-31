@@ -4,10 +4,10 @@ import type { GitApiMethod, GitCommitDataType, GitReleaseDataType } from '@/type
 type Provider = 'GitHub' | 'Gitee' | 'Gitcode' | 'CNB' | string
 
 const DEFAULT_API: Record<string, string> = {
-  GitHub: 'https://api.github.com/repos',
-  Gitee: 'https://gitee.com/api/v5/repos',
-  Gitcode: 'https://api.gitcode.com/api/v5/repos',
-  CNB: 'https://api.cnb.cool'
+  github: 'https://api.github.com/repos',
+  gitee: 'https://gitee.com/api/v5/repos',
+  gitcode: 'https://api.gitcode.com/api/v5/repos',
+  cnb: 'https://api.cnb.cool'
 }
 
 /**
@@ -22,6 +22,18 @@ function apiUrlFor (source: Provider): { apiUrl?: string; token?: string } {
   const name = String(source || '').toLowerCase()
   const result = custom[name] || (DEFAULT_API[name] ? { apiUrl: DEFAULT_API[name] } : {})
   return result
+}
+
+function basePath (pathname: string) {
+  return pathname.replace(/\/+$/, '')
+}
+
+function safeUrl (input: string | URL) {
+  const url = new URL(input)
+  for (const key of ['access_token', 'token']) {
+    if (url.searchParams.has(key)) url.searchParams.set(key, 'REDACTED')
+  }
+  return url.toString()
 }
 
 /**
@@ -71,7 +83,7 @@ export default new class RepoService {
         url.searchParams.set('sha', sha)
       } else if (isCNB) {
         // cnb: /{repo}/-/git/commits/{sha}
-        url.pathname = `${url.pathname}${url.pathname.endsWith('/') ? '' : '/'}${repo}/-/git/commits/${sha}`
+        url.pathname = `${basePath(url.pathname)}/${repo}/-/git/commits/${sha}`
       } else {
         // GitHub / Gitcode 等
         url.pathname = `${url.pathname}/${repo}/commits/${sha}`
@@ -80,7 +92,7 @@ export default new class RepoService {
       }
     } else {
       if (isCNB) {
-        url.pathname = `${url.pathname}/${repo}/-/git/${method}`
+        url.pathname = `${basePath(url.pathname)}/${repo}/-/git/${method}`
         url.searchParams.set('page', '1')
       } else {
         url.pathname = `${url.pathname}/${repo}/${method}`
@@ -92,7 +104,7 @@ export default new class RepoService {
     }
     const headers = this.getHeaders(source, token)
     try {
-      logger.trace('请求 URL:', url.toString())
+      logger.trace('请求 URL:', safeUrl(url))
       const data = await this.fetchData<GitCommitDataType | GitReleaseDataType>(
         url,
         headers,
@@ -102,7 +114,7 @@ export default new class RepoService {
       return data as any
     } catch (err) {
       logger.error('获取仓库数据失败', {
-        url: url.toString(),
+        url: safeUrl(url),
         err
       })
       return false
@@ -124,8 +136,8 @@ export default new class RepoService {
     // 对cnb特殊处理
     const isCNB = /cnb/i.test(String(source || ''))
 
-    let url = `${baseURL}/${repo}`
-    if (isCNB) url = `${baseURL}/${repo}/-/git/head`
+    const url = new URL(baseURL)
+    url.pathname = `${basePath(url.pathname)}/${repo}${isCNB ? '/-/git/head' : ''}`
 
     const headers = this.getHeaders(source, token)
     const data = await this.fetchData<{ default_branch?: string, name?: string }>(url, headers, repo, source)
@@ -168,11 +180,11 @@ export default new class RepoService {
    * @param source 仅用于日志
    * @returns 解析后的 JSON（泛型）或 false（失败）
    */
-  async fetchData<T = any> (url: Parameters<typeof request['get']>[0], headers: Record<string, string> = {}, repo?: string, source?: Provider): Promise<T | false> {
+  async fetchData<T = any> (url: string | URL, headers: Record<string, string> = {}, repo?: string, source?: Provider): Promise<T | false> {
     try {
       const response = await request.get(url, 'raw', {
         headers,
-        log: 'trace'
+        log: false
       })
       if (!response) return false
 
@@ -201,13 +213,13 @@ export default new class RepoService {
 
       const contentType = response.headers?.get?.('content-type') ?? ''
       if (!contentType.includes('application/json')) {
-        logger.error(`响应非 JSON 格式: ${url} , 内容：${await response.text()}`)
+        logger.error(`响应非 JSON 格式: ${safeUrl(url)} , 内容：${await response.text()}`)
         return false
       }
 
       return await response.json() as T
     } catch (error: any) {
-      logger.error(`请求失败: ${url}，错误信息: ${error?.stack ?? error}`)
+      logger.error(`请求失败: ${safeUrl(url)}，错误信息: ${error?.stack ?? error}`)
       return false
     }
   }

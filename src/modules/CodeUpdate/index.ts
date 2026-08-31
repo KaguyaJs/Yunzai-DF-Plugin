@@ -6,6 +6,11 @@ import { pushTouser } from './services/push'
 import { generateScreenshot } from './services/screenshot'
 import GitRepo from '@/utils/GitRepo'
 import { redisHeler, repoPath } from './utils'
+import { autoFillDefaultBranches } from './utils/autoBranch'
+
+void autoFillDefaultBranches().catch(error => {
+  logger.warn(`自动获取默认分支失败: ${error?.message ?? error}`)
+})
 
 /**
  * 检查仓库更新并推送
