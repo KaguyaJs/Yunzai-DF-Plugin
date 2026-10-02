@@ -19,7 +19,7 @@
   "dependencies": {
     "https-proxy-agent": "^7.0.6",
     "lodash": "^4.18.1",
-    "marked": "^18.0.2",
+    "marked": "^18.0.14",
     "node-fetch": "^3.3.2",
     "ulid": "^3.0.2"
   },
