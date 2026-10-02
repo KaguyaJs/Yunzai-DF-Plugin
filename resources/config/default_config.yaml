@@ -34,6 +34,12 @@ CodeUpdate:
   multiPageTips: |-
     当获取到的数据达到多少条时分片发送，填 -1 关闭
   multiPage: 12
+  timeFormatTips: |-
+    时间格式
+    1: 多久之前 x分钟前 X小时前
+    2: 日期加时间 2023-01-01 00:00:00
+    3: 自适应时分（非当日显示日期） 2023-01-01 00:00
+  timeFormat: 1
   RepoTips: |-
     GitApi配置
       provider: 仓库提供商，唯一标识符

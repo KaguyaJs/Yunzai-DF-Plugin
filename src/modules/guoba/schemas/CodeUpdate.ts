@@ -67,6 +67,20 @@ export const CodeUpdate: GuobaSchemas = [
     }
   },
   {
+    field: 'CodeUpdate.timeFormat',
+    label: '日期格式',
+    bottomHelpMessage: '推送显示的日期格式',
+    component: 'RadioGroup',
+    componentProps: {
+      options: [
+        { label: '多久前', value: 1 },
+        { label: '日期加时间', value: 2 },
+        { label: '自适应日期加时间', value: 3 }
+      ]
+    },
+    required: true
+  },
+  {
     field: 'CodeUpdate.multiPage',
     label: '分片截图发送阈值',
     bottomHelpMessage: '当单次推送达到多少条时使用分片截图发送，填 -1 关闭',

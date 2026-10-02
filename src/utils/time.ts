@@ -1,4 +1,5 @@
 import moment from 'moment'
+import config from '@/config'
 
 /**
  * 创建一个计时器对象
@@ -32,33 +33,48 @@ export function createTimer () {
 }
 
 /**
- * 格式化时间戳，返回多久之前
+ * 格式化时间戳，返回时间格式
  * @param date 时间戳
  * @returns 多久前
  */
 export function timeAgo (date: string) {
-  const now = moment()
-  const duration = moment.duration(now.diff(date))
-  const years = duration.years()
-  const months = duration.months()
-  const days = duration.days()
-  const hours = duration.hours()
-  const minutes = duration.minutes()
+  const time = moment(date)
 
-  if (years >= 2) {
-    return '两年以前'
-  } else if (years >= 1) {
-    return '1年前'
-  } else if (months >= 1) {
-    return `${months}个月前`
-  } else if (days >= 1) {
-    return `${days}天前`
-  } else if (hours >= 1) {
-    return `${hours}小时前`
-  } else if (minutes >= 1) {
-    return `${minutes}分钟前`
-  } else {
-    return '刚刚'
+  switch (config.CodeUpdate.timeFormat) {
+    case 1: {
+      const duration = moment.duration(moment().diff(time))
+      const years = duration.years()
+      const months = duration.months()
+      const days = duration.days()
+      const hours = duration.hours()
+      const minutes = duration.minutes()
+
+      if (years >= 2) {
+        return '两年以前'
+      } else if (years >= 1) {
+        return '1年前'
+      } else if (months >= 1) {
+        return `${months}个月前`
+      } else if (days >= 1) {
+        return `${days}天前`
+      } else if (hours >= 1) {
+        return `${hours}小时前`
+      } else if (minutes >= 1) {
+        return `${minutes}分钟前`
+      } else {
+        return '刚刚'
+      }
+    }
+    case 2: return time.format('YYYY-MM-DD HH:mm:ss')
+    // case 3: return time.format('HH:mm')
+    // case 4: return time.format('HH:mm:ss')
+    case 3: {
+      const now = moment()
+      if (time.isSame(now, 'day')) return time.format('HH:mm')
+      if (time.isSame(now, 'year')) return time.format('MM月DD日')
+      return time.format('YYYY-MM-DD')
+    }
+    default: return time.format('YYYY-MM-DD HH:mm:ss')
   }
 }
 
