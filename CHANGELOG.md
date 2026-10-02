@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.11.1...yunzai-df-plugin-v2.12.0) (2026-10-02)
+
+
+### ✨ 新功能
+
+* **CodeUpdate:** 添加时间格式配置选项 ([52f4ec1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/52f4ec128221c336c1a82757d8e51cb3744faead))
+
 ## [2.11.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.11.0...yunzai-df-plugin-v2.11.1) (2026-08-31)
 
 
