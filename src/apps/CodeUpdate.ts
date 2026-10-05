@@ -42,7 +42,7 @@ export class GitRepoUpdate extends plugin<'message'> {
     if (ret === false) return false
     if (!push) {
       return e.reply(ret > 0
-        ? `检查完成，共有${ret}个仓库有更新，已按照配置尝试推送`
+        ? `检查完成，共有${ret}个仓库有更新，正在按照你的配置进行推送哦~`
         : '检查完成，没有发现仓库有更新')
     }
   }
