@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { FacePoke } from '@/modules'
 import { getCodeUpdateTranslateName, translateCodeUpdateTextInfo } from './translate'
+import { escapeSingleTildes } from './tilde'
 import {
   GitCommitDataType,
   GitReleaseDataType,
@@ -126,7 +127,7 @@ async function formatMessageInfo (message?: string): Promise<{ text: string, tra
   if (!rest) return { text: lines.join('<br>'), translated }
 
   const body = await translateCodeUpdateTextInfo(rawRest, { markdown: true })
-  const renderBody = body.text.trim()
+  const renderBody = escapeSingleTildes(body.text.trim())
   translated ||= body.translated
 
   let tokens
@@ -257,7 +258,7 @@ export async function formatReleaseInfo (
   const authorTime = publishedAt ? `<span>${timeAgo(publishedAt)}</span>` : '未知'
   const releaseName = await translateCodeUpdateTextInfo(name || tagName || '未命名发布')
   const releaseBody = await translateCodeUpdateTextInfo(replaceEmojiCodes(body || ''), { markdown: true })
-  const releaseText = marked(releaseBody.text)
+  const releaseText = marked(escapeSingleTildes(releaseBody.text))
   const translated = releaseName.translated || releaseBody.translated
 
   return {
