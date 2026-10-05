@@ -1,4 +1,3 @@
-import { marked } from 'marked'
 import { timeAgo, Data } from '@/utils'
 import config from '@/config'
 import { ResPath } from '@/dir'
@@ -6,7 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { FacePoke } from '@/modules'
 import { getCodeUpdateTranslateName, translateCodeUpdateTextInfo } from './translate'
-import { escapeSingleTildes } from './tilde'
+import { markdown } from './markdown'
 import {
   GitCommitDataType,
   GitReleaseDataType,
@@ -127,22 +126,22 @@ async function formatMessageInfo (message?: string): Promise<{ text: string, tra
   if (!rest) return { text: lines.join('<br>'), translated }
 
   const body = await translateCodeUpdateTextInfo(rawRest, { markdown: true })
-  const renderBody = escapeSingleTildes(body.text.trim())
+  const renderBody = body.text
   translated ||= body.translated
 
   let tokens
   try {
-    tokens = marked.lexer(renderBody)
+    tokens = markdown.lexer(renderBody)
   } catch {
     return { text: [lines[0], ...body.text.split('\n')].join('<br>'), translated }
   }
 
-  const isMarkdown = tokens.some(
-    token => token.type !== 'paragraph' || token.raw.includes('\n')
-  )
+  const isMarkdown = tokens.some(token => token.type === 'paragraph'
+    ? token.tokens?.some(inline => inline.type !== 'text')
+    : token.type !== 'space')
 
   const text = isMarkdown
-    ? `${lines[0]}<br>${marked(renderBody)}`
+    ? `${lines[0]}<br>${markdown.parser(tokens)}`
     : [lines[0], ...body.text.split('\n')].join('<br>')
 
   return { text, translated }
@@ -258,12 +257,12 @@ export async function formatReleaseInfo (
   const authorTime = publishedAt ? `<span>${timeAgo(publishedAt)}</span>` : '未知'
   const releaseName = await translateCodeUpdateTextInfo(name || tagName || '未命名发布')
   const releaseBody = await translateCodeUpdateTextInfo(replaceEmojiCodes(body || ''), { markdown: true })
-  const releaseText = marked(escapeSingleTildes(releaseBody.text))
+  const releaseText = markdown.parse(releaseBody.text, { async: false })
   const translated = releaseName.translated || releaseBody.translated
 
   return {
     release: true,
-    avatar: author?.avatar_url,
+    avatar: { is: false, author: author?.avatar_url },
     icon: await getIcon(source),
     name: {
       source,

@@ -5,6 +5,7 @@ const DEFAULT_TRANSLATE_API = 'https://translate.googleapis.com/translate_a/sing
 const DEFAULT_TRANSLATE_NAME = 'Google 翻译'
 const TARGET_LANG = 'zh-CN'
 const MAX_CHUNK_LENGTH = 1200
+const MAX_CACHE_SIZE = 200
 const cache = new Map<string, Promise<string>>()
 
 interface TranslateInfo {
@@ -48,7 +49,7 @@ async function translateMarkdown (text: string): Promise<string> {
   const lines = text.split('\n')
   const result: string[] = []
   let buffer: string[] = []
-  let inCodeBlock = false
+  let fence: string | undefined
 
   const flush = async () => {
     if (!buffer.length) return
@@ -57,14 +58,17 @@ async function translateMarkdown (text: string): Promise<string> {
   }
 
   for (const line of lines) {
-    if (/^\s*(```|~~~)/.test(line)) {
-      await flush()
-      inCodeBlock = !inCodeBlock
+    if (fence) {
       result.push(line)
+      const end = /^\s*(`{3,}|~{3,})[ \t\r]*$/.exec(line)?.[1]
+      if (end && end[0] === fence[0] && end.length >= fence.length) fence = undefined
       continue
     }
 
-    if (inCodeBlock) {
+    const start = /^\s*(`{3,}|~{3,})(.*)$/.exec(line)
+    if (start && (start[1][0] !== '`' || !start[2].includes('`'))) {
+      await flush()
+      fence = start[1]
       result.push(line)
     } else {
       buffer.push(line)
@@ -91,26 +95,31 @@ async function translatePlainText (text: string): Promise<string> {
 async function translateChunk (text: string): Promise<string> {
   if (!shouldTranslate(text)) return text
 
-  const key = `${TARGET_LANG}:${text}`
-  if (!cache.has(key)) {
-    cache.set(
-      key,
-      requestTranslate(text).catch((error) => {
-        cache.delete(key)
-        logger.warn(`[CodeUpdate] 翻译失败: ${error instanceof Error ? error.message : String(error)}`)
-        return text
-      })
-    )
+  const key = JSON.stringify([config.CodeUpdate?.TranslateApi || DEFAULT_TRANSLATE_API, TARGET_LANG, text])
+  const cached = cache.get(key)
+  if (cached) return cached
+
+  const pending: Promise<string> = requestTranslate(text).catch((error) => {
+    logger.warn(`[CodeUpdate] 翻译失败: ${error instanceof Error ? error.message : String(error)}`)
+    return undefined
+  }).then((translated) => {
+    if (translated === undefined && cache.get(key) === pending) cache.delete(key)
+    return translated ?? text
+  })
+  cache.set(key, pending)
+  if (cache.size > MAX_CACHE_SIZE) {
+    const oldest = cache.keys().next().value
+    if (oldest !== undefined) cache.delete(oldest)
   }
 
-  return cache.get(key) ?? text
+  return pending
 }
 
-async function requestTranslate (text: string): Promise<string> {
+async function requestTranslate (text: string): Promise<string | undefined> {
   const protectedText = protectSegments(text)
   const data = await request.get(buildTranslateUrl(protectedText.text), 'json', { log: 'trace' })
   const translated = parseTranslateResult(data)
-  return translated ? protectedText.restore(translated) : text
+  return translated ? protectedText.restore(translated) : undefined
 }
 
 function buildTranslateUrl (text: string): string {

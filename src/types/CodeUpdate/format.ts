@@ -28,7 +28,7 @@ export interface CommitInfo {
 
 export interface ReleaseInfo {
   release: true
-  avatar?: string
+  avatar: CommitInfo['avatar']
   icon: string
   name: {
     source: string
