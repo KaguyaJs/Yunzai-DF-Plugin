@@ -27,7 +27,7 @@ export const CodeUpdate: GuobaSchemas = [
   {
     field: 'CodeUpdate.AutoBranch',
     label: '自动获取远程默认分支',
-    bottomHelpMessage: '在未指定分支的情况下，启动时自动获取远程仓库的默认分支',
+    bottomHelpMessage: '在未指定分支的情况下，获取更新前自动解析远程仓库的默认分支',
     component: 'Switch'
   },
   {

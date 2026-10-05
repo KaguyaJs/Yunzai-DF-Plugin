@@ -1,140 +1,151 @@
 import config from '@/config'
-import { logger, Data } from '@/utils'
-import { icqq, MessageEvent } from 'trss-yunzai'
+import { logger } from '@/utils'
+import type { icqq, MessageEvent } from 'trss-yunzai'
 import { fetchUpdate } from './services'
 import { pushTouser } from './services/push'
 import { generateScreenshot } from './services/screenshot'
 import GitRepo from '@/utils/GitRepo'
-import { redisHeler, repoPath } from './utils'
-import { autoFillDefaultBranches } from './utils/autoBranch'
+import { redisHeler, repoPath, getRepoKey, getRepoType, getRepoBranch } from './utils'
+import type { RepoConfig } from './utils/repo'
 
-void autoFillDefaultBranches().catch(error => {
-  logger.warn(`自动获取默认分支失败: ${error?.message ?? error}`)
-})
+type Target = { type: 'Group' | 'QQ', id: string, repos: Set<string> }
+let checking = false
 
-/**
- * 检查仓库更新并推送
- * @param isAuto 是否为自动
- * @param e 消息事件
- * @returns 获取的仓库数据数量
- */
+/** Serialize automatic and manual checks; always release the lock. */
 export async function CodeUpdate (isAuto: boolean = true, e?: MessageEvent): Promise<number | false> {
+  if (checking) {
+    if (e) await e.reply('正在检查仓库更新，请稍后再试')
+    return false
+  }
+  checking = true
+  try {
+    return await checkUpdates(isAuto, e)
+  } finally {
+    checking = false
+  }
+}
+
+async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
   const { List } = config.CodeUpdate
   if (!List?.length) {
     logger.warn('未配置推送列表')
     if (e) await e.reply('请先配置需要监听的仓库')
     return false
   }
-  logger.mark(logger.cyan('开始检查仓库更新'))
-
   const repos = getRepos(true)
   if (!repos.length) return false
-  /** 获取到的数据 */
-  const DataMap = await fetchUpdate(repos, isAuto)
-  /** 获取到存在更新的仓库数量 */
-  const num = DataMap.size
-  if (!num) {
+  if (e) await e.reply(`正在${isAuto ? '检查' : '推送'}仓库更新，请稍等`)
+  logger.mark(logger.cyan('开始检查仓库更新'))
+  const updates = await fetchUpdate(repos, isAuto)
+  if (!updates.size) {
     logger.info(logger.yellow('未检测到仓库更新'))
-    return num
-  } else {
-    logger.info(logger.green(`共获取到 ${num} 个仓库更新`))
+    return 0
   }
-  const PashMap = getListMap(List)
-  const imageCache = new Map<string, icqq.ImageElem | icqq.ImageElem[]>()
+  logger.info(logger.green(`共获取到 ${updates.size} 个仓库更新`))
   if (!isAuto && e) {
-    const img = await generateScreenshot(Array.from(DataMap.values()), String(e.user_id))
-    if (img) await e.reply(img)
-    return num
-  } else {
-    for (const [type, value] of Object.entries(PashMap)) {
-      for (const [id, repo] of Object.entries(value)) {
-        let img
-        if (!repo.size) continue
-        const Key = Data.getSetKey(repo)
-        if (imageCache.get(Key)) {
-          img = imageCache.get(Key)
-        } else {
-          const repoInfo = Array.from(repo)
-            .map(i => DataMap.get(i))
-            .filter(i => i !== undefined)
-          if (!repoInfo.length) continue
-          img = await generateScreenshot(repoInfo, String(id))
-          if (img) imageCache.set(Key, img)
+    const image = await generateScreenshot(Array.from(updates.values(), update => update.info), String(e.user_id))
+    if (!image) {
+      await e.reply('截图失败，请稍后再试')
+      return false
+    }
+    await e.reply(image)
+    return updates.size
+  }
+
+  const targets = getTargets(List)
+  const images = new Map<string, icqq.ImageElem | icqq.ImageElem[]>()
+  const failed = new Set<string>()
+  for (const [targetKey, { type, id, repos }] of targets) {
+    const assigned = Array.from(repos).filter(key => updates.has(key))
+    if (!assigned.length) continue
+    try {
+      const pending: string[] = []
+      for (const key of assigned) {
+        const update = updates.get(key)!
+        const deliveryKey = redisHeler.getDeliveryKey(update.redisKey, targetKey)
+        if (!isAuto || !await redisHeler.isUpdate(deliveryKey, update.sha)) pending.push(key)
+      }
+      if (!pending.length) continue
+      const imageKey = JSON.stringify(pending.sort())
+      let image = images.get(imageKey)
+      if (!image) {
+        const content = pending.map(key => updates.get(key)!.info)
+        const result = await generateScreenshot(content, id)
+        if (!result || (Array.isArray(result) && !result.length)) throw new Error('截图失败')
+        image = result
+        images.set(imageKey, image)
+      }
+      if (!await pushTouser(type, id, image)) throw new Error('消息发送失败')
+      if (isAuto) {
+        for (const key of pending) {
+          const update = updates.get(key)!
+          await redisHeler.updatesSha(redisHeler.getDeliveryKey(update.redisKey, targetKey), update.sha)
         }
-        if (!img) {
-          logger.warn('[CodeUpdate] 截图失败')
-          continue
-        }
-        void pushTouser(type as 'QQ' | 'Group', id, img)
+      }
+    } catch (error) {
+      assigned.forEach(key => failed.add(key))
+      logger.error(`推送仓库更新至 ${type} ${id} 失败: `, error)
+    }
+  }
+  if (isAuto) {
+    for (const [key, update] of updates) {
+      if (!failed.has(key) && Array.from(targets.values()).some(target => target.repos.has(key))) {
+        await redisHeler.updatesSha(update.redisKey, update.sha)
       }
     }
-    return num
   }
+  return updates.size
 }
 
-/**
- * 将配置列表转换为分组映射对象
- *
- * @description 根据提供的配置数据，生成一个包含Group和QQ两个映射的对象。
- * 每个映射将ID映射到对应的仓库集合。支持自动路径填充和排除项配置。
- *
- * @param data - 代码更新配置列表数据
- * @returns 返回包含两个映射对象的结果：
- *   - Group: 群组ID到仓库集合的映射
- *   - QQ: QQ号到仓库集合的映射
- *
- * @example
- * ```typescript
- * const listMap = getListMap(config.CodeUpdate.List)
- * // listMap.Group[123] // Set<Repo>
- * // listMap.QQ[456789] // Set<Repo>
- * ```
- */
-function getListMap (data: typeof config.CodeUpdate.List) {
-  type Repo = typeof data[number]['repos'][number]
-  return data.reduce((acc, item) => {
-    const fill = (
-      map: Record<string | number, Set<Repo>>,
-      ids: (string | number)[]
-    ) => {
-      ids.forEach(id => {
-        map[id] ||= new Set()
-        item.repos.forEach(r => map[id].add(r))
-        if (item.AutoPath) {
-          GitRepo.PluginPath.forEach(r => {
-            if (Array.isArray(item.Exclude) && item.Exclude.includes(repoPath(r.repo, r.branch))) return
-            map[id].add(r)
-          })
+/** Merge recipient subscriptions by stable repository identity. */
+function getTargets (list: typeof config.CodeUpdate.List) {
+  const targets = new Map<string, Target>()
+  for (const item of list) {
+    const repos = getStrategyRepos(item)
+    for (const type of ['Group', 'QQ'] as const) {
+      for (const id of item[type] ?? []) {
+        const key = `${type}:${id}`
+        let target = targets.get(key)
+        if (!target) {
+          target = { type, id: String(id), repos: new Set() }
+          targets.set(key, target)
         }
-      })
+        repos.forEach(repo => target.repos.add(getRepoKey(repo)))
+      }
     }
-    fill(acc.Group, item.Group ?? [])
-    fill(acc.QQ, item.QQ ?? [])
-    return acc
-  }, {
-    Group: {} as Record<string | number, Set<Repo>>,
-    QQ: {} as Record<string | number, Set<Repo>>,
-  })
+  }
+  return targets
 }
 
-/**
- * 获取配置文件中的所有推送仓库（去重）
- * @param toArray 是否转成数组
- */
-export function getRepos (toArray: true): Array<typeof config.CodeUpdate.List[number]['repos'][number]>
-export function getRepos (toArray: false): Set<typeof config.CodeUpdate.List[number]['repos'][number]>
+function getStrategyRepos (item: typeof config.CodeUpdate.List[number]): RepoConfig[] {
+  const repos = [...item.repos ?? []]
+  if (item.AutoPath) repos.push(...GitRepo.PluginPath.filter(repo => !item.Exclude?.includes(repoPath(repo.repo, repo.branch))))
+  return repos
+}
+
+function getSubscriptions () {
+  return config.CodeUpdate.List.flatMap(getStrategyRepos).filter(Boolean)
+}
+
+export function getRepos (toArray: true): RepoConfig[]
+export function getRepos (toArray: false): Set<RepoConfig>
 export function getRepos (toArray: boolean) {
-  const { List } = config.CodeUpdate
-  const repos = new Set(List.flatMap(i => i.repos).filter(Boolean))
-  if (config.AutoPath) GitRepo.PluginPath.forEach(r => r && repos.add(r))
-  return toArray ? Array.from(repos) : repos
+  const repos = getSubscriptions()
+  const unique = Array.from(new Map(repos.map(repo => [getRepoKey(repo), repo])).values())
+  return toArray ? unique : new Set(unique)
 }
 
-/**
- * 根据配置中获取所有仓库的 Redis Key
- * @returns Redis Key 列表
- */
+/** Include active recipient cursors when cleaning obsolete Redis keys. */
 export function getAllRedisKey () {
-  const repos = getRepos(true)
-  return repos.map(({ provider, repo, branch, type }) => redisHeler.getRedisKey(provider, type === 'commit' ? 'commits' : type, repo, branch))
+  const keys = new Map(getRepos(true).map(repo => [
+    getRepoKey(repo), redisHeler.getRedisKey(repo.provider, getRepoType(repo.type), repo.repo, getRepoBranch(repo))
+  ]))
+  const result = new Set(keys.values())
+  for (const repo of getSubscriptions()) {
+    result.add(redisHeler.getLegacyRedisKey(repo.provider, getRepoType(repo.type), repo.repo, repo.branch))
+  }
+  for (const [target, { repos }] of getTargets(config.CodeUpdate.List)) {
+    for (const repo of repos) result.add(redisHeler.getDeliveryKey(keys.get(repo)!, target))
+  }
+  return Array.from(result)
 }

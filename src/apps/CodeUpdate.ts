@@ -4,9 +4,6 @@ import common from '../../../../lib/common/common'
 import { CodeUpdateRedisKey } from '@/constants'
 import config from '@/config'
 
-/** 锁 */
-let lock = false
-
 export class GitRepoUpdate extends plugin<'message'> {
   constructor () {
     super({
@@ -40,16 +37,12 @@ export class GitRepoUpdate extends plugin<'message'> {
   }
 
   async check (e = this.e) {
-    if (lock) return e.reply('前置流程未完成，请等待完成后再试')
-    lock = true
     const push = e.msg.includes('推送')
-    await e.reply(`正在${push ? '推送' : '检查'}仓库更新，请稍等`)
     const ret = await CodeUpdate(!push, e)
     if (ret === false) return false
-    lock = false
     if (!push) {
       return e.reply(ret > 0
-        ? `检查完成，共有${ret}个仓库有更新，正在按照你的配置进行推送哦~`
+        ? `检查完成，共有${ret}个仓库有更新，已按照配置尝试推送`
         : '检查完成，没有发现仓库有更新')
     }
   }
@@ -74,7 +67,9 @@ export class GitRepoUpdate extends plugin<'message'> {
   async startClear (_: Parameters<typeof this.clear>[0]) {
     const e = this.e
     if (/^#?确认清理$/i.test(e.msg)) {
-      const num = await redis.del(_.redisInvalidKeys)
+      const active = new Set(getAllRedisKey())
+      const invalid = _.redisInvalidKeys.filter(key => !active.has(key))
+      const num = invalid.length ? await redis.del(invalid) : 0
       await e.reply(`✅ 成功清理${num}个无效数据`)
     } else {
       await e.reply('❎ 已取消')

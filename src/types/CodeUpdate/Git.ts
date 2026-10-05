@@ -12,7 +12,7 @@ export interface Commit {
   commit: {
     url: string
     author: null | GitUser
-    committer: null | GitUser1
+    committer: null | GitUser
     message: string
     comment_count: number
     tree: {
@@ -45,16 +45,6 @@ export interface Commit {
  * Metaproperties for Git author/committer information.
  */
 export interface GitUser {
-  name?: string
-  email?: string
-  date?: string
-  [k: string]: unknown
-}
-
-/**
- * Metaproperties for Git author/committer information.
- */
-export interface GitUser1 {
   name?: string
   email?: string
   date?: string

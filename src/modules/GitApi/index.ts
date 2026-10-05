@@ -30,6 +30,8 @@ function basePath (pathname: string) {
 
 function safeUrl (input: string | URL) {
   const url = new URL(input)
+  url.username = ''
+  url.password = ''
   for (const key of ['access_token', 'token']) {
     if (url.searchParams.has(key)) url.searchParams.set(key, 'REDACTED')
   }
@@ -54,7 +56,6 @@ export default new class RepoService {
     source: Provider,
     repo: string,
     method: M,
-    // token?: string,
     sha?: string
   ): Promise<
     M extends 'commits' ? GitCommitDataType | GitCommitDataType[number] | false : GitReleaseDataType | false
@@ -78,7 +79,7 @@ export default new class RepoService {
     if (method === 'commits' && sha) {
       if (isGitea) {
         // Gitea: /{repo}/commits?sha={sha}&page=1
-        url.pathname = `${url.pathname}/${repo}/commits`
+        url.pathname = `${basePath(url.pathname)}/${repo}/commits`
         url.searchParams.set('page', '1')
         url.searchParams.set('sha', sha)
       } else if (isCNB) {
@@ -86,7 +87,7 @@ export default new class RepoService {
         url.pathname = `${basePath(url.pathname)}/${repo}/-/git/commits/${sha}`
       } else {
         // GitHub / Gitcode 等
-        url.pathname = `${url.pathname}/${repo}/commits/${sha}`
+        url.pathname = `${basePath(url.pathname)}/${repo}/commits/${sha}`
         // Gitcode 文件变更信息
         if (isGitcode) url.searchParams.set('show_diff', 'true')
       }
@@ -95,7 +96,7 @@ export default new class RepoService {
         url.pathname = `${basePath(url.pathname)}/${repo}/-/git/${method}`
         url.searchParams.set('page', '1')
       } else {
-        url.pathname = `${url.pathname}/${repo}/${method}`
+        url.pathname = `${basePath(url.pathname)}/${repo}/${method}`
         isGitea ? url.searchParams.set('page', '1') : url.searchParams.set('per_page', '1')
       }
     }
@@ -103,22 +104,8 @@ export default new class RepoService {
       url.searchParams.set('access_token', token)
     }
     const headers = this.getHeaders(source, token)
-    try {
-      logger.trace('请求 URL:', safeUrl(url))
-      const data = await this.fetchData<GitCommitDataType | GitReleaseDataType>(
-        url,
-        headers,
-        repo,
-        source
-      )
-      return data as any
-    } catch (err) {
-      logger.error('获取仓库数据失败', {
-        url: safeUrl(url),
-        err
-      })
-      return false
-    }
+    logger.trace('请求 URL:', safeUrl(url))
+    return await this.fetchData<GitCommitDataType | GitReleaseDataType>(url, headers, repo, source) as any
   }
 
   /**
@@ -138,6 +125,7 @@ export default new class RepoService {
 
     const url = new URL(baseURL)
     url.pathname = `${basePath(url.pathname)}/${repo}${isCNB ? '/-/git/head' : ''}`
+    if (/gitee/i.test(String(source || '')) && token) url.searchParams.set('access_token', token)
 
     const headers = this.getHeaders(source, token)
     const data = await this.fetchData<{ default_branch?: string, name?: string }>(url, headers, repo, source)
@@ -151,13 +139,13 @@ export default new class RepoService {
    * @param token 认证token，会自动添加至请求头
    */
   getHeaders (source?: Provider, token?: string) {
-    const src = String(source || '')
-    // 根据 provider 设置 Accept header（优先使用 provider 精确值）
+    const src = String(source || '').toLowerCase()
+    // 根据 provider 设置 Accept header
     const accept = (() => {
       switch (src) {
-        case 'GitHub':
+        case 'github':
           return 'application/vnd.github+json'
-        case 'Gitee':
+        case 'gitee':
           return 'application/vnd.gitee+json'
         default:
           return 'application/json'
@@ -186,7 +174,10 @@ export default new class RepoService {
         headers,
         log: false
       })
-      if (!response) return false
+      if (!response) {
+        logger.error(`请求 ${String(source)} 失败: ${String(repo)}，网络请求未成功或已超时`)
+        return false
+      }
 
       if (!response.ok) {
         let msg = `状态码：${response.status} ${response?.statusText || ''}`
@@ -213,13 +204,13 @@ export default new class RepoService {
 
       const contentType = response.headers?.get?.('content-type') ?? ''
       if (!contentType.includes('application/json')) {
-        logger.error(`响应非 JSON 格式: ${safeUrl(url)} , 内容：${await response.text()}`)
+        logger.error(`响应非 JSON 格式: ${safeUrl(url)}`)
         return false
       }
 
       return await response.json() as T
     } catch (error: any) {
-      logger.error(`请求失败: ${safeUrl(url)}，错误信息: ${error?.stack ?? error}`)
+      logger.error(`请求失败: ${safeUrl(url)}，错误类型: ${error?.name ?? 'Error'}`)
       return false
     }
   }

@@ -26,37 +26,7 @@ export class Request {
     responseType: 'json' | 'text' | 'raw' = 'json',
     options: OptionsType = {}
   ): Promise<T | string | Response | false> {
-    const {
-      log = true,
-      ...fetchOptions
-    } = options
-
-    if (config.proxy.open && config.proxy.url) {
-      fetchOptions.agent = new HttpsProxyAgent(config.proxy.url)
-    }
-    try {
-      if (log) logger.debug(`GET请求URL: ${logger.green(url)}`)
-      const response = await fetch(url, {
-        method: 'GET',
-        ...fetchOptions
-      })
-      if (!response.ok && responseType !== 'raw') {
-        if (log) logger[typeof log === 'boolean' ? 'debug' : log](`GET 请求失败：${response.status} ${response.statusText}`)
-        return false
-      }
-      switch (responseType) {
-        case 'raw':
-          return response
-        case 'text':
-          return response.text()
-        case 'json':
-        default:
-          return response.json() as T
-      }
-    } catch (error) {
-      if (log) logger[typeof log === 'boolean' ? 'error' : log]('GET请求失败:', error)
-      return false
-    }
+    return this.request<T>('GET', url, responseType, options)
   }
 
   /**
@@ -76,13 +46,13 @@ export class Request {
     url: Parameters<typeof fetch>[0],
     body: unknown,
     responseType: 'text',
-    options: OptionsType
+    options?: OptionsType
   ): Promise<string | false>
   async post (
     url: Parameters<typeof fetch>[0],
     body: unknown,
     responseType: 'raw',
-    options: OptionsType
+    options?: OptionsType
   ): Promise<Response | false>
   async post<T = any> (
     url: Parameters<typeof fetch>[0],
@@ -90,34 +60,41 @@ export class Request {
     responseType: 'json' | 'text' | 'raw' = 'json',
     options: OptionsType = {}
   ): Promise<T | string | Response | false> {
+    return this.request<T>('POST', url, responseType, options, body)
+  }
+
+  private async request<T> (
+    method: 'GET' | 'POST',
+    url: Parameters<typeof fetch>[0],
+    responseType: 'json' | 'text' | 'raw',
+    options: OptionsType,
+    body?: unknown
+  ): Promise<T | string | Response | false> {
     const { log = true, ...fetchOptions } = options
-
-    if (config.proxy.open && config.proxy.url) {
-      fetchOptions.agent = new HttpsProxyAgent(config.proxy.url)
-    }
-
     try {
-      if (log) logger[typeof log === 'boolean' ? 'debug' : log](`POST请求URL: ${logger.green(url)}`)
+      if (fetchOptions.signal === undefined) fetchOptions.signal = AbortSignal.timeout(30_000)
+      if (config.proxy.open && config.proxy.url) fetchOptions.agent = new HttpsProxyAgent(config.proxy.url)
+      if (log) logger[typeof log === 'boolean' ? 'debug' : log](`${method}请求URL: ${logger.green(url)}`)
       const response = await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(body),
+        method,
+        ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
         ...fetchOptions
       })
       if (!response.ok && responseType !== 'raw') {
-        if (log) logger[typeof log === 'boolean' ? 'error' : log](`POST 请求失败：${response.status} ${response.statusText}`)
+        if (log) logger[typeof log === 'boolean' ? (method === 'GET' ? 'debug' : 'error') : log](`${method} 请求失败：${response.status} ${response.statusText}`)
         return false
       }
       switch (responseType) {
         case 'raw':
           return response
         case 'text':
-          return response.text()
+          return await response.text()
         case 'json':
         default:
-          return response.json() as T
+          return await response.json() as T
       }
     } catch (error) {
-      if (log) logger[typeof log === 'boolean' ? 'error' : log]('POST请求失败:', error)
+      if (log) logger[typeof log === 'boolean' ? 'error' : log](`${method}请求失败:`, error)
       return false
     }
   }

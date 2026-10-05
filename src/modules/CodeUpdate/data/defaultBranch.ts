@@ -1,1 +1,1 @@
-export const defaultBranchMap = new Map<string, string>()
+export const defaultBranchMap = new Map<string, Promise<string>>()
