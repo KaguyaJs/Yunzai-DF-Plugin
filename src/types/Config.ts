@@ -150,7 +150,7 @@ export interface Config {
      *
      * @default "hitokoto"
      */
-    textMode: 'hitokoto' | 'list'
+    textMode: 'hitokoto' | 'list' | 'text'
     /**
      * 戳一戳文本列表
      *

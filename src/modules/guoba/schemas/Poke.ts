@@ -76,7 +76,7 @@ export const Poke: GuobaSchemas = [
     componentProps: {
       options: [
         { label: '一言', value: 'hitokoto' },
-        { label: '自定义文字列表', value: 'text' }
+        { label: '自定义文字列表', value: 'list' }
       ]
     },
     required: true

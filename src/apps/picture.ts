@@ -1,12 +1,13 @@
 import config from '@/config'
 import { apiHandlers, FacePoke } from '@/modules'
-import { FaceList, FaceAliasIndex, FaceNames } from '@/data'
+import { FaceAliasIndex, FaceNames } from '@/data'
+import _ from 'lodash'
 
 const apiRegList = apiHandlers.map(i => `(?:${i.reg instanceof RegExp ? i.reg.source : i.reg})$`)
 // Api表情正则
 const apiPictureRegx = new RegExp(`^#?(?:来张|看看|随机)(${apiRegList.join('|')})`, 'i')
 // DF表情正则
-const facePictureRegx = new RegExp(`^#?(?:来张|看看|随机)(${FaceNames.map(i => `(?:${i})`).join('|')})$`, 'i')
+const facePictureRegx = new RegExp(`^#?(?:来张|看看|随机)(${FaceNames.map(i => `(?:${_.escapeRegExp(i)})`).join('|')})$`, 'i')
 
 export class RandomPictures extends plugin<'message'> {
   constructor () {
@@ -56,9 +57,9 @@ export class RandomPictures extends plugin<'message'> {
       logger.mark('随机表情已禁用')
       return false
     }
-    const type = facePictureRegx.exec(e.msg)?.[1]
+    const type = facePictureRegx.exec(e.msg)?.[1]?.toLowerCase()
     if (!type) return false
-    const name = FaceList.includes(type) ? type : FaceAliasIndex[type] ?? ''
+    const name = FaceAliasIndex[type] ?? ''
     if (!name) return false
     if (config.Picture.faceDisable.includes(name)) {
       logger.mark(`随机表情 ${name} 已禁用`)

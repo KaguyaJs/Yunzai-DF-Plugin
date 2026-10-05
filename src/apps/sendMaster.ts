@@ -46,25 +46,25 @@ export class sendMasterMsg extends plugin {
     const REDISCDKEY = `${REDISKEY}:cd`
     const rawCd = Number(cd)
     const cdTime = Number.isFinite(rawCd) ? Math.max(0, Math.trunc(rawCd)) : 0
-    if (!e.isMaster) {
-      if (!open) return e.reply('❎ 该功能暂未开启，请先让主人开启才能用哦', true)
-      if (cdTime > 0) {
-        const ttl = await redis.ttl(REDISCDKEY)
-        if (ttl > 0) {
-          return e.reply('❎ 操作频繁，请稍后再试', true)
-        } else if (ttl === -1) {
-          await redis.del(REDISCDKEY)
-        }
-      }
-      if (banWords.some(item => e.msg.includes(item))) return e.reply('❎ 消息包含违禁词，请检查后重试', true)
-      if (banUser.includes(e.user_id)) return e.reply('❎ 对不起，您不可用', true)
-      if (e.isGroup && banGroup.includes(e.group_id)) return e.reply('❎ 该群暂不可用该功能', true)
-    }
-
     Sending = true
 
     try {
-      const message = utils.ReplaceMessage(e, /#联系主人/)
+      if (!e.isMaster) {
+        if (!open) return e.reply('❎ 该功能暂未开启，请先让主人开启才能用哦', true)
+        if (cdTime > 0) {
+          const ttl = await redis.ttl(REDISCDKEY)
+          if (ttl > 0) {
+            return e.reply('❎ 操作频繁，请稍后再试', true)
+          } else if (ttl === -1) {
+            await redis.del(REDISCDKEY)
+          }
+        }
+        if (banWords.some(item => e.msg.includes(item))) return e.reply('❎ 消息包含违禁词，请检查后重试', true)
+        if (banUser.includes(e.user_id)) return e.reply('❎ 对不起，您不可用', true)
+        if (e.isGroup && banGroup.includes(e.group_id)) return e.reply('❎ 该群暂不可用该功能', true)
+      }
+
+      const message = utils.ReplaceMessage(e, /#?联系主人/)
       if (message.length === 0) return e.reply('❎ 消息不能为空')
       const msgId = ulid().slice(-5)
       const data = {

@@ -35,7 +35,7 @@ export async function sendMasterMsg (
       const MsgRet: Record<string, Record<string, MessageRet>> = {}
       for (const master of masterList) {
         const bot = Number(botUin) || String(botUin)
-        if (MsgRet[bot]) MsgRet[bot] = {}
+        MsgRet[bot] ??= {}
         MsgRet[bot][master] = await common.relpyPrivate(master, msg, bot)
         await common.sleep(1000)
       }

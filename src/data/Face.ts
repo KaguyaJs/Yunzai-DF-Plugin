@@ -37,15 +37,15 @@ if (await Data.isDirectory(FacePath)) {
 }
 
 /**
- * 表情别名反向索引
+ * 表情名称和别名反向索引（小写）
  *
  * @example
- * { "别名1": "name", "别名2": "name" }
+ * { "name": "name", "别名1": "name", "别名2": "name" }
  */
-export const FaceAliasIndex: Record<string, string> = Object.fromEntries(
-  Object.entries(FaceAlias)
-    .flatMap(([k, a]) => a.map(v => [v, k]))
-)
+export const FaceAliasIndex: Record<string, string> = Object.fromEntries([
+  ...Object.entries(FaceAlias).flatMap(([k, a]) => a.map(v => [v.toLowerCase(), k])),
+  ...FaceList.map(name => [name.toLowerCase(), name])
+])
 
 /** 表情包名称 + 别名 */
 export const FaceNames = Object.entries(FaceAlias).flatMap(([key, arr]) => [key, ...arr])

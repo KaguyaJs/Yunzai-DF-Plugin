@@ -94,7 +94,7 @@ export class Poke extends plugin<'notice.*.poke'> {
       const text = _.sample(data)
       logger.debug(`${this.LogText} 获取一言文字:`, text)
       return text || null
-    } else if (textMode === 'list') {
+    } else if (textMode === 'list' || textMode === 'text') {
       if (!(Array.isArray(textList) && textList.length > 0)) {
         logger.warn(`${this.LogText} 获取自定义戳一戳文本失败，返回为空`)
         return null
