@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.12.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.12.0...yunzai-df-plugin-v2.12.1) (2026-10-05)
+
+
+### 🐛 Bug 修复
+
+* **CodeUpdate:** 修复订阅去重、默认分支与推送失败重试 ([15cf5e4](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/15cf5e4b85bca1c51850a3b33147c182a2985c96))
+* **CodeUpdate:** 恢复仓库更新检查提示文案 ([28bc20e](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/28bc20ee282afb401ea3019b5d96dcade8174bc0))
+* **CodeUpdate:** 正文里的单个波浪号不再被当成删除线 ([#72](https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues/72)) ([33a723c](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/33a723c656f92c6cc0fa9059699fe22452dd5981))
+* **CodeUpdate:** 简化 Markdown 渲染并修复翻译与头像显示 ([0badf11](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/0badf11161bedc87eee70c00570e67d3e005b755))
+* 修复联系主人、图片匹配和戳一戳配置 ([11eb73b](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/11eb73b926ddc40365bcf2e8c2ff90b6ead711c8))
+
 ## [2.12.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.11.1...yunzai-df-plugin-v2.12.0) (2026-10-02)
 
 
