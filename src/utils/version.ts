@@ -24,6 +24,9 @@ if (Array.isArray(Bot.uin)) {
 } else if (yunzaiPackage.name === 'miao-yunzai') {
   yunzaiName = 'Miao-Yunzai'
   isMiao = true
+} else if (yunzaiPackage.name === 'MangoCat-Yunzai') {
+  yunzaiName = 'MangoCat-Yunzai'
+  isMiao = true
 } else {
   yunzaiName = yunzaiPackage.name
   throw new Error(`不支持的Yunzai版本: ${yunzaiName}`)
