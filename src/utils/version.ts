@@ -18,7 +18,10 @@ let yunzaiName: string = 'Yunzai'
 let isTRSS: boolean = false
 let isMiao: boolean = false
 
-if (Array.isArray(Bot.uin)) {
+if (yunzaiPackage.name === 'MangoCat-Yunzai') {
+  yunzaiName = 'MangoCat-Yunzai'
+  isMiao = true
+} else if (Array.isArray(Bot.uin)) {
   yunzaiName = 'TRSS-Yunzai'
   isTRSS = true
 } else if (yunzaiPackage.name === 'miao-yunzai') {
