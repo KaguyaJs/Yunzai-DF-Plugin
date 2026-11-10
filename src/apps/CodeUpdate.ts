@@ -1,5 +1,5 @@
 import { CodeUpdate, getAllRedisKey } from '@CodeUpdate'
-import { Loading } from '@/utils'
+import { Loading, logger } from '@/utils'
 import common from '../../../../lib/common/common'
 import { CodeUpdateRedisKey } from '@/constants'
 import config from '@/config'
@@ -49,31 +49,42 @@ export class GitRepoUpdate extends plugin<'message'> {
 
   async clear (e: typeof this.e & { redisInvalidKeys: string[] }) {
     if (Loading) return e.reply('❎ 请等待本地仓库载入完成哦~')
-    const ConfigKeys = getAllRedisKey()
-    const RedisKeys = await redis.keys(`${CodeUpdateRedisKey}:*`)
+    try {
+      const ConfigKeys = await getAllRedisKey()
+      const RedisKeys = await redis.keys(`${CodeUpdateRedisKey}:*`)
 
-    const invalidKeys = RedisKeys.filter(i => !ConfigKeys.includes(i))
-    const { length } = invalidKeys
-    if (length > 0) {
-      await e.reply(`⚠️ 本次需清理${length}个key, 如需清理请发送 #确认清理`)
-      e.redisInvalidKeys = invalidKeys
-      await e.reply(await common.makeForwardMsg(e, ['无效键名列表', ...invalidKeys]))
-      this.setContext('startClear')
-    } else {
-      return e.reply('✅ 你的设备很干净，无需清理')
+      const invalidKeys = RedisKeys.filter(i => !ConfigKeys.includes(i))
+      const { length } = invalidKeys
+      if (length > 0) {
+        await e.reply(`⚠️ 本次需清理${length}个key, 如需清理请发送 #确认清理`)
+        e.redisInvalidKeys = invalidKeys
+        await e.reply(await common.makeForwardMsg(e, ['无效键名列表', ...invalidKeys]))
+        this.setContext('startClear')
+      } else {
+        return e.reply('✅ 你的设备很干净，无需清理')
+      }
+    } catch (error) {
+      logger.error('查询无效仓库记录失败: ', error)
+      return e.reply('❎ 获取仓库记录失败，本次清理已取消，请稍后重试')
     }
   }
 
   async startClear (_: Parameters<typeof this.clear>[0]) {
     const e = this.e
-    if (/^#?确认清理$/i.test(e.msg)) {
-      const active = new Set(getAllRedisKey())
-      const invalid = _.redisInvalidKeys.filter(key => !active.has(key))
-      const num = invalid.length ? await redis.del(invalid) : 0
-      await e.reply(`✅ 成功清理${num}个无效数据`)
-    } else {
-      await e.reply('❎ 已取消')
+    try {
+      if (/^#?确认清理$/i.test(e.msg)) {
+        const active = new Set(await getAllRedisKey())
+        const invalid = _.redisInvalidKeys.filter(key => !active.has(key))
+        const num = invalid.length ? await redis.del(invalid) : 0
+        await e.reply(`✅ 成功清理${num}个无效数据`)
+      } else {
+        await e.reply('❎ 已取消')
+      }
+    } catch (error) {
+      logger.error('清理无效仓库记录失败: ', error)
+      await e.reply('❎ 清理失败，请稍后重试')
+    } finally {
+      this.finish('startClear')
     }
-    this.finish('startClear')
   }
 }

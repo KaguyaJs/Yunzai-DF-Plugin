@@ -31,10 +31,10 @@ export function supportGuoba (): GuobaType {
       getConfigData () {
         return Config.config
       },
-      setConfigData (data, { Result }) {
+      async setConfigData (data, { Result }) {
         for (const k in data) {
-          const [name, key] = k.split('.')
-          void Config.modify(name, key, data[k])
+          const [name, ...keys] = k.split('.')
+          await Config.modify(name, keys.join('.'), data[k])
         }
         return Result.ok({}, 'Ciallo～(∠・ω< )⌒☆')
       },

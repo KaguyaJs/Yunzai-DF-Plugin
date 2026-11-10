@@ -1,4 +1,4 @@
-import { CodeUpdateRedisKey } from '@/constants'
+import { CodeUpdateRedisKey } from '@/constants/Redis'
 import type { GitApiMethod, ActivityJournal } from '@/types'
 
 const PROVIDERS: Record<string, string> = { github: 'GitHub', gitee: 'Gitee', gitcode: 'Gitcode', cnb: 'CNB' }

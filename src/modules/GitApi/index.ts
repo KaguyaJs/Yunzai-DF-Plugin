@@ -15,13 +15,9 @@ const DEFAULT_API: Record<string, string> = {
  */
 function apiUrlFor (source: Provider): { apiUrl?: string; token?: string } {
   const cfg = config?.CodeUpdate?.repos ?? []
-  const custom: Record<string, { apiUrl: string; token?: string }> = cfg.reduce((acc, item) => {
-    if (item.provider && item.ApiUrl) acc[item.provider.toLowerCase()] = { apiUrl: item.ApiUrl, token: item.token ?? '' }
-    return acc
-  }, {} as Record<string, { apiUrl: string; token: string }>)
   const name = String(source || '').toLowerCase()
-  const result = custom[name] || (DEFAULT_API[name] ? { apiUrl: DEFAULT_API[name] } : {})
-  return result
+  const item = cfg.findLast(item => item.provider?.toLowerCase() === name)
+  return { apiUrl: item?.ApiUrl || DEFAULT_API[name], token: item?.token }
 }
 
 function basePath (pathname: string) {
@@ -84,10 +80,10 @@ export default new class RepoService {
         url.searchParams.set('sha', sha)
       } else if (isCNB) {
         // cnb: /{repo}/-/git/commits/{sha}
-        url.pathname = `${basePath(url.pathname)}/${repo}/-/git/commits/${sha}`
+        url.pathname = `${basePath(url.pathname)}/${repo}/-/git/commits/${encodeURIComponent(sha)}`
       } else {
         // GitHub / Gitcode 等
-        url.pathname = `${basePath(url.pathname)}/${repo}/commits/${sha}`
+        url.pathname = `${basePath(url.pathname)}/${repo}/commits/${encodeURIComponent(sha)}`
         // Gitcode 文件变更信息
         if (isGitcode) url.searchParams.set('show_diff', 'true')
       }
@@ -110,6 +106,38 @@ export default new class RepoService {
 
   supportsActivity (source: Provider) {
     return /github|gitee|gitcode|gitea/i.test(source)
+  }
+
+  /** Refresh every check; fail rather than accepting a truncated list of branches. */
+  async getBranches (source: Provider, repo: string): Promise<string[] | false> {
+    const { apiUrl, token } = apiUrlFor(source)
+    if (!apiUrl) return false
+    const url = new URL(apiUrl)
+    const repoPath = repo.split('/').map(encodeURIComponent).join('/')
+    url.pathname = `${basePath(url.pathname)}/${repoPath}${/cnb/i.test(source) ? '/-/git/branches' : '/branches'}`
+    if (/gitee/i.test(source) && token) url.searchParams.set('access_token', token)
+    url.searchParams.set(/gitea/i.test(source) ? 'limit' : /cnb/i.test(source) ? 'page_size' : 'per_page', '100')
+    const result = new Set<string>()
+    for (let page = 1; page <= 1000; page++) {
+      url.searchParams.set('page', String(page))
+      const pagination: { hasNext?: boolean } = {}
+      const data = await this.fetchData<{ name: string }[]>(url, this.getHeaders(source, token), repo, source, pagination)
+      if (data === false) return false
+      if (!Array.isArray(data) || data.some(branch => typeof branch?.name !== 'string' || !branch.name)) {
+        logger.error(`${source} ${repo} 的分支接口未返回有效列表`)
+        return false
+      }
+      const count = result.size
+      data.forEach(branch => result.add(branch.name))
+      if (pagination.hasNext === false || !data.length) return Array.from(result)
+      // Some providers cap page size below the requested 100; read until an empty page.
+      if (result.size === count && pagination.hasNext === undefined) {
+        logger.error(`${source} ${repo} 的分支分页未前进，无法确认完整列表`)
+        return false
+      }
+    }
+    logger.error(`${source} ${repo} 的分支数据超过分页上限，跳过本次提交检查`)
+    return false
   }
 
   private activityUrl (source: Provider, repo: string, path: string) {

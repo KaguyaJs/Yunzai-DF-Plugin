@@ -10,9 +10,6 @@ CodeUpdate:
     仓库更新检查Cron表达式
     Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
   Cron: "0 */30 * * * *"
-  AutoBranchTips: |-
-    是否自动给未配置分支的仓库添加默认分支
-  AutoBranch: true
   FirstAddTips: |-
     首次添加仓库(数据库不存在数据库)是否进行一次推送
   FirstAdd: false
@@ -92,8 +89,8 @@ CodeUpdate:
     repos: 
         provider: 仓库提供商，唯一标识符
         repo: 仓库名
-        branch: 分支名 (commits时有效 为空自动获取)
-        type: commits、releases、pulls（PR）或 issues
+        branch: 分支数组，仅commits生效；[]自动获取默认分支，[main, dev]监听多个分支，[all]每次获取并监听所有分支
+        type: 监听类型数组，可同时选择commits、releases、pulls（PR）、issues，例如[commits, pulls, issues]
         events: 监听事件，留空使用新建/关闭/重开，PR另含合并/转为正式
         labels / excludeLabels: 包含任一指定标签 / 排除标签
         authors / excludeAuthors: 作者账号筛选（评论按评论作者）

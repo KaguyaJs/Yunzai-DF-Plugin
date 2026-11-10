@@ -83,7 +83,7 @@ pnpm install
 - `#推送仓库更新`: 不管有没有更新都回复到当前会话，不会推送所有群组
 - 可在配置中开启 `CodeUpdate.Translate`，并通过 `TranslateApi` / `TranslateName` 自定义翻译接口和图片提示名称
 
-支持监听提交（`commits`）、发布（`releases`）、PR（`pulls`）和 Issues（`issues`）。在锅巴的“推送列表 → 监听仓库配置”中选择类型、事件及筛选条件，也可在用户配置中添加：
+支持监听提交（`commits`）、发布（`releases`）、PR（`pulls`）和 Issues（`issues`）。一个仓库条目的 `type` 是数组，锅巴使用多选框，同一仓库可以同时监听多个类型。也可在用户配置中添加：
 
 ```yaml
 CodeUpdate:
@@ -102,20 +102,32 @@ CodeUpdate:
       repos:
         - provider: GitHub
           repo: KaguyaJs/Yunzai-DF-Plugin
-          type: pulls
-          events: [opened, reopened, closed, merged, ready_for_review]
+          type: [commits, releases, pulls, issues]
+          branch: [main, dev]
+          events: [opened, reopened, closed, merged, ready_for_review, commented]
           baseBranches: [main, dev]
           excludeBots: true
           includeDrafts: false
-        - provider: GitHub
-          repo: KaguyaJs/Yunzai-DF-Plugin
-          type: issues
-          events: [opened, closed, reopened, commented]
           labels: [bug]
           excludeLabels: [duplicate]
 ```
 
 将示例群号替换为自己的群号；私聊使用 `QQ` 列表。`provider` 对应“GitApi配置”中的名称，认证令牌及接口地址沿用已有配置。同一仓库可以在不同群配置不同筛选条件，数据会合并获取，再分别筛选。
+
+`branch` 仅控制提交监听；PR 使用 `baseBranches` 筛选目标分支，发布和 Issue 按仓库监听。锅巴分支框可以输入多个名称，按回车添加，也支持逗号分隔。
+
+| 分支配置 | 提交监听范围 |
+| --- | --- |
+| 不填或 `branch: []` | 自动获取远程默认分支，无需开启额外开关 |
+| `branch: [main]` | 仅 main |
+| `branch: [main, dev]` | main 和 dev，分别保存进度 |
+| `branch: [all]` | 每次检查分页获取全部远程分支，包括后来新增的分支 |
+
+手工配置也兼容 `branch: main`、`branch: "main,dev"`、`branch: all`。`all` 与其他名称同时出现时以全部分支为准；`branch: ["", dev]` 可同时监听默认分支和 dev。默认分支名称缓存五分钟后重新获取；默认分支或完整分支列表获取失败时跳过相应提交检查并保留进度，其他类型继续检查。清理无效数据遇到分支查询失败时会中止清理。
+
+初始化会自动将旧的单个 `type` 转为数组，兼容 `commit` 别名；单个分支转为数组。同一策略组内，同仓库且筛选条件和其他设置完全相同的条目会合并，提交分支也会合并。筛选条件不同的条目继续保留，可手工按需求调整，避免 PR 和 Issue 的筛选被混用。旧 `AutoBranch` 设置移除，空分支始终自动解析默认分支。原有提交、发布及 PR/Issue 推送记录继续使用。
+
+迁移先衔接旧 Redis 游标，再等待配置保存成功，最后写入 `DF:ConfigMigration:CodeUpdate:v2`，不设置过期时间。存在标记时后续启动跳过迁移；迁移或保存失败会记录错误并在下次启动重试。该标记不属于无效推送数据清理范围。
 
 | 事件 | 含义 |
 | --- | --- |

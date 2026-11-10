@@ -5,6 +5,7 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import { PluginName, ResPath } from '@/dir'
 import type { Config as config } from '@/types'
+import { migrateCodeUpdateConfig } from './codeUpdateMigration'
 
 class Config {
   plugin_name = PluginName
@@ -31,6 +32,17 @@ class Config {
     })
     this.config = config
     this.configSave = configSave
+
+    try {
+      const migrated = await migrateCodeUpdateConfig(this.config.CodeUpdate, this.configSave, {
+        get: key => redis.get(key),
+        set: (key, value) => redis.set(key, value),
+        copy: (key, value) => redis.set(key, value, { NX: true })
+      })
+      if (migrated) logger.mark('[DF] 仓库监听配置迁移完成')
+    } catch (error) {
+      logger.error('[DF] 仓库监听配置迁移未完成，下次启动将重试；本次继续兼容旧配置', error)
+    }
 
     return this
   }
@@ -100,8 +112,17 @@ class Config {
    * @param value 修改的value值
    */
   modify (name: string, key: string, value: unknown) {
-    if (typeof this.config[name] !== 'object') { this.config[name] = {} }
-    this.config[name][key] = value
+    const keys = [name, ...key.split('.')]
+    // Block prototype keys while traversing nested settings.
+    if (keys.some(key => !key || ['__proto__', 'prototype', 'constructor'].includes(key))) {
+      throw new Error('无效的配置路径')
+    }
+    let target = this.config
+    for (const part of keys.slice(0, -1)) {
+      if (!target[part] || typeof target[part] !== 'object') target[part] = {}
+      target = target[part]
+    }
+    target[keys[keys.length - 1]] = value
     return this.configSave()
   }
 

@@ -1,28 +1,27 @@
-import type { Config } from '@/types'
+import type { RepoConfig } from './repo'
 import GitApi from '@/modules/GitApi'
 import { defaultBranchMap } from '@CodeUpdate/data'
-import { logger } from '@/utils'
-import config from '@/config'
 
 /** 解析请求分支，保留用户配置及其缓存标识。 */
-export async function resolveBranch (cfg: Config['CodeUpdate']['List'][number]['repos'][number]): Promise<string> {
+export async function resolveBranch (cfg: RepoConfig): Promise<string> {
   const { provider, repo, branch, type } = cfg
-  if (branch || !config.CodeUpdate.AutoBranch || (type !== 'commits' && type !== 'commit')) return branch ?? ''
+  if (type !== 'commits' && type !== 'commit') return ''
+  if (branch) return branch
 
   const key = `${provider.toLowerCase()}:${repo}`
-  let pending = defaultBranchMap.get(key)
-  if (!pending) {
-    pending = GitApi.getDefaultBranch(provider, repo)
+  let cached = defaultBranchMap.get(key)
+  if (!cached || cached.expires <= Date.now()) {
+    const pending = GitApi.getDefaultBranch(provider, repo)
       .then(defaultBranch => {
-        if (!defaultBranch) defaultBranchMap.delete(key)
-        return defaultBranch || ''
+        if (!defaultBranch) throw new Error(`获取 ${provider} ${repo} 的默认分支失败，跳过本次提交检查`)
+        return defaultBranch
       })
-      .catch((error: any) => {
+      .catch(error => {
         defaultBranchMap.delete(key)
-        logger.warn(`获取 ${provider} 的默认分支失败 ${repo}: ${error?.name ?? 'Error'}`)
-        return ''
+        throw error
       })
-    defaultBranchMap.set(key, pending)
+    cached = { pending, expires: Date.now() + 5 * 60 * 1000 }
+    defaultBranchMap.set(key, cached)
   }
-  return pending
+  return cached.pending
 }

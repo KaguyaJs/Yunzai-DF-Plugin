@@ -4,9 +4,9 @@ import type { icqq, MessageEvent } from 'trss-yunzai'
 import { fetchUpdate } from './services'
 import { pushTouser } from './services/push'
 import { generateScreenshot } from './services/screenshot'
-import GitRepo from '@/utils/GitRepo'
-import { redisHeler, repoPath, getRepoKey, getRepoType, getRepoBranch } from './utils'
-import type { RepoConfig, SubscriptionTarget } from './utils/repo'
+import { redisHeler, getRepoKey, getRepoType, getRepoBranch } from './utils'
+import type { RepoConfig } from './utils/repo'
+import { subscriptionSnapshot } from './services/subscriptions'
 import { activityOptions, isActivityMethod } from './utils/activity'
 import type { RepositoryUpdate } from './services/repo'
 
@@ -33,12 +33,14 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
     if (e) await e.reply('请先配置需要监听的仓库')
     return false
   }
-  const repos = getRepos(true)
-  if (!repos.length) return false
   if (e) await e.reply(`正在${isAuto ? '检查' : '推送'}仓库更新，请稍等`)
   logger.mark(logger.cyan('开始检查仓库更新'))
-  const targets = getTargets(List)
-  const updates = await fetchUpdate(repos, isAuto, targets, getSubscriptions())
+  const { repos, targets, subscriptions, complete } = await subscriptionSnapshot()
+  if (!repos.length) {
+    if (e) await e.reply(complete ? '当前没有可检查的仓库，请检查监听配置' : '获取仓库或分支列表失败，请稍后重试')
+    return false
+  }
+  const updates = await fetchUpdate(repos, isAuto, targets, subscriptions)
   if (!updates.size) {
     logger.info(logger.yellow('未检测到仓库更新'))
     return 0
@@ -126,62 +128,28 @@ function withActivityLinks (image: icqq.ImageElem | icqq.ImageElem[], updates: R
   return links.length ? [...(Array.isArray(image) ? image : [image]), `\n${links.join('\n')}`] : image
 }
 
-/** Merge recipient subscriptions by stable repository identity. */
-function getTargets (list: typeof config.CodeUpdate.List) {
-  const targets = new Map<string, SubscriptionTarget>()
-  for (const item of list) {
-    const repos = getStrategyRepos(item)
-    for (const type of ['Group', 'QQ'] as const) {
-      for (const id of item[type] ?? []) {
-        const key = `${type}:${id}`
-        let target = targets.get(key)
-        if (!target) {
-          target = { type, id: String(id), repos: new Map() }
-          targets.set(key, target)
-        }
-        for (const repo of repos) {
-          const repoKey = getRepoKey(repo)
-          const rules = target.repos.get(repoKey) ?? []
-          rules.push(repo)
-          target.repos.set(repoKey, rules)
-        }
-      }
-    }
-  }
-  return targets
-}
-
-function getStrategyRepos (item: typeof config.CodeUpdate.List[number]): RepoConfig[] {
-  const repos = [...item.repos ?? []]
-  if (item.AutoPath) repos.push(...GitRepo.PluginPath.filter(repo => !item.Exclude?.includes(repoPath(repo.repo, repo.branch))))
-  return repos
-}
-
-function getSubscriptions () {
-  return config.CodeUpdate.List.flatMap(getStrategyRepos).filter(Boolean)
-}
-
-export function getRepos (toArray: true): RepoConfig[]
-export function getRepos (toArray: false): Set<RepoConfig>
-export function getRepos (toArray: boolean) {
-  const repos = getSubscriptions()
-  const unique = Array.from(new Map(repos.map(repo => [getRepoKey(repo), repo])).values())
-  return toArray ? unique : new Set(unique)
+export function getRepos (toArray: true): Promise<RepoConfig[]>
+export function getRepos (toArray: false): Promise<Set<RepoConfig>>
+export async function getRepos (toArray: boolean) {
+  const { repos } = await subscriptionSnapshot()
+  return toArray ? repos : new Set(repos)
 }
 
 /** Include active recipient cursors when cleaning obsolete Redis keys. */
-export function getAllRedisKey () {
-  const keys = new Map(getRepos(true).map(repo => [
+export async function getAllRedisKey () {
+  const { repos, subscriptions, targets, complete } = await subscriptionSnapshot()
+  if (!complete) throw new Error('仓库或分支列表获取未完成，无法确认哪些记录有效；本次不清理')
+  const keys = new Map(repos.map(repo => [
     getRepoKey(repo), redisHeler.getRedisKey(repo.provider, getRepoType(repo.type), repo.repo, getRepoBranch(repo))
   ]))
   const result = new Set(keys.values())
-  for (const repo of getRepos(true)) {
+  for (const repo of repos) {
     if (isActivityMethod(getRepoType(repo.type))) result.add(redisHeler.getActivityKey(keys.get(getRepoKey(repo))!))
   }
-  for (const repo of getSubscriptions()) {
+  for (const repo of subscriptions) {
     result.add(redisHeler.getLegacyRedisKey(repo.provider, getRepoType(repo.type), repo.repo, repo.branch))
   }
-  for (const [target, { repos }] of getTargets(config.CodeUpdate.List)) {
+  for (const [target, { repos }] of targets) {
     for (const repo of repos.keys()) result.add(redisHeler.getDeliveryKey(keys.get(repo)!, target))
   }
   return Array.from(result)

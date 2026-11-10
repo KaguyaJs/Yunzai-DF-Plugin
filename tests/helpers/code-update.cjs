@@ -13,10 +13,10 @@ function createHarness (options = {}) {
   const screenshots = []
   const logs = []
   const failures = new Set()
+  const redisWrites = []
   const config = {
     CodeUpdate: {
       FirstAdd: false,
-      AutoBranch: true,
       Translate: false,
       badgeStyle: true,
       multiPage: 2,
@@ -26,7 +26,7 @@ function createHarness (options = {}) {
       ...options.config
     }
   }
-  const harness = { store, requests, deliveries, screenshots, logs, failures, config, failWrite: false, render: true, router: () => ({ data: [] }) }
+  const harness = { store, requests, deliveries, screenshots, logs, failures, redisWrites, config, localRepos: [], failWrite: false, render: true, router: () => ({ data: [] }) }
   const logger = Object.fromEntries(['error', 'warn', 'trace', 'debug', 'info', 'mark'].map(name => [name, (...args) => logs.push({ name, args })]))
   for (const name of ['cyan', 'magenta', 'yellow', 'green']) logger[name] = value => value
   const utils = {
@@ -58,17 +58,26 @@ function createHarness (options = {}) {
   const cache = new Map()
   const context = vm.createContext({
     console,
+    logger,
     URL,
+    setTimeout,
     structuredClone,
     Buffer,
     Date: class extends Date {
       constructor (...args) { super(...(args.length ? args : [now])) }
       static now () { return now }
     },
+    plugin: class {
+      constructor () { this.context = null; this.finishes = [] }
+      setContext (name) { this.context = name }
+      finish (name) { this.context = null; this.finishes.push(name) }
+    },
     redis: {
       get: async key => store.get(key) ?? null,
-      set: async (key, value) => {
+      set: async (key, value, options) => {
         if (harness.failWrite) throw new Error('fixture Redis failure')
+        redisWrites.push({ key, value, options })
+        if (options?.NX && store.has(key)) return null
         store.set(key, value)
         return 'OK'
       },
@@ -98,12 +107,13 @@ function createHarness (options = {}) {
   }
 
   function load (specifier, parent = path.join(project, 'tests/entry.cjs')) {
-    if (specifier === '@/config') return config
-    if (specifier === '@/constants') return { CodeUpdateRedisKey: 'fixture:CodeUpdate' }
+    if (specifier === '../../../../lib/common/common') return { makeForwardMsg: async (_, messages) => messages }
+    if (specifier === '@/config') return harness.configFacade ?? config
+    if (specifier === '@/constants' || specifier === '@/constants/Redis') return { CodeUpdateRedisKey: 'fixture:CodeUpdate', commonRedisKey: 'fixture' }
     if (specifier === '@/utils') return utils
     if (specifier === '@/dir') return { ResPath: path.join(project, 'resources'), PluginName: 'DF-Plugin' }
     if (specifier === '@/modules') return { FacePoke: async () => path.join(project, 'resources/CodeUpdate/icon/git.svg') }
-    if (specifier === '@/utils/GitRepo') return { PluginPath: [] }
+    if (specifier === '@/utils/GitRepo') return { PluginPath: harness.localRepos }
     const filename = resolveModule(specifier, parent)
     if (!filename) return require(specifier)
     if (filename.endsWith(path.join('utils', 'translate.ts'))) {
@@ -114,6 +124,9 @@ function createHarness (options = {}) {
     }
     if (filename.endsWith(path.join('CodeUpdate', 'utils', 'index.ts'))) {
       return Object.assign({}, ...['repo', 'redis', 'activity', 'format', 'formatActivity', 'autoBranch'].map(name => load(`./${name}`, filename)))
+    }
+    if (filename.endsWith(path.join('guoba', 'schemas', 'index.ts'))) {
+      return { CodeUpdate: load('@/modules/guoba/schemas/CodeUpdate').CodeUpdate }
     }
     if (cache.has(filename)) return cache.get(filename).exports
     const module = { exports: {} }
@@ -128,6 +141,20 @@ function createHarness (options = {}) {
 
   return Object.assign(harness, {
     load,
+    loadConfig: async (save = async () => {}) => {
+      const filename = path.join(project, 'src/config/index.ts')
+      const source = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
+        compilerOptions: { target: ts.ScriptTarget.ES2024, module: ts.ModuleKind.CommonJS, esModuleInterop: true }
+      }).outputText
+      const module = { exports: {} }
+      const run = vm.runInContext(`(async function(require,module,exports){\n${source}\n})`, context, { filename })
+      await run(value => {
+        if (value === '../../../../lib/config/config.js') return { master: [], masterQQ: [] }
+        if (value === '../../../../lib/plugins/config.js') return async (name, defaults) => ({ config: { ...defaults, CodeUpdate: config.CodeUpdate }, configSave: save })
+        return load(value, filename)
+      }, module, module.exports)
+      return module.exports.default
+    },
     setNow: value => { now = Date.parse(value) }
   })
 }
@@ -154,7 +181,7 @@ function item (number, changes = {}) {
 }
 
 function subscribe (harness, method = 'issues', overrides = {}, target = 10001) {
-  const rule = { provider: 'GitHub', repo: 'owner/repo', type: method, ...overrides }
+  const rule = { provider: 'GitHub', repo: 'owner/repo', type: Array.isArray(method) ? method : [method], ...overrides }
   harness.config.CodeUpdate.List.push({ Group: [target], repos: [rule] })
   return rule
 }

@@ -3,9 +3,9 @@ import { PluginPath } from '@/utils'
 import { repoPath, ACTIVITY_ACTIONS } from '@CodeUpdate/utils'
 import config from '@/config'
 import type { Schemas } from 'trss-yunzai/guoba'
-import type { RepoConfig } from '@CodeUpdate/utils/repo'
+import type { RepositoryConfig } from '@CodeUpdate/utils/repo'
 
-const activityFilters: Schemas<RepoConfig> = [
+const activityFilters: Schemas<RepositoryConfig> = [
   {
     field: 'events',
     label: 'PR/Issue监听事件',
@@ -54,12 +54,6 @@ export const CodeUpdate: GuobaSchemas = [
       placeholder: '请输入Cron表达式',
       hideYear: true
     }
-  },
-  {
-    field: 'CodeUpdate.AutoBranch',
-    label: '自动获取远程默认分支',
-    bottomHelpMessage: '在未指定分支的情况下，获取更新前自动解析远程仓库的默认分支',
-    component: 'Switch'
   },
   {
     field: 'CodeUpdate.FirstAdd',
@@ -317,18 +311,26 @@ export const CodeUpdate: GuobaSchemas = [
               {
                 field: 'branch',
                 label: '分支名',
-                bottomHelpMessage: '仅提交监听生效；PR请使用目标分支筛选。',
-                component: 'Input',
+                bottomHelpMessage: '仅提交监听生效。留空自动获取默认分支；可输入多个分支，输入all每次自动获取并监听全部分支。PR请使用目标分支筛选。',
+                defaultValue: [],
+                component: 'Select',
                 componentProps: {
-                  placeholder: '请输入分支名'
+                  mode: 'tags',
+                  allowClear: true,
+                  tokenSeparators: [',', '，', ' '],
+                  placeholder: '留空使用默认分支，或输入分支名/all',
+                  options: [{ label: '全部分支', value: 'all' }]
                 }
               },
               {
                 field: 'type',
                 label: '监听类型',
-                component: 'RadioGroup',
+                component: 'Select',
+                defaultValue: ['commits'],
                 required: true,
                 componentProps: {
+                  mode: 'multiple',
+                  allowClear: true,
                   options: [
                     { label: '提交', value: 'commits' },
                     { label: '发布', value: 'releases' },
@@ -336,7 +338,7 @@ export const CodeUpdate: GuobaSchemas = [
                     { label: 'Issues', value: 'issues' }
                   ]
                 },
-                bottomHelpMessage: 'PR/Issue支持GitHub、Gitee、Gitcode和Gitea兼容接口；CNB暂不支持。'
+                bottomHelpMessage: '一个仓库可同时选择多个类型，共用下方PR/Issue筛选。PR/Issue支持GitHub、Gitee、Gitcode和Gitea兼容接口；CNB暂不支持。'
               },
               ...activityFilters
             ]

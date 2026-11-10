@@ -1,6 +1,8 @@
-import type { Config } from '@/types'
+import type { Config, GitApiMethod } from '@/types'
 
-export type RepoConfig = Config['CodeUpdate']['List'][number]['repos'][number]
+export type RepositoryConfig = Config['CodeUpdate']['List'][number]['repos'][number]
+/** One expanded subscription. Its identity stays compatible with existing Redis records. */
+export type RepoConfig = Omit<RepositoryConfig, 'type' | 'branch'> & { type: GitApiMethod | 'commit', branch?: string }
 export type SubscriptionTarget = { type: 'Group' | 'QQ', id: string, repos: Map<string, RepoConfig[]> }
 
 export function getRepoType (type: RepoConfig['type']) {

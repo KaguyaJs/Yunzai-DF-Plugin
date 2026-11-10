@@ -1,5 +1,5 @@
 import GitApi from '@/modules/GitApi'
-import type { Commit, Config, Release, RepositoryInfo } from '@/types'
+import type { Commit, Release, RepositoryInfo } from '@/types'
 import { redisHeler, formatCommitInfo, formatReleaseInfo, repoPath, getRepoKey, getRepoType, getRepoBranch, resolveBranch } from '@CodeUpdate/utils'
 import config from '@/config'
 import { logger } from '@/utils'
@@ -8,7 +8,7 @@ import { formatActivityInfo } from '../utils/formatActivity'
 import { isActivityMethod } from '../utils/activity'
 import type { RepoConfig, SubscriptionTarget } from '../utils/repo'
 
-export type ReposListType = Config['CodeUpdate']['List'][number]['repos']
+export type ReposListType = RepoConfig[]
 
 export interface RepositoryUpdate {
   info: RepositoryInfo
@@ -21,7 +21,7 @@ export interface RepositoryUpdate {
 /** Fetch each subscription once without acknowledging undelivered updates. */
 export async function fetchUpdate (repoList: ReposListType, isAuto: boolean, targets = new Map<string, SubscriptionTarget>(), subscriptions: RepoConfig[] = repoList) {
   const content = new Map<string, RepositoryUpdate>()
-  const previous = [...repoList, ...config.CodeUpdate.List.flatMap(strategy => strategy.repos ?? [])]
+  const previous = [...repoList, ...subscriptions]
     .map(item => ({ ...item }))
   const repos = new Map(repoList.map(item => [getRepoKey(item), { ...item }]))
   await Promise.all(Array.from(repos, async ([key, item]) => {

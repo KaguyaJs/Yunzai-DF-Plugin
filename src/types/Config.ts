@@ -9,12 +9,6 @@ export interface Config {
      */
     Auto: boolean
     /**
-     * 是否自动给未配置分支的仓库添加默认分支
-     *
-     * @default true
-     */
-    AutoBranch: boolean
-    /**
      * 首次添加仓库是否进行一次推送
      *
      * @default false
@@ -111,8 +105,9 @@ export interface Config {
       repos: {
         provider: string
         repo: string
-        branch?: string
-        type: GitApiMethod | 'commit'
+        /** Empty resolves the default branch; `all` discovers every branch. Commits only. */
+        branch?: string[]
+        type: GitApiMethod[]
         /** Empty/omitted uses the default lifecycle events for this type. */
         events?: GitActivityAction[]
         labels?: string[]
