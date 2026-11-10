@@ -97,6 +97,9 @@ CodeUpdate:
     BodyLimit: 600
     OverlapSeconds: 60
     SendLinks: true
+    ShowDiff: false
+    DiffMaxFiles: 3
+    DiffMaxLines: 40
   List:
     - Group: [123456789]
       repos:
@@ -144,6 +147,10 @@ CodeUpdate:
 `labels` 匹配任一标签，`excludeLabels` 命中任一标签即排除；移除标签事件也会考虑移除前的标签。`authors` / `excludeAuthors` 按账号筛选，PR/Issue 事件按条目创建者匹配，评论按评论作者匹配。标签和作者账号忽略大小写，分支名区分大小写。上述筛选只对 PR/Issue 生效，自动扫描本地插件仍监听提交。
 
 首次检查会完整建立条目基线。`FirstAdd: false` 时不发送历史活动；开启时最多推送每仓库 `InitialLimit` 条当前状态。`#推送仓库更新` 预览同样遵守筛选和条目上限，并且不会改变自动推送进度。卡片展示编号、状态、标签、分支、正文或评论摘要，PR 详情可用时还展示文件及增删行数；`SendLinks` 控制附带原始链接。
+
+在锅巴开启“PR展示代码diff”（`CodeUpdate.Activity.ShowDiff: true`）后，PR 活动卡片和手动预览会展示文件路径、增删统计及代码差异，新增/删除行使用不同颜色。默认最多展开 `DiffMaxFiles: 3` 个文件、`DiffMaxLines: 40` 行（包含上下文）。超过任一上限、补丁过长或平台只提供部分差异时，自动收起代码并展示文件摘要。推送是图片，完整代码通过 PR 原文查看；开启 `SendLinks` 后消息会附上可点击的完整 diff 链接。
+
+diff 仅在需要展示的 PR 活动中获取，Issue、普通评论和静默基线不请求 diff。代码保持原文，不参与自动翻译。diff 获取或版本确认失败时仍推送 PR 通知，并显示“Diff暂不可用”。失败待重试的消息保存当时的 diff，避免重试时混入 PR 的后续代码。GitHub、Gitee、Gitcode 使用文件接口，Gitea 使用原始 unified diff；二进制文件或平台省略的补丁会提示未提供文本差异。
 
 PR/Issue 接口适配 GitHub、Gitee、Gitcode 和 Gitea 兼容接口，CNB 当前仅支持原有提交/发布功能。自建 Gitea 的 `provider` 名称应包含 `Gitea`，`ApiUrl` 指向 `https://你的域名/api/v1/repos`。各平台的访问权限和限流以实际接口为准，建议配置令牌。
 

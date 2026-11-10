@@ -6,6 +6,7 @@ import type { RepoConfig, SubscriptionTarget } from '../utils/repo'
 import { getRepoBranch, getRepoType } from '../utils/repo'
 import { redisHeler } from '../utils/redis'
 import { activityDate, activityEvents, activityExcerpt, activityHash, activityOptions, activitySnapshot, activityTargets, activityUser, detectActivityActions, isActivityMethod, makeActivityEvent, matchesActivity, normalizeActivityItem, safeActivityUrl } from '../utils/activity'
+import { normalizePullRequestDiff, pullRequestDiffUrl } from '../utils/diff'
 
 export interface PendingActivity {
   event: ActivityEvent
@@ -27,6 +28,26 @@ async function hydrateItems<T, R> (items: T[], hydrate: (item: T, index: number)
     for (const item of settled) if (item.status === 'fulfilled') result.push(item.value)
   }
   return result
+}
+
+/** Freeze optional diff with its event so retries cannot show code from a newer PR revision. */
+async function enrichPullRequestDiff (event: ActivityEvent) {
+  const options = activityOptions()
+  if (!options.showDiff || event.method !== 'pulls' || event.comment) return
+  try {
+    const data = await GitApi.getPullRequestDiff(event.provider, event.repo, event.item.number, options.diffMaxFiles)
+    if (data === false) throw new Error('暂时无法获取diff')
+    // File endpoints expose the current PR revision. Verify it still matches the observed event.
+    if (event.item.headSha) {
+      const current = await GitApi.getActivityItem(event.provider, event.repo, 'pulls', event.item.number)
+      if (current === false || current.head?.sha !== event.item.headSha) throw new Error('PR代码版本已变化或无法确认，请查看原文')
+    }
+    event.diff = normalizePullRequestDiff(data, event)
+    if (!event.diff.files.length && event.diff.fileCount > 0) throw new Error('接口未提供文件diff，请查看原文')
+  } catch (error) {
+    logger.warn(`获取 ${event.provider} ${event.repo} PR #${event.item.number} diff 失败: `, error)
+    event.diff = { url: pullRequestDiffUrl(event), fileCount: event.item.stats?.files ?? 0, hasMoreFiles: false, collapsed: true, files: [], unavailable: 'Diff暂不可用，请查看PR原文' }
+  }
 }
 
 /** A complete scan and its outgoing payloads are committed with one Redis SET. */
@@ -88,10 +109,15 @@ export async function fetchActivity (
         const event = makeActivityEvent(rule, item, ['snapshot'])
         if (initialCount < options.initialLimit && rules.some(candidate => matchesActivity(event, candidate))) {
           initialCount++
-          if (!isAuto) previews.push({ event, journalKey, targets: [] })
-          else {
+          if (!isAuto) {
+            await enrichPullRequestDiff(event)
+            previews.push({ event, journalKey, targets: [] })
+          } else {
             const recipients = activityTargets(event, targets)
-            if (recipients.length) journal.pending[event.id] = { event, targets: recipients }
+            if (recipients.length) {
+              await enrichPullRequestDiff(event)
+              journal.pending[event.id] = { event, targets: recipients }
+            }
           }
         }
       } else if (existing) {
@@ -100,7 +126,10 @@ export async function fetchActivity (
           const event = makeActivityEvent(rule, item, actions)
           event.previousLabels = previous?.labels
           const recipients = activityTargets(event, targets)
-          if (recipients.length) journal.pending[event.id] = { event, targets: recipients }
+          if (recipients.length) {
+            await enrichPullRequestDiff(event)
+            journal.pending[event.id] = { event, targets: recipients }
+          }
         }
       }
       if (isAuto && existing && item.comments !== 0 && rules.some(candidate => activityEvents(candidate).includes('commented'))) {

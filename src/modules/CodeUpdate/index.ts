@@ -123,7 +123,9 @@ function updateBatches (updates: RepositoryUpdate[]) {
 
 function withActivityLinks (image: icqq.ImageElem | icqq.ImageElem[], updates: RepositoryUpdate[]): icqq.Sendable {
   const links = activityOptions().sendLinks
-    ? Array.from(new Set(updates.flatMap(update => 'activity' in update.info && update.info.url ? [update.info.url] : [])))
+    ? Array.from(new Set(updates.flatMap(update => 'activity' in update.info
+      ? [update.info.url, update.info.diff?.url].filter((url): url is string => !!url)
+      : [])))
     : []
   return links.length ? [...(Array.isArray(image) ? image : [image]), `\n${links.join('\n')}`] : image
 }

@@ -165,6 +165,26 @@ export const CodeUpdate: GuobaSchemas = [
     bottomHelpMessage: '图片消息后附可点击链接。'
   },
   {
+    field: 'CodeUpdate.Activity.ShowDiff',
+    label: 'PR展示代码diff',
+    component: 'Switch',
+    bottomHelpMessage: '默认关闭。仅PR活动卡片展示代码差异；过大时自动收起为摘要。评论通知沿用正文摘要。'
+  },
+  {
+    field: 'CodeUpdate.Activity.DiffMaxFiles',
+    label: 'PR diff展开文件上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 20 },
+    bottomHelpMessage: '默认3；超过上限时展示部分文件列表并收起代码。'
+  },
+  {
+    field: 'CodeUpdate.Activity.DiffMaxLines',
+    label: 'PR diff展开行数上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 200 },
+    bottomHelpMessage: '默认40；按所有文件的代码及上下文总行数判断。完整内容可通过PR原始链接查看，附带可点击链接需开启上方选项。'
+  },
+  {
     field: 'CodeUpdate.repos',
     label: 'GitApi配置',
     bottomHelpMessage: 'Git仓库的接口配置',

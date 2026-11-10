@@ -334,3 +334,23 @@ body {
 .activity-body th, .activity-body td { padding: 4px; border: 1px solid #555; overflow-wrap: anywhere; }
 .activity-body blockquote { margin-left: 0; padding-left: 10px; border-left: 3px solid #90d0e4; }
 .activity-image-alt { color: #90d0e4; }
+
+.pr-diff { margin-top: 12px; border: 1px solid #45454f; border-radius: 8px; overflow: hidden; background: #10101790; }
+.diff-heading { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; color: #e2e8f0; font-size: 12px; background: #272732; }
+.diff-state { font-size: 10px; color: #90d0e4; border: 1px solid #596473; border-radius: 4px; padding: 2px 5px; }
+.diff-collapsed .diff-state { color: #f3cc8b; border-color: #79634b; }
+.diff-summary, .diff-notice, .diff-previous-name { padding: 6px 10px; color: #aaaab8; font-size: 11px; overflow-wrap: anywhere; }
+.diff-file { border-top: 1px solid #3d3d48; }
+.diff-file-heading { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 10px; font-size: 11px; background: #20202a; }
+.diff-file-name { flex: 1; min-width: 0; color: #d2d8e4; overflow-wrap: anywhere; }
+.diff-file-status { color: #a7a7ba; white-space: nowrap; }
+.diff-line { display: flex; min-width: 0; font-size: 11px; line-height: 1.6; }
+.diff-line-number { flex: 0 0 32px; text-align: right; padding-right: 6px; color: #7d8796; border-right: 1px solid #ffffff0a; }
+.diff-line code { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; padding: 0 7px; color: #c8cddd; tab-size: 2; }
+.diff-add { background: #23863628; }
+.diff-add code { color: #a5eab6; }
+.diff-delete { background: #da363327; }
+.diff-delete code { color: #f3b1b5; }
+.diff-hunk { background: #1f6feb22; }
+.diff-hunk code { color: #9dc3fc; }
+.diff-link { display: block; padding: 8px 10px; border-top: 1px solid #3d3d48; color: #90d0e4; font-size: 11px; text-decoration: none; }

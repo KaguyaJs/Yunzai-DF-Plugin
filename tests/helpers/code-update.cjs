@@ -49,6 +49,11 @@ function createHarness (options = {}) {
           ok: status >= 200 && status < 300,
           status,
           statusText: String(status),
+          body: result.text !== undefined || result.chunks
+            ? (async function * () {
+                for (const chunk of result.chunks || [result.text]) { result.onChunk?.(); yield Buffer.from(chunk) }
+              })()
+            : null,
           headers: { get: key => key === 'content-type' ? 'application/json' : key === 'link' ? result.link || null : null },
           json: async () => result.data
         }

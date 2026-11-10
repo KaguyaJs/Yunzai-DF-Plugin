@@ -62,6 +62,9 @@ export interface Config {
       BodyLimit: number
       OverlapSeconds: number
       SendLinks: boolean
+      ShowDiff: boolean
+      DiffMaxFiles: number
+      DiffMaxLines: number
     }
     /**
      * 仓库更新检查Cron表达式

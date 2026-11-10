@@ -40,6 +40,9 @@ CodeUpdate:
     BodyLimit: 正文/评论摘要最大字符数，0为隐藏正文
     OverlapSeconds: 增量查询回看秒数，避免时间边界遗漏
     SendLinks: PR/Issue图片后附可点击的原始链接
+    ShowDiff: 在PR卡片中展示代码diff，默认关闭；不用于评论通知
+    DiffMaxFiles: 展开diff最多包含的文件数，超过后自动收起为文件摘要
+    DiffMaxLines: 展开diff最多显示的总行数（含上下文），超过后自动收起
   Activity:
     PageSize: 100
     MaxPages: 20
@@ -48,6 +51,9 @@ CodeUpdate:
     BodyLimit: 600
     OverlapSeconds: 60
     SendLinks: false
+    ShowDiff: false
+    DiffMaxFiles: 3
+    DiffMaxLines: 40
   timeFormatTips: |-
     时间格式
     1: 多久之前 x分钟前 X小时前

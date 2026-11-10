@@ -1,7 +1,8 @@
 import { Marked } from 'marked'
 import { timeAgo } from '@/utils'
 import type { ActivityEvent, ActivityInfo } from '@/types'
-import { ACTIVITY_ACTIONS, safeActivityUrl } from './activity'
+import { ACTIVITY_ACTIONS, activityOptions, safeActivityUrl } from './activity'
+import { displayPullRequestDiff } from './diff'
 import { getIcon } from './format'
 import { getCodeUpdateTranslateName, translateCodeUpdateTextInfo } from './translate'
 
@@ -41,6 +42,7 @@ export async function formatActivityInfo (event: ActivityEvent): Promise<Activit
     text: `<span class="head">${escapeHtml(title.text)}</span>${renderedBody ? `<div class="activity-body">${renderedBody}</div>` : ''}`,
     translate: translated ? { label: getCodeUpdateTranslateName(), title: '已在渲染前自动翻译' } : false,
     stats: comment ? undefined : item.stats,
+    diff: activityOptions().showDiff && event.method === 'pulls' && !comment && event.diff ? displayPullRequestDiff(event.diff) : undefined,
     detail: {
       kind: event.method === 'pulls' ? 'PR' : 'Issue',
       number: item.number,

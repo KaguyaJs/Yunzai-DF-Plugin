@@ -1,4 +1,4 @@
-import type { ActivityLabel, ActivityItem } from './activity'
+import type { ActivityLabel, ActivityItem, PullRequestDiff } from './activity'
 
 export interface CommitInfo {
   url?: string
@@ -62,6 +62,7 @@ export interface ActivityInfo {
   text: string
   translate?: CommitInfo['translate']
   stats?: ActivityItem['stats']
+  diff?: PullRequestDiff
   detail: {
     kind: 'PR' | 'Issue'
     number: string

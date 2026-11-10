@@ -80,6 +80,34 @@
               {{/if}}
             </div>
             {{/if}}
+            {{if item.diff}}
+            <div class="pr-diff {{if item.diff.collapsed}}diff-collapsed{{/if}}">
+              <div class="diff-heading">
+                <span>代码 Diff</span>
+                <span class="diff-state">{{if item.diff.unavailable}}暂不可用{{else if item.diff.collapsed}}已收起{{else}}已展开{{/if}}</span>
+              </div>
+              {{if item.diff.unavailable}}
+              <div class="diff-notice">{{item.diff.unavailable}}</div>
+              {{else}}
+              <div class="diff-summary">{{if item.diff.hasMoreFiles}}至少 {{/if}}{{item.diff.fileCount}} 个文件{{if item.diff.collapsed}} · 改动较多，代码已收起{{/if}}</div>
+              {{each item.diff.files file}}
+              <div class="diff-file">
+                <div class="diff-file-heading"><span class="diff-file-name">{{file.filename}}</span><span class="diff-file-status">{{file.status}}</span><span class="additions">+{{file.additions}}</span><span class="deletions">-{{file.deletions}}</span></div>
+                {{if file.previousFilename}}<div class="diff-previous-name">原路径：{{file.previousFilename}}</div>{{/if}}
+                {{if !item.diff.collapsed}}
+                  {{if file.missingPatch}}<div class="diff-notice">此文件未提供文本diff</div>{{/if}}
+                  {{each file.lines line}}
+                  <div class="diff-line diff-{{line.kind}}"><span class="diff-line-number">{{line.oldNumber}}</span><span class="diff-line-number">{{line.newNumber}}</span><code>{{line.text}}</code></div>
+                  {{/each}}
+                {{/if}}
+              </div>
+              {{/each}}
+              {{if item.diff.hasMoreFiles}}<div class="diff-notice">其余文件已收起</div>{{/if}}
+              {{if !item.diff.fileCount}}<div class="diff-notice">没有文件改动</div>{{/if}}
+              {{/if}}
+              {{if item.diff.url}}<a class="diff-link" href="{{item.diff.url}}">查看完整 Diff · PR 原文</a>{{/if}}
+            </div>
+            {{/if}}
           </div>
         </div>
         {{/each}}

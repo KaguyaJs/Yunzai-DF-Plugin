@@ -38,7 +38,10 @@ export function activityOptions () {
     batchSize: integerOption(options?.BatchSize, 20, 1, 50),
     bodyLimit: integerOption(options?.BodyLimit, 600, 0, 10000),
     overlapSeconds: integerOption(options?.OverlapSeconds, 60, 1, 3600),
-    sendLinks: options?.SendLinks !== false
+    sendLinks: options?.SendLinks !== false,
+    showDiff: options?.ShowDiff === true,
+    diffMaxFiles: integerOption(options?.DiffMaxFiles, 3, 1, 20),
+    diffMaxLines: integerOption(options?.DiffMaxLines, 40, 1, 200)
   }
 }
 

@@ -1,6 +1,7 @@
 import { request, logger } from '@/utils'
 import config from '@/config'
-import type { GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment } from '@/types'
+import type { Response } from 'node-fetch'
+import type { GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment, GitPullRequestDiff, GitPullRequestFile } from '@/types'
 type Provider = 'GitHub' | 'Gitee' | 'Gitcode' | 'CNB' | string
 
 const DEFAULT_API: Record<string, string> = {
@@ -203,6 +204,61 @@ export default new class RepoService {
     return this.fetchData<GitActivityItem>(url, headers, repo, source)
   }
 
+  /** Optional enrichment: read only enough files to decide whether the image should collapse. */
+  async getPullRequestDiff (source: Provider, repo: string, number: string, maxFiles: number): Promise<GitPullRequestDiff | false> {
+    const { url, headers } = this.activityUrl(source, repo, /gitea/i.test(source)
+      ? `pulls/${encodeURIComponent(number)}.diff`
+      : `pulls/${encodeURIComponent(number)}/files`)
+    if (/gitea/i.test(source)) {
+      // Gitea's file-list API omits patches; its raw diff endpoint supplies the actual code.
+      try {
+        const response = await request.get(url, 'raw', { headers: { ...headers, Accept: 'text/plain' }, log: false })
+        if (!response || !response.ok) return false
+        const { text, truncated } = await this.readLimitedBody(response, 512 * 1024)
+        if (text.trim() && !/^diff --git /m.test(text)) return false
+        return { kind: 'unified', text, truncated }
+      } catch (error: any) {
+        logger.warn(`获取 ${source} ${repo} PR #${number} diff 失败: ${error?.name ?? 'Error'}`)
+        return false
+      }
+    }
+    const pageSize = Math.max(2, Math.min(21, maxFiles + 1))
+    url.searchParams.set('per_page', String(pageSize))
+    const files = new Map<string, GitPullRequestFile>()
+    for (let page = 1; page <= pageSize + 1; page++) {
+      url.searchParams.set('page', String(page))
+      const pagination: { hasNext?: boolean } = {}
+      const data = await this.fetchData<GitPullRequestFile[]>(url, headers, repo, source, pagination, 512 * 1024)
+      if (data === false || !Array.isArray(data)) return false
+      const size = files.size
+      for (const file of data) {
+        const filename = file?.filename || file?.new_path || file?.old_path
+        if (typeof filename !== 'string' || !filename) return false
+        files.set(filename, file)
+      }
+      if (files.size > maxFiles) return { kind: 'files', files: Array.from(files.values()).slice(0, pageSize), hasMore: true }
+      if (!data.length || pagination.hasNext === false) return { kind: 'files', files: Array.from(files.values()), hasMore: false }
+      if (files.size === size) return false
+    }
+    return false
+  }
+
+  private async readLimitedBody (response: Response, limit: number) {
+    const chunks: Buffer[] = []
+    let length = 0
+    let truncated = false
+    if (response.body) {
+      for await (const chunk of response.body) {
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+        const remaining = limit - length
+        chunks.push(bytes.subarray(0, remaining))
+        length += Math.min(bytes.length, remaining)
+        if (bytes.length > remaining) { truncated = true; break }
+      }
+    }
+    return { text: Buffer.concat(chunks).toString('utf8'), truncated }
+  }
+
   async getActivityComments (
     source: Provider,
     repo: string,
@@ -279,7 +335,7 @@ export default new class RepoService {
    * @param source 仅用于日志
    * @returns 解析后的 JSON（泛型）或 false（失败）
    */
-  async fetchData<T = any> (url: string | URL, headers: Record<string, string> = {}, repo?: string, source?: Provider, pagination?: { hasNext?: boolean }): Promise<T | false> {
+  async fetchData<T = any> (url: string | URL, headers: Record<string, string> = {}, repo?: string, source?: Provider, pagination?: { hasNext?: boolean }, maxBytes?: number): Promise<T | false> {
     try {
       const response = await request.get(url, 'raw', {
         headers,
@@ -322,6 +378,14 @@ export default new class RepoService {
         return false
       }
 
+      if (maxBytes && response.body) {
+        const { text, truncated } = await this.readLimitedBody(response, maxBytes)
+        if (truncated) {
+          logger.warn(`${source} ${repo} diff响应过大，改用PR原文查看`)
+          return false
+        }
+        return JSON.parse(text) as T
+      }
       return await response.json() as T
     } catch (error: any) {
       logger.error(`请求失败: ${safeUrl(url)}，错误类型: ${error?.name ?? 'Error'}`)

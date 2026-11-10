@@ -719,3 +719,231 @@ test('手动检查全部分支在发现分支前给出提示，失败后回复�
   assert.equal(await CodeUpdate(true), 0)
   assert.equal(h.store.size, 1)
 })
+
+function diffRouter (h, data) {
+  h.router = url => {
+    if (url.pathname.endsWith('/files')) return { data: Number(url.searchParams.get('page')) === 1 ? data.files : [], link: '<https://example.com/last>; rel="last"' }
+    if (url.pathname.endsWith('.diff')) return { text: data.raw || '' }
+    if (url.pathname.endsWith('/comments')) return { data: data.comments || [] }
+    const number = url.pathname.match(/\/pulls\/(\d+)$/)?.[1]
+    if (number) return { data: data.pulls.find(value => String(value.number) === number) }
+    return { data: url.pathname.endsWith('/pulls') ? data.pulls : data.issues || [] }
+  }
+}
+
+const SMALL_PATCH = '@@ -1,2 +1,2 @@\n-oldValue()\n+newValue()\n unchanged()'
+
+test('PR diff默认关闭，开启后展示增删代码和行号，多群共享一次diff查询', async () => {
+  for (const enabled of [false, true]) {
+    const h = createHarness({ config: { FirstAdd: true, Activity: { ShowDiff: enabled } } })
+    subscribe(h, 'pulls', {}, 1)
+    subscribe(h, 'pulls', {}, 2)
+    const data = { pulls: [item(1, { html_url: 'https://github.com/owner/repo/pull/1', changed_files: 1, additions: 1, deletions: 1 })], files: [{ filename: 'src/main.ts', status: 'modified', additions: 1, deletions: 1, patch: SMALL_PATCH }] }
+    diffRouter(h, data)
+    await h.load('@CodeUpdate').CodeUpdate(true)
+    assert.equal(h.deliveries.length, 2)
+    assert.equal(h.requests.filter(value => value.url.pathname.endsWith('/files')).length, enabled ? 1 : 0)
+    const info = h.screenshots[0].data.lifeData[0]
+    if (!enabled) { assert.equal(info.diff, undefined); continue }
+    assert.equal(info.diff.collapsed, false)
+    assert.equal(info.diff.url, 'https://github.com/owner/repo/pull/1/files')
+    assert.deepEqual(info.diff.files[0].lines.map(line => [line.kind, line.oldNumber, line.newNumber]), [
+      ['hunk', undefined, undefined], ['delete', 1, undefined], ['add', undefined, 1], ['context', 2, 2]
+    ])
+    assert.ok(h.deliveries[0].message.some(value => typeof value === 'string' && value.includes('/pull/1/files')))
+  }
+})
+
+test('diff超过文件或行数上限时收起代码，文件摘要和完整链接仍显示', async () => {
+  for (const byFiles of [true, false]) {
+    const h = createHarness({ config: { FirstAdd: true, Activity: { ShowDiff: true, DiffMaxFiles: 2, DiffMaxLines: byFiles ? 40 : 2 } } })
+    subscribe(h, 'pulls')
+    const data = {
+      pulls: [item(1, { changed_files: byFiles ? 8 : 1, additions: 1, deletions: 1 })],
+      files: Array.from({ length: byFiles ? 3 : 1 }, (_, index) => ({ filename: `src/file${index}.ts`, additions: 1, deletions: 1, patch: SMALL_PATCH }))
+    }
+    diffRouter(h, data)
+    await h.load('@CodeUpdate').CodeUpdate(true)
+    const info = h.screenshots[0].data.lifeData[0]
+    assert.equal(info.diff.collapsed, true)
+    assert.equal(info.diff.files.length, byFiles ? 2 : 1)
+    assert.ok(info.diff.files.every(file => file.lines.length === 0))
+    const template = require('art-template')
+    const html = template(path.join(project, 'resources/CodeUpdate/index.html'), { pluResPath: '', sys: { scale: '', copyright: '' }, lifeData: [info] })
+    assert.match(html, /已收起/)
+    assert.match(html, /src\/file0.ts/)
+    assert.doesNotMatch(html, /oldValue|newValue/)
+  }
+})
+
+test('diff获取失败仍推送PR并建立进度，代码版本变化时不会展示其他版本的diff', async () => {
+  for (const changed of [false, true]) {
+    const h = createHarness({ config: { FirstAdd: true, Activity: { ShowDiff: true } } })
+    subscribe(h, 'pulls')
+    let version = 'aaaaa'
+    h.router = url => {
+      if (url.pathname.endsWith('/files')) {
+        version = 'new-version'
+        return changed ? { data: [{ filename: 'main.ts', patch: SMALL_PATCH }], link: '<https://example.com/last>; rel="last"' } : { status: 500 }
+      }
+      const current = item(1, { head: { sha: version } })
+      return { data: /\/pulls\/1$/.test(url.pathname) ? current : [current] }
+    }
+    await h.load('@CodeUpdate').CodeUpdate(true)
+    assert.equal(h.deliveries.length, 1)
+    assert.match(h.screenshots[0].data.lifeData[0].diff.unavailable, /暂不可用/)
+    assert.equal(h.screenshots[0].data.lifeData[0].diff.files.length, 0)
+    assert.ok(Object.keys(JSON.parse([...h.store.values()][0]).items).includes('1'))
+  }
+})
+
+test('失败消息保存当时diff，PR出现后续代码时重试不会替换旧内容', async () => {
+  const h = createHarness({ config: { FirstAdd: true, Activity: { ShowDiff: true } } })
+  subscribe(h, 'pulls', {}, 1)
+  subscribe(h, 'pulls', {}, 2)
+  const data = { pulls: [item(1)], files: [{ filename: 'main.ts', patch: SMALL_PATCH }] }
+  diffRouter(h, data)
+  h.failures.add('Group:2')
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  await CodeUpdate(true)
+  const journal = JSON.parse([...h.store.values()][0])
+  assert.match(Object.values(journal.pending)[0].event.diff.files[0].lines[2].text, /newValue/)
+  data.pulls[0] = item(1, { head: { sha: 'bbbb' }, updated_at: '2026-11-10T08:01:00Z' })
+  data.files[0].patch = '@@ -1 +1 @@\n-old\n+laterCode'
+  h.setNow('2026-11-10T08:02:00Z')
+  h.failures.clear()
+  await CodeUpdate(true)
+  assert.equal(h.requests.filter(value => value.url.pathname.endsWith('/files')).length, 1)
+  assert.equal(h.deliveries.length, 3)
+  assert.match(h.screenshots.at(-1).data.lifeData[0].diff.files[0].lines[2].text, /newValue/)
+  assert.deepEqual(JSON.parse([...h.store.values()][0]).pending, {})
+})
+
+test('静默基线、过滤掉的PR、Issue和普通评论均不请求diff，手动预览遵守条目上限', async () => {
+  const h = createHarness({ config: { Activity: { ShowDiff: true, InitialLimit: 1 } } })
+  subscribe(h, 'pulls', { events: ['opened', 'commented'] })
+  subscribe(h, 'issues')
+  const data = { pulls: [item(1), item(2)], issues: [item(3)], files: [{ filename: 'main.ts', patch: SMALL_PATCH }], comments: [] }
+  diffRouter(h, data)
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  await CodeUpdate(true)
+  assert.equal(h.requests.some(value => value.url.pathname.endsWith('/files')), false)
+  const before = [...h.store]
+  await CodeUpdate(false, { user_id: 1, reply: async () => true })
+  assert.deepEqual([...h.store], before)
+  assert.equal(h.requests.filter(value => value.url.pathname.endsWith('/files')).length, 1)
+  const preview = h.screenshots.at(-1).data.lifeData
+  assert.equal(preview.filter(info => info.detail.kind === 'PR').length, 1)
+  h.requests.length = 0
+  data.pulls[0] = item(1, { comments: 1, updated_at: '2026-11-10T08:01:00Z' })
+  data.comments = [{ id: 1, body: '普通评论', created_at: '2026-11-10T08:01:00Z', user: { login: 'alice' } }]
+  h.setNow('2026-11-10T08:02:00Z')
+  await CodeUpdate(true)
+  assert.equal(h.requests.some(value => value.url.pathname.endsWith('/files')), false)
+  assert.equal(h.screenshots.at(-1).data.lifeData[0].diff, undefined)
+  const filtered = createHarness({ config: { FirstAdd: true, Activity: { ShowDiff: true } } })
+  subscribe(filtered, 'pulls', { labels: ['missing-label'] })
+  diffRouter(filtered, data)
+  await filtered.load('@CodeUpdate').CodeUpdate(true)
+  assert.equal(filtered.requests.some(value => value.url.pathname.endsWith('/files')), false)
+})
+
+test('Gitee和Gitcode文件diff兼容路径字段、令牌及分页，新增文件的行号从1开始', async () => {
+  const h = createHarness({ config: { Activity: { ShowDiff: true } } })
+  h.config.CodeUpdate.repos.push({ provider: 'Gitee', token: 'gitee-token' })
+  h.router = url => ({ data: Number(url.searchParams.get('page')) === 1 ? [{ new_path: 'new.ts', old_path: 'old.ts', renamed_file: true, diff: '@@ -0,0 +1,2 @@\n+first\n+second' }] : [] })
+  const api = h.load('@/modules/GitApi').default
+  const raw = await api.getPullRequestDiff('Gitee', 'owner/repo', '1', 3)
+  assert.equal(h.requests[0].url.searchParams.get('access_token'), 'gitee-token')
+  assert.equal(h.requests.length, 2)
+  const utils = h.load('@CodeUpdate/utils/activity')
+  const event = utils.makeActivityEvent({ provider: 'Gitee', repo: 'owner/repo', type: 'pulls' }, utils.normalizeActivityItem(item(1), 'pulls'), ['opened'])
+  const diff = h.load('@CodeUpdate/utils/diff').normalizePullRequestDiff(raw, event)
+  assert.equal(diff.files[0].filename, 'new.ts')
+  assert.equal(diff.files[0].previousFilename, 'old.ts')
+  assert.equal(diff.files[0].status, '重命名')
+  assert.deepEqual(plain(diff.files[0].lines).slice(1).map(line => line.newNumber), [1, 2])
+  await api.getPullRequestDiff('Gitcode', 'owner/repo', '1', 3)
+  assert.ok(h.requests.at(-1).url.pathname.endsWith('/pulls/1/files'))
+})
+
+test('Gitea从原始diff获取代码，解析重命名、带空格和转义Unicode路径及二进制文件', async () => {
+  const h = createHarness({ config: { Activity: { ShowDiff: true, DiffMaxFiles: 3 } } })
+  h.config.CodeUpdate.repos.push({ provider: 'MyGitea', ApiUrl: 'https://gitea.example/api/v1/repos' })
+  const raw = String.raw`diff --git "a/old name.ts" "b/new name.ts"
+similarity index 80%
+rename from old name.ts
+rename to new name.ts
+--- "a/old name.ts"
++++ "b/new name.ts"
+@@ -1 +1 @@
+-old
++new
+diff --git "a/\346\226\260.ts" "b/\346\226\260.ts"
+new file mode 100644
+--- /dev/null
++++ "b/\346\226\260.ts"
+@@ -0,0 +1 @@
++hello
+diff --git a/logo.png b/logo.png
+Binary files a/logo.png and b/logo.png differ
+`
+  h.router = () => ({ text: raw })
+  const data = await h.load('@/modules/GitApi').default.getPullRequestDiff('MyGitea', 'owner/repo', '1', 3)
+  assert.ok(h.requests[0].url.pathname.endsWith('/pulls/1.diff'))
+  const utils = h.load('@CodeUpdate/utils/activity')
+  const event = utils.makeActivityEvent({ provider: 'MyGitea', repo: 'owner/repo', type: 'pulls' }, utils.normalizeActivityItem(item(1), 'pulls'), ['opened'])
+  const diff = h.load('@CodeUpdate/utils/diff').normalizePullRequestDiff(data, event)
+  assert.deepEqual(plain(diff.files).map(file => file.filename), ['new name.ts', '新.ts', 'logo.png'])
+  assert.equal(diff.files[0].previousFilename, 'old name.ts')
+  assert.equal(diff.files[1].status, '新增')
+  assert.equal(diff.files[2].missingPatch, true)
+})
+
+test('Gitea巨大diff在读取上限处停止，长代码行及过量diff不会撑大渲染数据', async () => {
+  const h = createHarness({ config: { Activity: { ShowDiff: true, DiffMaxLines: 5 } } })
+  h.config.CodeUpdate.repos.push({ provider: 'MyGitea', ApiUrl: 'https://gitea.example/api/v1/repos' })
+  let chunks = 0
+  h.router = () => ({ chunks: ['diff --git a/big.ts b/big.ts\n--- a/big.ts\n+++ b/big.ts\n@@ -0,0 +1,200000 @@\n' + '+x\n'.repeat(200000), 'must-not-be-read'], onChunk: () => chunks++ })
+  const data = await h.load('@/modules/GitApi').default.getPullRequestDiff('MyGitea', 'owner/repo', '1', 3)
+  assert.equal(data.truncated, true)
+  assert.ok(Buffer.byteLength(data.text) <= 512 * 1024)
+  assert.equal(chunks, 1)
+  const utils = h.load('@CodeUpdate/utils/activity')
+  const event = utils.makeActivityEvent({ provider: 'MyGitea', repo: 'owner/repo', type: 'pulls' }, utils.normalizeActivityItem(item(1), 'pulls'), ['opened'])
+  const normalize = h.load('@CodeUpdate/utils/diff').normalizePullRequestDiff
+  assert.equal(normalize(data, event).collapsed, true)
+  const long = normalize({ kind: 'files', hasMore: false, files: [{ filename: 'long.ts', patch: '@@ -0,0 +1 @@\n+' + 'x'.repeat(50000) }] }, event)
+  assert.equal(long.collapsed, true)
+  assert.ok(long.files[0].lines.every(line => line.text.length <= 161))
+  assert.ok(JSON.stringify(long).length < 2000)
+})
+
+test('diff代码和文件名安全转义且保留原文，关闭展示后不渲染已保存的diff', async () => {
+  const h = createHarness({ config: { Translate: true, Activity: { ShowDiff: true } } })
+  const utils = h.load('@CodeUpdate/utils/activity')
+  const event = utils.makeActivityEvent({ provider: 'GitHub', repo: 'owner/repo', type: 'pulls' }, utils.normalizeActivityItem(item(1), 'pulls'), ['opened'])
+  event.diff = h.load('@CodeUpdate/utils/diff').normalizePullRequestDiff({ kind: 'files', hasMore: false, files: [{ filename: '<img src=x>.ts', patch: '@@ -0,0 +1 @@\n+<script>alert("test")</script>' }] }, event)
+  const format = h.load('@CodeUpdate/utils/formatActivity').formatActivityInfo
+  const info = plain(await format(event))
+  assert.match(info.diff.files[0].lines[1].text, /<script>/)
+  const template = require('art-template')
+  const html = template(path.join(project, 'resources/CodeUpdate/index.html'), { pluResPath: '', sys: { scale: '', copyright: '' }, lifeData: [info] })
+  assert.doesNotMatch(html, /<script>|<img src=x>/)
+  assert.match(html, /(?:&lt;|&#60;)script(?:&gt;|&#62;)/)
+  assert.match(html, /(?:&lt;|&#60;)img src=x(?:&gt;|&#62;).ts/)
+  h.config.CodeUpdate.Activity.ShowDiff = false
+  assert.equal((await format(event)).diff, undefined)
+})
+
+test('文件API的大JSON响应也受读取上限保护，平台省略的补丁自动收起', async () => {
+  const h = createHarness({ config: { Activity: { ShowDiff: true } } })
+  let reads = 0
+  h.router = () => ({ chunks: [JSON.stringify([{ filename: 'large.ts', patch: 'x'.repeat(600000) }]), 'must-not-read'], onChunk: () => reads++ })
+  assert.equal(await h.load('@/modules/GitApi').default.getPullRequestDiff('GitHub', 'owner/repo', '1', 3), false)
+  assert.equal(reads, 1)
+  const utils = h.load('@CodeUpdate/utils/activity')
+  const event = utils.makeActivityEvent({ provider: 'GitHub', repo: 'owner/repo', type: 'pulls' }, utils.normalizeActivityItem(item(1), 'pulls'), ['opened'])
+  const diff = h.load('@CodeUpdate/utils/diff').normalizePullRequestDiff({ kind: 'files', hasMore: false, files: [{ filename: 'partial.ts', additions: 30, deletions: 0, patch: '@@ -0,0 +1 @@\n+onlyOneLine' }] }, event)
+  assert.equal(diff.collapsed, true)
+})
