@@ -62,7 +62,7 @@ export class Poke extends plugin<'notice.*.poke'> {
         List = FaceList.filter(i => !imageBlack.includes(i))
       }
       name = _.sample(List)
-      logger.mark(`${this.LogText} 表情随机选择 ${name}`)
+      logger.debug(`${this.LogText} 表情随机选择 ${name}`)
     } else {
       name = FaceList[imageType]
     }
