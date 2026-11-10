@@ -1,8 +1,10 @@
+import fs from 'node:fs/promises'
+import { join } from 'node:path'
 import { update as Update } from '../../../other/update.js'
 import { FacePath, PluginName } from '@/dir'
 import Data from '@/utils/data'
 import { FaceRepoUrl } from '@/constants'
-import { exec } from '@/utils'
+import { exec, logger } from '@/utils'
 
 let lock = false
 
@@ -20,6 +22,11 @@ export class DFUpdate extends plugin<'message'> {
         {
           reg: /^#?DF(安装|(强制)?更新)(戳一戳)?图库$/i,
           fnc: 'upImg'
+        },
+        {
+          reg: /^#?DF(卸载|精简)(戳一戳)?图库$/i,
+          fnc: 'removeImg',
+          permission: 'master'
         }
       ]
     })
@@ -36,11 +43,14 @@ export class DFUpdate extends plugin<'message'> {
 
   async upImg (e = this.e) {
     if (!e.isMaster) return
-    if (lock) return e.reply('已有更新任务正在进行中，请勿重复操作！')
+    if (lock) return e.reply('已有图库任务正在进行中，请勿重复操作！')
     lock = true
     try {
       let command = ''; let msg = ''; let type: 'update' | 'install'
       if (await Data.isDirectory(FacePath)) {
+        if (!await Data.isDirectory(join(FacePath, '.git'))) {
+          return e.reply('本地图库缺少 .git 文件夹，图片仍可正常使用。如需更新，请先发送 #DF卸载图库，再发送 #DF安装图库 重新安装。')
+        }
         const isForce = e.msg.includes('强制')
         command = 'git pull --rebase'
         if (isForce) command = `git reset --hard origin/HEAD && ${command}`
@@ -72,6 +82,36 @@ export class DFUpdate extends plugin<'message'> {
         .catch(error => {
           void e.reply(`图片资源${type === 'update' ? '更新' : '安装'}失败！\nError code: ${error?.code}\n${error?.stack}\n 请尝试${type === 'update' ? '使用 #DF强制更新图库 或' : ''}稍后重试。`)
         })
+    } finally {
+      lock = false
+    }
+  }
+
+  async removeImg (e = this.e) {
+    if (!e.isMaster) return
+    if (lock) return e.reply('已有图库任务正在进行中，请勿重复操作！')
+    lock = true
+    const isUninstall = e.msg.includes('卸载')
+    const action = isUninstall ? '卸载' : '精简'
+    try {
+      if (!await Data.isDirectory(FacePath)) {
+        return e.reply(`尚未安装戳一戳图库，无需${action}~`)
+      }
+      if ((await fs.lstat(FacePath)).isSymbolicLink()) {
+        return e.reply('图库目录是符号链接，请手动处理，以免误删其他位置的文件。')
+      }
+      const target = isUninstall ? FacePath : join(FacePath, '.git')
+      if (!isUninstall && !await Data.isDirectory(target)) {
+        return e.reply('图库中没有 .git 文件夹，无需精简，图片仍可正常使用~')
+      }
+      await e.reply(`开始${action}戳一戳图库，请主人稍安勿躁~`)
+      await fs.rm(target, { recursive: true, force: true, maxRetries: 3 })
+      return e.reply(isUninstall
+        ? '戳一戳图库已卸载，将使用在线图片。需要时可发送 #DF安装图库 重新安装。'
+        : '图库精简完成，已删除 .git 文件夹，图片仍可正常使用。如需更新，请先发送 #DF卸载图库，再发送 #DF安装图库 重新安装。')
+    } catch (error) {
+      logger.error(`${action}图库失败：`, error)
+      return e.reply(`${action}图库失败，请检查文件权限或稍后重试。`)
     } finally {
       lock = false
     }
