@@ -94,7 +94,7 @@ export class Request {
           return await response.json() as T
       }
     } catch (error) {
-      if (log) logger[typeof log === 'boolean' ? 'error' : log](`${method}请求失败:`, error)
+      logger[typeof log === 'boolean' ? 'error' : log](`${method}请求失败:`, error)
       return false
     }
   }
