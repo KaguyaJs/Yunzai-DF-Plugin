@@ -2,7 +2,7 @@ import config from '@/config'
 import GitApi from '@/modules/GitApi'
 import GitRepo from '@/utils/GitRepo'
 import { logger } from '@/utils'
-import { normalizeRepository } from '../../../config/codeUpdateMigration'
+import { normalizeRepository } from '../../../config/codeUpdateRepository'
 import { getRepoKey, repoPath } from '../utils/repo'
 import type { RepoConfig, SubscriptionTarget } from '../utils/repo'
 

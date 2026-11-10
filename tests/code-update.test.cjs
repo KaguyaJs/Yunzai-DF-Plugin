@@ -947,3 +947,180 @@ test('文件API的大JSON响应也受读取上限保护，平台省略的补丁�
   const diff = h.load('@CodeUpdate/utils/diff').normalizePullRequestDiff({ kind: 'files', hasMore: false, files: [{ filename: 'partial.ts', additions: 30, deletions: 0, patch: '@@ -0,0 +1 @@\n+onlyOneLine' }] }, event)
   assert.equal(diff.collapsed, true)
 })
+
+test('请求估算解析五/六段Cron、秒级任务、范围及周/月日历限制', () => {
+  const { cronChecksPerHour } = createHarness().load('@/utils/gitRequestEstimate')
+  const now = new Date('2026-11-11T12:00:00')
+  for (const [cron, expected] of [
+    ['0 */30 * * * *', 2], ['*/30 * * * *', 2], ['*/15 * * * * *', 240],
+    ['* * * * * *', 3600], ['0 0 */6 * * *', 1 / 6], ['0 0 9,17 * * *', 1 / 12]
+  ]) assert.equal(cronChecksPerHour(cron, now), expected, cron)
+  let weekdays = 0
+  for (let day = 0; day < 366; day++) {
+    const date = new Date(now)
+    date.setDate(date.getDate() + day)
+    if (date.getDay() > 0 && date.getDay() < 6) weekdays++
+  }
+  assert.equal(cronChecksPerHour('0 0 9-17 * * MON-FRI', now), weekdays * 9 / (366 * 24))
+  assert.equal(cronChecksPerHour('0 0 12 1 * *', now), 12 / (366 * 24))
+  assert.throws(() => cronChecksPerHour('bad cron', now))
+})
+
+test('按平台估算去重后的多类型多分支仓库，包含本地扫描并尊重排除项', () => {
+  const h = createHarness()
+  const rule = { provider: 'GitHub', repo: 'owner/repo', type: ['commits', 'releases', 'pulls', 'issues'], branch: ['main', 'dev'] }
+  h.config.CodeUpdate.List.push(
+    { Group: [1, 2], AutoPath: true, Exclude: ['owner/excluded:main'], repos: [rule] },
+    { QQ: [3], repos: [{ ...rule, provider: 'github', labels: ['bug'] }, { provider: 'Gitee', repo: 'owner/repo', type: ['commits', 'releases'] }] }
+  )
+  const local = [
+    { provider: 'github', repo: 'owner/repo', type: 'commit', branch: 'main' },
+    { provider: 'GitHub', repo: 'owner/local', type: 'commit', branch: 'main' },
+    { provider: 'Gitee', repo: 'owner/excluded', type: 'commit', branch: 'main' }
+  ]
+  const estimates = plain(h.load('@/utils/gitRequestEstimate').estimateGitRequests(h.config.CodeUpdate, local, 2))
+  const github = estimates.find(value => value.provider.toLowerCase() === 'github')
+  const gitee = estimates.find(value => value.provider === 'Gitee')
+  assert.equal(github.repositories, 2)
+  assert.deepEqual(github.methods, { commits: 3, releases: 1, pulls: 1, issues: 1 })
+  assert.equal(github.perCheck, 6)
+  assert.equal(github.perHour, 12)
+  assert.equal(gitee.repositories, 1)
+  assert.equal(gitee.defaultBranches, 1)
+  assert.equal(gitee.defaultPerHour, 2)
+  assert.equal(gitee.perHour, 6)
+  assert.equal(h.requests.length, 0)
+})
+
+test('默认分支查询共享去重并使用五分钟缓存，关闭自动检查时为零', () => {
+  const h = createHarness()
+  subscribe(h, 'commits', {}, 1)
+  subscribe(h, 'commits', {}, 2)
+  const { estimateGitRequests } = h.load('@/utils/gitRequestEstimate')
+  let [value] = estimateGitRequests(h.config.CodeUpdate, [], 120)
+  assert.equal(value.defaultBranches, 1)
+  assert.equal(value.defaultPerHour, 12)
+  assert.equal(value.perHour, 132)
+  const rates = h.load('@/utils/gitRequestEstimate').cronRequestRates('0 */4 * * * *')
+  assert.equal(rates.checksPerHour, 15)
+  assert.equal(rates.defaultChecksPerHour, 7.5)
+  const clustered = h.load('@/utils/gitRequestEstimate').cronRequestRates('0 0-9 12 * * *')
+  assert.equal(clustered.checksPerHour, 10 / 24)
+  assert.equal(clustered.defaultChecksPerHour, 2 / 24)
+  h.config.CodeUpdate.Auto = false
+  ;[value] = estimateGitRequests(h.config.CodeUpdate, [], 120)
+  assert.equal(value.perHour, 0)
+})
+
+test('all估算先标记未知分支，使用已获取快照后按实际分支去重并计入发现接口', () => {
+  const h = createHarness()
+  subscribe(h, ['commits', 'releases'], { branch: ['all'] }, 1)
+  subscribe(h, 'commits', { branch: ['all'] }, 2)
+  subscribe(h, 'commits', { branch: ['main'] }, 3)
+  const { estimateGitRequests } = h.load('@/utils/gitRequestEstimate')
+  const [unknown] = estimateGitRequests(h.config.CodeUpdate, [], 2)
+  assert.equal(unknown.allBranches, 1)
+  assert.equal(unknown.unresolvedAllBranches, 1)
+  assert.equal(unknown.perHour, 6)
+  const [resolved] = estimateGitRequests(h.config.CodeUpdate, [], 2, [
+    { provider: 'GitHub', repo: 'owner/repo', type: 'commits', branch: 'main' },
+    { provider: 'github', repo: 'owner/repo', type: 'commits', branch: 'main' },
+    { provider: 'GitHub', repo: 'owner/repo', type: 'commits', branch: 'dev' },
+    { provider: 'GitHub', repo: 'owner/repo', type: 'releases' }
+  ])
+  assert.equal(resolved.repositories, 1)
+  assert.equal(resolved.unresolvedAllBranches, 0)
+  assert.equal(resolved.methods.commits, 2)
+  assert.equal(resolved.perHour, 8)
+})
+
+test('请求量日志处理关闭/空配置/无效Cron，重复检查不刷屏且强制扫描会输出', () => {
+  const h = createHarness({ config: { Auto: false, Cron: 'bad cron' } })
+  const { logGitRequestEstimate } = h.load('@/utils/gitRequestEstimate')
+  const logger = Object.fromEntries(['info', 'warn'].map(name => [name, message => h.logs.push({ name, args: [message] })]))
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.ok(h.logs.some(log => log.args[0].includes('自动检查已关闭')))
+  assert.ok(h.logs.some(log => log.args[0].includes('当前没有需要监听的仓库')))
+  const count = h.logs.length
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.equal(h.logs.length, count)
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger, { force: true })
+  assert.equal(h.logs.length, count * 2)
+  h.config.CodeUpdate.Auto = true
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.ok(h.logs.some(log => log.name === 'warn' && log.args[0].includes('无法计算请求量')))
+  assert.equal(h.requests.length, 0)
+})
+
+test('完整更新扫描后输出all实际请求量，分支变化时重新输出且统计不增加请求', async () => {
+  const h = createHarness()
+  subscribe(h, ['commits', 'releases'], { branch: ['all'] })
+  let names = ['main', 'dev']
+  h.router = url => {
+    if (url.pathname.endsWith('/branches')) return { data: names.map(name => ({ name })), link: '<https://example.com/last>; rel="last"' }
+    if (url.pathname.endsWith('/releases')) return { data: [] }
+    return { data: { sha: 'fixture-sha' } }
+  }
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  assert.equal(await CodeUpdate(true), 0)
+  assert.equal(h.requests.length, 4)
+  const platformLogs = () => h.logs.filter(log => log.args[0].includes('[DF:仓库请求估算] GitHub:'))
+  assert.match(platformLogs()[0].args[0], /基础访问约 8 次\/小时/)
+  assert.equal(await CodeUpdate(true), 0)
+  assert.equal(platformLogs().length, 1)
+  names.push('feature')
+  assert.equal(await CodeUpdate(true), 0)
+  assert.match(platformLogs().at(-1).args[0], /基础访问约 10 次\/小时/)
+  assert.equal(h.requests.length, 13)
+})
+
+test('all仓库暂无分支时仍输出发现接口的用量，查询失败时标记分支未知', async () => {
+  for (const failed of [false, true]) {
+    const h = createHarness()
+    subscribe(h, 'commits', { branch: ['all'] })
+    h.router = () => failed ? { status: 500 } : { data: [] }
+    assert.equal(await h.load('@CodeUpdate').CodeUpdate(true), false)
+    assert.equal(h.requests.length, 1)
+    const logs = h.logs.map(log => log.args[0]).filter(value => value.includes('[DF:仓库请求估算]'))
+    assert.ok(logs.some(value => value.includes(failed ? '已知部分至少约 2 次/小时' : '基础访问约 2 次/小时')))
+    assert.equal(logs.some(value => value.includes('分支数待远程检查')), failed)
+  }
+})
+
+test('本地全部Git仓库扫描完成后才输出完整平台估算，重新扫描不会叠加仓库', async () => {
+  const root = path.resolve(project, 'tests/virtual-git-root')
+  let release
+  const gate = new Promise(resolve => { release = resolve })
+  const fileSystem = {
+    access: async filename => {
+      if (filename === path.join(root, '.git')) throw new Error('not a repo')
+      if (filename === path.join(root, 'b', '.git')) await gate
+    },
+    readdir: async filename => filename === root ? ['a', 'b'].map(name => ({ name, isDirectory: () => true })) : []
+  }
+  const h = createHarness({ fileSystem, exec: async (command, cwd) => {
+    if (command.includes('rev-parse')) return 'main'
+    if (command.includes('config')) return 'origin'
+    return cwd.endsWith(`${path.sep}a`) ? 'https://github.com/owner/a.git' : 'https://gitee.com/owner/b.git'
+  } })
+  h.config.CodeUpdate.List.push({ AutoPath: true, repos: [], Group: [1] })
+  h.config.AutoPath = false // Trigger the full scan explicitly so the test can control completion.
+  const git = h.load('../src/utils/GitRepo')
+  h.logs.length = 0
+  const scanning = git.loadLocalPlugins(root)
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(git.Loading, true)
+  assert.equal(h.logs.some(log => log.args[0].includes('[DF:仓库请求估算]')), false)
+  release()
+  await scanning
+  assert.equal(git.Loading, false)
+  assert.equal(git.PluginPath.length, 2)
+  const completed = h.logs.findIndex(log => log.args[0].includes('本地Git仓库载入完成'))
+  const firstEstimate = h.logs.findIndex(log => log.args[0].includes('[DF:仓库请求估算]'))
+  assert.ok(completed >= 0 && firstEstimate > completed)
+  assert.ok(h.logs.some(log => /GitHub: 1 个仓库.*基础访问约 2 次\/小时/.test(log.args[0])))
+  assert.ok(h.logs.some(log => /Gitee: 1 个仓库.*基础访问约 2 次\/小时/.test(log.args[0])))
+  await git.loadLocalPlugins(root)
+  assert.equal(git.PluginPath.length, 2)
+  assert.equal(h.requests.length, 0)
+})

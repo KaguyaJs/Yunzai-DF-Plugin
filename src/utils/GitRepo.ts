@@ -5,6 +5,7 @@ import Config from '@/config'
 import { createTimer } from './time'
 import { logger } from './logger'
 import { exec } from './exec'
+import { logGitRequestEstimate } from './gitRequestEstimate'
 
 /**
  * 单个插件仓库项
@@ -117,6 +118,7 @@ export async function loadLocalPlugins (root: string = YunzaiPath): Promise<void
     Loading = false
     logger.mark(`本地Git仓库载入完成, 耗时: ${timer.end()}`)
   }
+  logGitRequestEstimate(Config.CodeUpdate, PluginPath, logger, { force: true })
 }
 
 /** 扫描根目录，返回 RepoMap */
@@ -218,6 +220,8 @@ export function classify (url: string, branch: string, result: RepoMap): void {
 
 if (Config.AutoPath) {
   loadLocalPlugins().catch(err => logger.warn('载入本地Git仓库失败', err))
+} else {
+  logGitRequestEstimate(Config.CodeUpdate, PluginPath, logger, { force: true })
 }
 
 export default {

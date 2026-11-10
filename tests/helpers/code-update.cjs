@@ -17,6 +17,8 @@ function createHarness (options = {}) {
   const config = {
     CodeUpdate: {
       FirstAdd: false,
+      Auto: true,
+      Cron: '0 */30 * * * *',
       Translate: false,
       badgeStyle: true,
       multiPage: 2,
@@ -112,15 +114,18 @@ function createHarness (options = {}) {
   }
 
   function load (specifier, parent = path.join(project, 'tests/entry.cjs')) {
+    if (specifier === 'node:fs/promises' && options.fileSystem) return options.fileSystem
     if (specifier === '../../../../lib/common/common') return { makeForwardMsg: async (_, messages) => messages }
     if (specifier === '@/config') return harness.configFacade ?? config
     if (specifier === '@/constants' || specifier === '@/constants/Redis') return { CodeUpdateRedisKey: 'fixture:CodeUpdate', commonRedisKey: 'fixture' }
     if (specifier === '@/utils') return utils
-    if (specifier === '@/dir') return { ResPath: path.join(project, 'resources'), PluginName: 'DF-Plugin' }
+    if (specifier === '@/dir') return { ResPath: path.join(project, 'resources'), PluginName: 'DF-Plugin', YunzaiPath: path.resolve(project, '../..') }
     if (specifier === '@/modules') return { FacePoke: async () => path.join(project, 'resources/CodeUpdate/icon/git.svg') }
     if (specifier === '@/utils/GitRepo') return { PluginPath: harness.localRepos }
     const filename = resolveModule(specifier, parent)
     if (!filename) return require(specifier)
+    if (filename.endsWith(path.join('utils', 'logger.ts'))) return { logger }
+    if (filename.endsWith(path.join('utils', 'exec.ts')) && options.exec) return { exec: options.exec }
     if (filename.endsWith(path.join('utils', 'translate.ts'))) {
       return {
         getCodeUpdateTranslateName: () => '测试翻译',

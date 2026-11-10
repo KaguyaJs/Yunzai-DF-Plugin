@@ -9,6 +9,8 @@ import type { RepoConfig } from './utils/repo'
 import { subscriptionSnapshot } from './services/subscriptions'
 import { activityOptions, isActivityMethod } from './utils/activity'
 import type { RepositoryUpdate } from './services/repo'
+import { PluginPath } from '@/utils/GitRepo'
+import { logGitRequestEstimate } from '@/utils/gitRequestEstimate'
 
 let checking = false
 
@@ -37,10 +39,12 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
   logger.mark(logger.cyan('开始检查仓库更新'))
   const { repos, targets, subscriptions, complete } = await subscriptionSnapshot()
   if (!repos.length) {
+    logGitRequestEstimate(config.CodeUpdate, PluginPath, logger, { resolved: complete ? repos : undefined })
     if (e) await e.reply(complete ? '当前没有可检查的仓库，请检查监听配置' : '获取仓库或分支列表失败，请稍后重试')
     return false
   }
   const updates = await fetchUpdate(repos, isAuto, targets, subscriptions)
+  logGitRequestEstimate(config.CodeUpdate, PluginPath, logger, { resolved: complete ? repos : undefined })
   if (!updates.size) {
     logger.info(logger.yellow('未检测到仓库更新'))
     return 0

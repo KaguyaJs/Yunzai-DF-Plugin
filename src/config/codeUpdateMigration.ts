@@ -1,27 +1,14 @@
-import type { Config, GitApiMethod } from '@/types'
+import type { Config } from '@/types'
 import type { RepositoryConfig } from '../modules/CodeUpdate/utils/repo'
 import { redisHeler } from '../modules/CodeUpdate/utils/redis'
 import { commonRedisKey } from '@/constants/Redis'
+import { normalizeRepository } from './codeUpdateRepository'
+import type { LegacyRepository } from './codeUpdateRepository'
+
+export { normalizeRepository } from './codeUpdateRepository'
 
 // Outside CodeUpdate:* so obsolete-subscription cleanup cannot remove the marker.
 export const CODE_UPDATE_MIGRATION_KEY = `${commonRedisKey}:ConfigMigration:CodeUpdate:v2`
-
-type LegacyRepository = Omit<RepositoryConfig, 'type' | 'branch'> & {
-  type?: string | string[]
-  branch?: string | string[]
-}
-
-export function normalizeRepository (item: LegacyRepository): RepositoryConfig {
-  const input = item.type === undefined ? ['commits'] : Array.isArray(item.type) ? item.type : [item.type]
-  const type = [...new Set(input.map(value => value === 'commit' ? 'commits' : value))]
-  if (type.some(value => !['commits', 'releases', 'pulls', 'issues'].includes(value))) {
-    throw new Error(`仓库 ${item.repo} 包含不支持的监听类型`)
-  }
-  const raw = Array.isArray(item.branch) ? item.branch : item.branch?.trim() ? [item.branch] : []
-  const branches = [...new Set(raw.flatMap(value => value.trim() ? value.trim().split(/[,，\s]+/) : ['']))]
-  const branch = branches.some(value => value.toLowerCase() === 'all') ? ['all'] : branches
-  return { ...item, type: type as GitApiMethod[], branch }
-}
 
 function stable (value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stable).join(',')}]`
