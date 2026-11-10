@@ -34,6 +34,23 @@ CodeUpdate:
   multiPageTips: |-
     当获取到的数据达到多少条时分片发送，填 -1 关闭
   multiPage: 12
+  ActivityTips: |-
+    PR/Issue推送设置（GitHub、Gitee、Gitcode及Gitea兼容接口）
+    PageSize: 每页获取数量（1-100）
+    MaxPages: 单次最多获取页数；达到上限且尚有数据时保留检查进度，需调高后重试
+    InitialLimit: 首次推送与手动预览的每仓库条目上限
+    BatchSize: 包含PR/Issue时每条推送消息的条目上限
+    BodyLimit: 正文/评论摘要最大字符数，0为隐藏正文
+    OverlapSeconds: 增量查询回看秒数，避免时间边界遗漏
+    SendLinks: PR/Issue图片后附可点击的原始链接
+  Activity:
+    PageSize: 100
+    MaxPages: 20
+    InitialLimit: 10
+    BatchSize: 20
+    BodyLimit: 600
+    OverlapSeconds: 60
+    SendLinks: false
   timeFormatTips: |-
     时间格式
     1: 多久之前 x分钟前 X小时前
@@ -76,7 +93,13 @@ CodeUpdate:
         provider: 仓库提供商，唯一标识符
         repo: 仓库名
         branch: 分支名 (commits时有效 为空自动获取)
-        type: commits 或 release
+        type: commits、releases、pulls（PR）或 issues
+        events: 监听事件，留空使用新建/关闭/重开，PR另含合并/转为正式
+        labels / excludeLabels: 包含任一指定标签 / 排除标签
+        authors / excludeAuthors: 作者账号筛选（评论按评论作者）
+        excludeBots: 忽略机器人，默认true
+        includeDrafts: 包含草稿PR，默认false
+        baseBranches: PR目标分支，留空监听全部
     note: 备注
   List: []
 

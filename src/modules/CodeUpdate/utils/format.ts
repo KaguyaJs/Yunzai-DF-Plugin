@@ -298,7 +298,7 @@ function getTranslateInfo (translated: boolean): false | { label: string, title:
  * const iconPath = await getIcon('github');
  * // 返回本地图标路径或默认图标
  */
-async function getIcon (source: string): Promise<string> {
+export async function getIcon (source: string): Promise<string> {
   const iconName = PROVIDER_ICON_MAP[String(source).toLowerCase()] || 'git'
 
   // find local file

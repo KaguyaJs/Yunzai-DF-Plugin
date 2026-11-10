@@ -1,4 +1,4 @@
-import type { GitApiMethod } from './CodeUpdate'
+import type { GitApiMethod, GitActivityAction } from './CodeUpdate'
 
 export interface Config {
   CodeUpdate: {
@@ -59,6 +59,16 @@ export interface Config {
      * @default 12
      */
     multiPage: number
+    /** PR / Issue polling and presentation settings. */
+    Activity: {
+      PageSize: number
+      MaxPages: number
+      InitialLimit: number
+      BatchSize: number
+      BodyLimit: number
+      OverlapSeconds: number
+      SendLinks: boolean
+    }
     /**
      * 仓库更新检查Cron表达式
      * Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
@@ -103,6 +113,15 @@ export interface Config {
         repo: string
         branch?: string
         type: GitApiMethod | 'commit'
+        /** Empty/omitted uses the default lifecycle events for this type. */
+        events?: GitActivityAction[]
+        labels?: string[]
+        excludeLabels?: string[]
+        authors?: string[]
+        excludeAuthors?: string[]
+        excludeBots?: boolean
+        includeDrafts?: boolean
+        baseBranches?: string[]
       }[]
     }[]
   }

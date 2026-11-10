@@ -1,6 +1,7 @@
 import type { Config } from '@/types'
 
 export type RepoConfig = Config['CodeUpdate']['List'][number]['repos'][number]
+export type SubscriptionTarget = { type: 'Group' | 'QQ', id: string, repos: Map<string, RepoConfig[]> }
 
 export function getRepoType (type: RepoConfig['type']) {
   return type === 'commit' ? 'commits' : type

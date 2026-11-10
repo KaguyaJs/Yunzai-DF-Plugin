@@ -1,5 +1,5 @@
 import { CodeUpdateRedisKey } from '@/constants'
-import type { GitApiMethod } from '@/types'
+import type { GitApiMethod, ActivityJournal } from '@/types'
 
 const PROVIDERS: Record<string, string> = { github: 'GitHub', gitee: 'Gitee', gitcode: 'Gitcode', cnb: 'CNB' }
 
@@ -28,5 +28,37 @@ export const redisHeler = {
 
   getDeliveryKey (key: string, target: string) {
     return `${key}:delivery:${target}`
+  },
+
+  getActivityKey (key: string) {
+    return `${key}:activity`
+  },
+
+  async getActivityJournal (key: string): Promise<ActivityJournal | null> {
+    const value = await redis.get(key)
+    if (!value) return null
+    const journal: ActivityJournal = JSON.parse(value)
+    if (journal.version !== 1 || typeof journal.checkedAt !== 'string' || !Number.isFinite(Date.parse(journal.checkedAt)) ||
+      !journal.items || typeof journal.items !== 'object' || Array.isArray(journal.items) ||
+      !journal.pending || typeof journal.pending !== 'object' || Array.isArray(journal.pending)) {
+      throw new Error('PR/Issue 推送记录格式错误，请检查对应 Redis 数据')
+    }
+    return journal
+  },
+
+  async saveActivityJournal (key: string, journal: ActivityJournal) {
+    await redis.set(key, JSON.stringify(journal))
+  },
+
+  async acknowledgeActivities (key: string, ids: string[], target: string) {
+    const journal = await this.getActivityJournal(key)
+    if (!journal) return
+    for (const id of ids) {
+      const pending = journal.pending[id]
+      if (!pending) continue
+      pending.targets = pending.targets.filter(value => value !== target)
+      if (!pending.targets.length) delete journal.pending[id]
+    }
+    await this.saveActivityJournal(key, journal)
   },
 }

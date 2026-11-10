@@ -18,7 +18,7 @@
     <div class="data_box">
       <div class="list">
         {{each lifeData item}}
-        <div class="item">
+        <div class="item {{if item.activity}}activity-card{{/if}}">
           <div class="title">
             <div class="text">
               <img src="{{item.icon}}" class="icon">
@@ -26,7 +26,26 @@
               {{if item.release}}
               <div class="release">Releases</div>
               {{/if}}
+              {{if item.activity}}
+              <span class="activity-kind">{{item.detail.kind}} #{{item.detail.number}}</span>
+              {{/if}}
             </div>
+            {{if item.activity}}
+            <div class="activity-meta">
+              <span class="activity-state state-{{item.detail.state}}">{{item.detail.stateLabel}}</span>
+              {{if item.detail.draft}}<span class="activity-action">草稿</span>{{/if}}
+              {{each item.detail.actions action}}<span class="activity-action">{{action}}</span>{{/each}}
+              {{if item.detail.comments !== undefined}}<span class="activity-comment-count">{{item.detail.comments}} 条评论</span>{{/if}}
+            </div>
+            {{if item.detail.baseBranch}}
+            <div class="activity-branches">{{item.detail.headBranch || '来源分支'}} <span>→</span> {{item.detail.baseBranch}}</div>
+            {{/if}}
+            {{if item.detail.labels.length}}
+            <div class="activity-labels">
+              {{each item.detail.labels label}}<span class="activity-label" style="border-color: #{{label.color}}"><i style="background-color: #{{label.color}}"></i>{{label.name}}</span>{{/each}}
+            </div>
+            {{/if}}
+            {{/if}}
             {{if item.name.branch || item.name.tag || item.name.sha}}
             <div class="branch">
               {{if item.name.branch || item.name.tag}}

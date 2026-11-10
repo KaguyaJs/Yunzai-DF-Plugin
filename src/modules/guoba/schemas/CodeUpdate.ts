@@ -1,7 +1,38 @@
 import { GuobaSchemas } from '@/types/guoba'
 import { PluginPath } from '@/utils'
-import { repoPath } from '@CodeUpdate/utils'
+import { repoPath, ACTIVITY_ACTIONS } from '@CodeUpdate/utils'
 import config from '@/config'
+import type { Schemas } from 'trss-yunzai/guoba'
+import type { RepoConfig } from '@CodeUpdate/utils/repo'
+
+const activityFilters: Schemas<RepoConfig> = [
+  {
+    field: 'events',
+    label: 'PR/Issue监听事件',
+    bottomHelpMessage: '留空使用生命周期事件；评论、标签、正文修改和新代码需手动勾选。转正式/草稿、合并和新代码仅适用于PR。',
+    component: 'Select',
+    componentProps: {
+      mode: 'multiple',
+      allowClear: true,
+      options: Object.entries(ACTIVITY_ACTIONS).filter(([value]) => value !== 'snapshot').map(([value, label]) => ({ value, label }))
+    }
+  },
+  ...([
+    ['labels', '包含标签', '匹配任一标签；留空不限制'],
+    ['excludeLabels', '排除标签', '命中任一标签则不推送'],
+    ['authors', '包含作者账号', '留空不限制；评论事件按评论作者匹配'],
+    ['excludeAuthors', '排除作者账号', '评论事件按评论作者匹配'],
+    ['baseBranches', 'PR目标分支', '留空监听所有目标分支；例如 main、dev']
+  ] as const).map(([field, label, bottomHelpMessage]) => ({
+    field,
+    label,
+    bottomHelpMessage: `仅PR/Issue生效。${bottomHelpMessage}`,
+    component: 'GTags' as const,
+    // componentProps: { mode: 'tags', allowClear: true }
+  })),
+  { field: 'excludeBots', label: '忽略机器人活动', bottomHelpMessage: '仅PR/Issue生效；省略此项时默认开启。', component: 'Switch', defaultValue: true },
+  { field: 'includeDrafts', label: '包含草稿PR', bottomHelpMessage: '省略此项时默认关闭；监听转为草稿事件时应开启。', component: 'Switch', defaultValue: false }
+]
 
 export const CodeUpdate: GuobaSchemas = [
   {
@@ -33,7 +64,7 @@ export const CodeUpdate: GuobaSchemas = [
   {
     field: 'CodeUpdate.FirstAdd',
     label: '首次添加仓库是否推送',
-    bottomHelpMessage: '当第一次添加仓库进推送列表时，是否立马进行一次推送（可能会推送很久以前的数据）',
+    bottomHelpMessage: '首次监听是否推送当前状态；PR/Issue按首次条目上限推送，关闭时只建立基线。',
     component: 'Switch'
   },
   {
@@ -45,7 +76,7 @@ export const CodeUpdate: GuobaSchemas = [
   {
     field: 'CodeUpdate.Translate',
     label: '更新内容翻译',
-    bottomHelpMessage: '开启后会在截图渲染前将提交信息和Release内容翻译为简体中文。',
+    bottomHelpMessage: '开启后会在截图渲染前将提交、Release、PR、Issue及评论内容翻译为简体中文。',
     component: 'Switch'
   },
   {
@@ -91,6 +122,53 @@ export const CodeUpdate: GuobaSchemas = [
       placeholder: '请输入数量，-1 关闭'
     },
     required: true,
+  },
+  {
+    field: 'CodeUpdate.Activity.PageSize',
+    label: 'PR/Issue每页数量',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 100 },
+    bottomHelpMessage: '首次检查完整建立基线；后续按更新时间增量获取。'
+  },
+  {
+    field: 'CodeUpdate.Activity.MaxPages',
+    label: 'PR/Issue最多获取页数',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 1000 },
+    bottomHelpMessage: '达到上限且尚有数据时保留原进度；大型仓库可调高。'
+  },
+  {
+    field: 'CodeUpdate.Activity.InitialLimit',
+    label: 'PR/Issue首次及预览条目上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 100 }
+  },
+  {
+    field: 'CodeUpdate.Activity.BatchSize',
+    label: 'PR/Issue每条消息的条目上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 50 },
+    bottomHelpMessage: '超过上限时分批发送，每批成功后独立确认；手动预览同样生效。'
+  },
+  {
+    field: 'CodeUpdate.Activity.BodyLimit',
+    label: 'PR/Issue正文摘要长度',
+    component: 'InputNumber',
+    componentProps: { min: 0, max: 10000 },
+    bottomHelpMessage: '评论同样生效；填0只展示标题和状态。'
+  },
+  {
+    field: 'CodeUpdate.Activity.OverlapSeconds',
+    label: 'PR/Issue增量回看秒数',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 3600 },
+    bottomHelpMessage: '处理更新时间的边界重叠，已检测过的事件不会重复入队。'
+  },
+  {
+    field: 'CodeUpdate.Activity.SendLinks',
+    label: 'PR/Issue附带原始链接',
+    component: 'Switch',
+    bottomHelpMessage: '图片消息后附可点击链接。'
   },
   {
     field: 'CodeUpdate.repos',
@@ -176,6 +254,7 @@ export const CodeUpdate: GuobaSchemas = [
         {
           field: 'AutoPath',
           label: '自动扫描本地插件',
+          bottomHelpMessage: '自动扫描监听提交；PR/Issue需在仓库配置中单独添加。',
           component: 'Switch'
         },
         {
@@ -238,6 +317,7 @@ export const CodeUpdate: GuobaSchemas = [
               {
                 field: 'branch',
                 label: '分支名',
+                bottomHelpMessage: '仅提交监听生效；PR请使用目标分支筛选。',
                 component: 'Input',
                 componentProps: {
                   placeholder: '请输入分支名'
@@ -251,10 +331,14 @@ export const CodeUpdate: GuobaSchemas = [
                 componentProps: {
                   options: [
                     { label: '提交', value: 'commits' },
-                    { label: '发布', value: 'releases' }
+                    { label: '发布', value: 'releases' },
+                    { label: 'PR', value: 'pulls' },
+                    { label: 'Issues', value: 'issues' }
                   ]
-                }
-              }
+                },
+                bottomHelpMessage: 'PR/Issue支持GitHub、Gitee、Gitcode和Gitea兼容接口；CNB暂不支持。'
+              },
+              ...activityFilters
             ]
           }
         },

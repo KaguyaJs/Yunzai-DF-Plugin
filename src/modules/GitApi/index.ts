@@ -1,6 +1,6 @@
 import { request, logger } from '@/utils'
 import config from '@/config'
-import type { GitApiMethod, GitCommitDataType, GitReleaseDataType } from '@/types'
+import type { GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment } from '@/types'
 type Provider = 'GitHub' | 'Gitee' | 'Gitcode' | 'CNB' | string
 
 const DEFAULT_API: Record<string, string> = {
@@ -51,7 +51,7 @@ export default new class RepoService {
    * @returns 成功返回数据，失败返回 false
    */
   async getRepositoryData<
-    M extends GitApiMethod
+    M extends Extract<GitApiMethod, 'commits' | 'releases'>
   > (
     source: Provider,
     repo: string,
@@ -106,6 +106,89 @@ export default new class RepoService {
     const headers = this.getHeaders(source, token)
     logger.trace('请求 URL:', safeUrl(url))
     return await this.fetchData<GitCommitDataType | GitReleaseDataType>(url, headers, repo, source) as any
+  }
+
+  supportsActivity (source: Provider) {
+    return /github|gitee|gitcode|gitea/i.test(source)
+  }
+
+  private activityUrl (source: Provider, repo: string, path: string) {
+    if (!this.supportsActivity(source)) throw new Error(`${source} 暂不支持 PR/Issue 监听`)
+    const { apiUrl, token } = apiUrlFor(source)
+    if (!apiUrl) throw new Error(`未知数据源: ${source}`)
+    const url = new URL(apiUrl)
+    url.pathname = `${basePath(url.pathname)}/${repo.split('/').map(encodeURIComponent).join('/')}/${path}`
+    if (/gitee/i.test(source) && token) url.searchParams.set('access_token', token)
+    return { url, headers: this.getHeaders(source, token) }
+  }
+
+  /** Fully read the requested window; never advance a cursor after a partial/failed scan. */
+  private async activityCollection<T extends { updated_at?: string, created_at?: string }> (
+    source: Provider,
+    repo: string,
+    url: URL,
+    headers: Record<string, string>,
+    options: { pageSize: number, maxPages: number, stopBefore?: number }
+  ): Promise<T[] | false> {
+    const result: T[] = []
+    const pageSize = Math.max(1, Math.min(100, options.pageSize))
+    url.searchParams.set(/gitea/i.test(source) ? 'limit' : 'per_page', String(pageSize))
+    for (let page = 1; page <= options.maxPages; page++) {
+      url.searchParams.set('page', String(page))
+      const pagination: { hasNext?: boolean } = {}
+      const data = await this.fetchData<T[]>(url, headers, repo, source, pagination)
+      if (data === false) return false
+      if (!Array.isArray(data)) {
+        logger.error(`${source} ${repo} 的 PR/Issue 接口未返回列表`)
+        return false
+      }
+      result.push(...data)
+      const reachedCursor = options.stopBefore !== undefined && data.some(item => Date.parse(item.updated_at || '') < options.stopBefore!)
+      if (reachedCursor || pagination.hasNext === false || (!data.length) || (pagination.hasNext === undefined && data.length < pageSize)) return result
+    }
+    logger.error(`${source} ${repo} 的 PR/Issue 数据超过单次分页上限，未推进检查进度；请调高 CodeUpdate.Activity.MaxPages`)
+    return false
+  }
+
+  async getActivityItems (
+    source: Provider,
+    repo: string,
+    method: GitActivityMethod,
+    options: { pageSize: number, maxPages: number, since?: string }
+  ): Promise<GitActivityItem[] | false> {
+    const { url, headers } = this.activityUrl(source, repo, method)
+    url.searchParams.set('state', 'all')
+    url.searchParams.set('sort', /gitea/i.test(source) ? 'recentupdate' : 'updated')
+    url.searchParams.set('direction', 'desc')
+    if (options.since && method === 'issues' && /github/i.test(source)) url.searchParams.set('since', options.since)
+    const data = await this.activityCollection<GitActivityItem>(source, repo, url, headers, {
+      ...options,
+      stopBefore: options.since ? Date.parse(options.since) : undefined
+    })
+    if (data === false) return false
+    if (data.some(item => !Number.isFinite(Date.parse(item.updated_at)))) throw new Error('PR/Issue 列表包含无效更新时间')
+    return data.filter(item => (method !== 'issues' || !item.pull_request) && (!options.since || Date.parse(item.updated_at) >= Date.parse(options.since)))
+  }
+
+  async getActivityItem (source: Provider, repo: string, method: GitActivityMethod, number: string): Promise<GitActivityItem | false> {
+    const { url, headers } = this.activityUrl(source, repo, `${method}/${encodeURIComponent(number)}`)
+    return this.fetchData<GitActivityItem>(url, headers, repo, source)
+  }
+
+  async getActivityComments (
+    source: Provider,
+    repo: string,
+    method: GitActivityMethod,
+    number: string,
+    options: { pageSize: number, maxPages: number, since: string }
+  ): Promise<GitActivityComment[] | false> {
+    const path = method === 'pulls' && /gitee|gitcode/i.test(source) ? 'pulls' : 'issues'
+    const { url, headers } = this.activityUrl(source, repo, `${path}/${encodeURIComponent(number)}/comments`)
+    if (/github|gitea/i.test(source)) url.searchParams.set('since', options.since)
+    const data = await this.activityCollection<GitActivityComment>(source, repo, url, headers, options)
+    if (data === false) return false
+    if (data.some(item => !Number.isFinite(Date.parse(item.created_at)))) throw new Error('评论列表包含无效创建时间')
+    return data.filter(item => Date.parse(item.created_at) >= Date.parse(options.since))
   }
 
   /**
@@ -168,7 +251,7 @@ export default new class RepoService {
    * @param source 仅用于日志
    * @returns 解析后的 JSON（泛型）或 false（失败）
    */
-  async fetchData<T = any> (url: string | URL, headers: Record<string, string> = {}, repo?: string, source?: Provider): Promise<T | false> {
+  async fetchData<T = any> (url: string | URL, headers: Record<string, string> = {}, repo?: string, source?: Provider, pagination?: { hasNext?: boolean }): Promise<T | false> {
     try {
       const response = await request.get(url, 'raw', {
         headers,
@@ -201,6 +284,9 @@ export default new class RepoService {
         logger.error(`请求 ${logger.magenta(String(source))} 失败: ${logger.cyan(String(repo))}, ${msg}`)
         return false
       }
+
+      const link = response.headers?.get?.('link')
+      if (pagination && link) pagination.hasNext = /rel="?next"?/i.test(link)
 
       const contentType = response.headers?.get?.('content-type') ?? ''
       if (!contentType.includes('application/json')) {

@@ -83,6 +83,64 @@ pnpm install
 - `#推送仓库更新`: 不管有没有更新都回复到当前会话，不会推送所有群组
 - 可在配置中开启 `CodeUpdate.Translate`，并通过 `TranslateApi` / `TranslateName` 自定义翻译接口和图片提示名称
 
+支持监听提交（`commits`）、发布（`releases`）、PR（`pulls`）和 Issues（`issues`）。在锅巴的“推送列表 → 监听仓库配置”中选择类型、事件及筛选条件，也可在用户配置中添加：
+
+```yaml
+CodeUpdate:
+  Auto: true
+  FirstAdd: false
+  Activity:
+    PageSize: 100
+    MaxPages: 20
+    InitialLimit: 10
+    BatchSize: 20
+    BodyLimit: 600
+    OverlapSeconds: 60
+    SendLinks: true
+  List:
+    - Group: [123456789]
+      repos:
+        - provider: GitHub
+          repo: KaguyaJs/Yunzai-DF-Plugin
+          type: pulls
+          events: [opened, reopened, closed, merged, ready_for_review]
+          baseBranches: [main, dev]
+          excludeBots: true
+          includeDrafts: false
+        - provider: GitHub
+          repo: KaguyaJs/Yunzai-DF-Plugin
+          type: issues
+          events: [opened, closed, reopened, commented]
+          labels: [bug]
+          excludeLabels: [duplicate]
+```
+
+将示例群号替换为自己的群号；私聊使用 `QQ` 列表。`provider` 对应“GitApi配置”中的名称，认证令牌及接口地址沿用已有配置。同一仓库可以在不同群配置不同筛选条件，数据会合并获取，再分别筛选。
+
+| 事件 | 含义 |
+| --- | --- |
+| `opened` / `closed` / `reopened` | 新建 / 关闭 / 重新打开 |
+| `merged` | PR 合并 |
+| `ready_for_review` / `converted_to_draft` | PR 转为正式 / 转为草稿 |
+| `edited` | 修改标题或正文 |
+| `labeled` / `unlabeled` | 添加 / 移除标签 |
+| `synchronize` | PR 来源分支出现新提交 |
+| `commented` | 新增普通讨论评论，逐条推送 |
+
+`events` 留空时，Issue 默认监听新建、关闭和重开，PR 另监听合并和转为正式。评论、标签、正文修改及新代码需要单独勾选；Review 和代码行评论不属于普通讨论评论。监听转为草稿时应开启 `includeDrafts`。
+
+`labels` 匹配任一标签，`excludeLabels` 命中任一标签即排除；移除标签事件也会考虑移除前的标签。`authors` / `excludeAuthors` 按账号筛选，PR/Issue 事件按条目创建者匹配，评论按评论作者匹配。标签和作者账号忽略大小写，分支名区分大小写。上述筛选只对 PR/Issue 生效，自动扫描本地插件仍监听提交。
+
+首次检查会完整建立条目基线。`FirstAdd: false` 时不发送历史活动；开启时最多推送每仓库 `InitialLimit` 条当前状态。`#推送仓库更新` 预览同样遵守筛选和条目上限，并且不会改变自动推送进度。卡片展示编号、状态、标签、分支、正文或评论摘要，PR 详情可用时还展示文件及增删行数；`SendLinks` 控制附带原始链接。
+
+PR/Issue 接口适配 GitHub、Gitee、Gitcode 和 Gitea 兼容接口，CNB 当前仅支持原有提交/发布功能。自建 Gitea 的 `provider` 名称应包含 `Gitea`，`ApiUrl` 指向 `https://你的域名/api/v1/repos`。各平台的访问权限和限流以实际接口为准，建议配置令牌。
+
+自动检查按更新时间分页并回看 `OverlapSeconds` 秒；达到 `MaxPages` 且尚不能确认列表完成、网络失败或评论获取失败时保留原检查进度。大型仓库首次检查可能需要调高页数上限。包含 PR/Issue 的消息按 `BatchSize` 分批发送，每批独立确认。检测状态和待发送内容一起保存在 Redis，某个群失败后继续重试其原始消息，已经成功的群不会重复接收同一事件。
+
+生命周期检测采用轮询快照比较，不能还原两次检查之间发生又撤回的中间状态；普通新评论有独立编号去重。发送成功但 Redis 确认失败时可能重发。若需要每一次状态操作的精确通知，应再接入事件时间线或 Webhook。
+
+开发验证：`pnpm run test:code-update`。
+
 </details>
 
 <details><summary>图片外显</summary>

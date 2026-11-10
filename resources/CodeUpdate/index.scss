@@ -353,3 +353,47 @@ body {
 .commit-prefix.haveScope {
   border-radius: 12px 0px 2px 4px;
 }
+
+.activity-card .title { width: 100%; min-width: 0; }
+.activity-card .text { flex-wrap: wrap; gap: 5px; overflow-wrap: anywhere; }
+.activity-kind {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 1px solid #90d0e4;
+  border-radius: 7px;
+  color: #90d0e4;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.activity-meta, .activity-labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+}
+.activity-state, .activity-action, .activity-label {
+  padding: 3px 7px;
+  border: 1px solid #61616b;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.activity-state.state-open { color: #86efac; border-color: #238636; background: #23863624; }
+.activity-state.state-closed { color: #fca5a5; border-color: #da3633; background: #da363324; }
+.activity-state.state-merged { color: #d8b4fe; border-color: #a371f7; background: #a371f724; }
+.activity-action, .activity-comment-count { color: #c4c3c8; font-size: 11px; }
+.activity-branches { margin-top: 8px; font-size: 12px; color: #90d0e4; overflow-wrap: anywhere; }
+.activity-branches span { color: #c4c3c8; padding: 0 5px; }
+.activity-label { display: inline-flex; align-items: center; gap: 5px; overflow-wrap: anywhere; }
+.activity-label i { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.activity-card .dec { flex-wrap: wrap; white-space: normal !important; line-height: 1.6; }
+.activity-card .desc { overflow-wrap: anywhere; line-height: 1.7; }
+.activity-body { max-height: 360px; overflow: hidden; margin-top: 8px; }
+.activity-body > :first-child { margin-top: 0; }
+.activity-body > :last-child { margin-bottom: 0; }
+.activity-body pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 8px; background: #11111180; border-radius: 6px; }
+.activity-body table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.activity-body th, .activity-body td { padding: 4px; border: 1px solid #555; overflow-wrap: anywhere; }
+.activity-body blockquote { margin-left: 0; padding-left: 10px; border-left: 3px solid #90d0e4; }
+.activity-image-alt { color: #90d0e4; }

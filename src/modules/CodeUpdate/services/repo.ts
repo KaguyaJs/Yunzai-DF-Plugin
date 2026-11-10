@@ -1,19 +1,25 @@
 import GitApi from '@/modules/GitApi'
-import type { Commit, CommitInfo, Config, Release, ReleaseInfo } from '@/types'
+import type { Commit, Config, Release, RepositoryInfo } from '@/types'
 import { redisHeler, formatCommitInfo, formatReleaseInfo, repoPath, getRepoKey, getRepoType, getRepoBranch, resolveBranch } from '@CodeUpdate/utils'
 import config from '@/config'
 import { logger } from '@/utils'
+import { fetchActivity } from './activity'
+import { formatActivityInfo } from '../utils/formatActivity'
+import { isActivityMethod } from '../utils/activity'
+import type { RepoConfig, SubscriptionTarget } from '../utils/repo'
 
 export type ReposListType = Config['CodeUpdate']['List'][number]['repos']
 
 export interface RepositoryUpdate {
-  info: CommitInfo | ReleaseInfo
+  info: RepositoryInfo
   sha: string
   redisKey: string
+  repoKey: string
+  activity?: { journalKey: string, eventId: string, targets: string[] }
 }
 
 /** Fetch each subscription once without acknowledging undelivered updates. */
-export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
+export async function fetchUpdate (repoList: ReposListType, isAuto: boolean, targets = new Map<string, SubscriptionTarget>(), subscriptions: RepoConfig[] = repoList) {
   const content = new Map<string, RepositoryUpdate>()
   const previous = [...repoList, ...config.CodeUpdate.List.flatMap(strategy => strategy.repos ?? [])]
     .map(item => ({ ...item }))
@@ -25,6 +31,18 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
     const logRepo = repoPath(repo, item.branch)
     const redisKey = redisHeler.getRedisKey(provider, type, repo, getRepoBranch(item))
     try {
+      if (isActivityMethod(type)) {
+        const activities = await fetchActivity(item, isAuto, targets, subscriptions.filter(candidate => getRepoKey(candidate) === key))
+        for (const { event, journalKey, targets } of activities) {
+          try {
+            const info = await formatActivityInfo(event)
+            content.set(event.id, { info, sha: event.id, redisKey, repoKey: key, activity: { journalKey, eventId: event.id, targets } })
+          } catch (error) {
+            logger.error(`渲染 ${provider} ${repo} #${event.item.number} 数据失败: `, error)
+          }
+        }
+        return
+      }
       const branch = await resolveBranch(item)
       logger.debug(`请求 ${logger.magenta(provider)} ${type}: ${logger.cyan(logRepo)}`)
       const result = await GitApi.getRepositoryData(provider, repo, type, branch)
@@ -60,7 +78,7 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean) {
       const info = await (type === 'commits'
         ? formatCommitInfo(data as Commit, provider, repo, branch)
         : formatReleaseInfo(data as Release, provider, repo))
-      content.set(key, { info, sha, redisKey })
+      content.set(key, { info, sha, redisKey, repoKey: key })
     } catch (error) {
       logger.error(`获取 ${logger.magenta(provider)} ${type} ${logger.cyan(logRepo)} 数据出错: `, error)
     }

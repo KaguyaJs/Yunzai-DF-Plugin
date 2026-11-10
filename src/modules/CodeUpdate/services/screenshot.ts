@@ -1,4 +1,4 @@
-import { CommitInfo, ReleaseInfo } from '@/types'
+import type { RepositoryInfo } from '@/types'
 import { screenshot } from '@/utils'
 import { ImageElem } from 'trss-yunzai/icqq'
 import config from '@/config'
@@ -9,7 +9,7 @@ import config from '@/config'
  * @param saveId 模板存储id
  * @returns 返回截图或false
  */
-export async function generateScreenshot (content: (CommitInfo | ReleaseInfo)[], saveId: string): Promise<false | ImageElem | ImageElem[]> {
+export async function generateScreenshot (content: RepositoryInfo[], saveId: string): Promise<false | ImageElem | ImageElem[]> {
   return screenshot('CodeUpdate/index', {
     saveId,
     lifeData: content
