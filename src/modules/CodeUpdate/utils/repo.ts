@@ -1,4 +1,5 @@
 import type { Config, GitApiMethod } from '@/types'
+import { redisHeler } from './redis'
 
 export type RepositoryConfig = Config['CodeUpdate']['List'][number]['repos'][number]
 /** One expanded subscription. Its identity stays compatible with existing Redis records. */
@@ -15,7 +16,15 @@ export function getRepoBranch ({ type, branch }: RepoConfig) {
 
 /** Stable subscription identity; resolved default branches do not change it. */
 export function getRepoKey (item: RepoConfig) {
-  return JSON.stringify([item.provider.toLowerCase(), getRepoType(item.type), item.repo, getRepoBranch(item)])
+  const key = [item.provider.toLowerCase(), getRepoType(item.type), item.repo, getRepoBranch(item)]
+  if (getRepoType(item.type) === 'releases' && item.includeDrafts) key.push('drafts')
+  return JSON.stringify(key)
+}
+
+/** Keep draft subscriptions separate from published-only cursors and deliveries. */
+export function getRepoRedisKey (item: RepoConfig) {
+  const key = redisHeler.getRedisKey(item.provider, getRepoType(item.type), item.repo, getRepoBranch(item))
+  return getRepoType(item.type) === 'releases' && item.includeDrafts ? `${key}:drafts` : key
 }
 
 /**

@@ -6,6 +6,8 @@ import path from 'node:path'
 import { FacePoke } from '@/modules'
 import { getCodeUpdateTranslateName, translateCodeUpdateTextInfo } from './translate'
 import { markdown } from './markdown'
+import { releaseAssets } from './release'
+import { safeActivityUrl } from './activity'
 import {
   GitCommitDataType,
   GitReleaseDataType,
@@ -251,10 +253,11 @@ export async function formatReleaseInfo (
   source: string,
   repo: string
 ): Promise<ReleaseInfo> {
-  const { tag_name: tagName, name, body, author, published_at: publishedAt } = data
+  const { tag_name: tagName, name, body, author, published_at: publishedAt, draft, prerelease } = data
 
   const authorName = author?.login || author?.name || '?'
-  const authorTime = publishedAt ? `<span>${timeAgo(publishedAt)}</span>` : '未知'
+  const date = draft ? data.updated_at || data.created_at : publishedAt || data.created_at
+  const authorTime = date ? `<span>${timeAgo(date)}</span>` : '未知'
   const releaseName = await translateCodeUpdateTextInfo(name || tagName || '未命名发布')
   const releaseBody = await translateCodeUpdateTextInfo(replaceEmojiCodes(body || ''), { markdown: true })
   const releaseText = markdown.parse(releaseBody.text, { async: false })
@@ -262,6 +265,10 @@ export async function formatReleaseInfo (
 
   return {
     release: true,
+    url: safeActivityUrl(data.html_url),
+    draft: !!draft,
+    prerelease: !!prerelease,
+    assets: releaseAssets(data),
     avatar: { is: false, author: author?.avatar_url },
     icon: await getIcon(source),
     name: {
@@ -270,7 +277,7 @@ export async function formatReleaseInfo (
       tag: tagName,
       authorStart: authorName[0] ?? '?'
     },
-    time_info: `<span>${authorName}</span> 发布于 ${authorTime}`,
+    time_info: `<span>${authorName}</span> ${draft ? data.updated_at ? '草稿更新于' : '草稿创建于' : '发布于'} ${authorTime}`,
     text: `<span class='head'>${releaseName.text}</span><br/>${releaseText}`,
     translate: getTranslateInfo(translated)
   }

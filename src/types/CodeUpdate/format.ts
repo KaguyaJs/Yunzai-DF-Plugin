@@ -32,6 +32,13 @@ export interface CommitInfo {
 export interface ReleaseInfo {
   url?: string
   release: true
+  draft: boolean
+  prerelease: boolean
+  assets?: {
+    total: number
+    hidden: number
+    files: { name: string, url: string, size: string }[]
+  }
   avatar: CommitInfo['avatar']
   icon: string
   name: {

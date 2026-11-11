@@ -31,7 +31,7 @@ const activityFilters: Schemas<RepositoryConfig> = [
     // componentProps: { mode: 'tags', allowClear: true }
   })),
   { field: 'excludeBots', label: '忽略机器人活动', bottomHelpMessage: '仅PR/Issue生效；省略此项时默认开启。', component: 'Switch', defaultValue: true },
-  { field: 'includeDrafts', label: '包含草稿PR', bottomHelpMessage: '省略此项时默认关闭；监听转为草稿事件时应开启。', component: 'Switch', defaultValue: false }
+  { field: 'includeDrafts', label: '包含草稿PR/Release', bottomHelpMessage: '默认关闭。Release会检查最新草稿的内容修改及转为正式；需配置有读取草稿权限的Token。监听PR转为草稿事件时应开启。', component: 'Switch', defaultValue: false }
 ]
 
 export const CodeUpdate: GuobaSchemas = [
@@ -116,6 +116,21 @@ export const CodeUpdate: GuobaSchemas = [
       placeholder: '请输入数量，-1 关闭'
     },
     required: true,
+  },
+  {
+    field: 'CodeUpdate.Release.ShowAssets',
+    label: 'Release展示附件',
+    component: 'Switch',
+    defaultValue: true,
+    bottomHelpMessage: '在推送图片中展示附件名称和大小；草稿开关位于下方仓库配置。'
+  },
+  {
+    field: 'CodeUpdate.Release.AssetLimit',
+    label: 'Release附件展开数量',
+    component: 'InputNumber',
+    defaultValue: 5,
+    componentProps: { min: -1, precision: 0 },
+    bottomHelpMessage: '默认5；超出部分显示“已折叠N个文件”。0折叠全部，-1展示全部。'
   },
   {
     field: 'CodeUpdate.Activity.PageSize',

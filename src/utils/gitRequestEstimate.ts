@@ -99,14 +99,14 @@ export function estimateGitRequests (config: CodeConfig, local: PluginItem[], ch
         }
         for (const branch of type === 'commits' ? item.branch?.length ? item.branch : [''] : ['']) {
           const subscription = { ...item, type, branch }
-          subscriptions.set(getRepoKey(subscription), subscription)
+          subscriptions.set(getRepoKey({ ...subscription, includeDrafts: false }), subscription)
         }
       }
     }
   }
   if (resolved) {
     subscriptions.clear()
-    for (const item of resolved) subscriptions.set(getRepoKey(item), item)
+    for (const item of resolved) subscriptions.set(getRepoKey({ ...item, includeDrafts: false }), item)
   }
   const platforms = new Map<string, PlatformRequestEstimate & { repos: Set<string> }>()
   function platform (provider: string) {

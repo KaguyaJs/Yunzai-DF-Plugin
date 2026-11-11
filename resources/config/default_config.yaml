@@ -31,6 +31,14 @@ CodeUpdate:
   multiPageTips: |-
     当获取到的数据达到多少条时分片发送，填 -1 关闭
   multiPage: 12
+  ReleaseTips: |-
+    Release附件展示设置
+    ShowAssets: 在推送图片中展示附件名称和大小
+    AssetLimit: 最多展开的附件数量，超出后显示折叠数量；0折叠全部，-1展示全部
+    草稿通过仓库条目的includeDrafts开启，默认忽略；接口认证账号需有读取草稿的权限
+  Release:
+    ShowAssets: true
+    AssetLimit: 5
   ActivityTips: |-
     PR/Issue推送设置（GitHub、Gitee、Gitcode及Gitea兼容接口）
     PageSize: 每页获取数量（1-100）
@@ -101,7 +109,7 @@ CodeUpdate:
         labels / excludeLabels: 包含任一指定标签 / 排除标签
         authors / excludeAuthors: 作者账号筛选（评论按评论作者）
         excludeBots: 忽略机器人，默认true
-        includeDrafts: 包含草稿PR，默认false
+        includeDrafts: 包含草稿PR和最新草稿Release，默认false；草稿Release修改及转为正式会触发推送，需要有读取草稿权限的认证Token
         baseBranches: PR目标分支，留空监听全部
     note: 备注
   List: []

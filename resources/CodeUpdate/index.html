@@ -18,13 +18,14 @@
     <div class="data_box">
       <div class="list">
         {{each lifeData item}}
-        <div class="item {{if item.activity}}activity-card{{/if}}">
+        <div class="item {{if item.activity}}activity-card{{/if}} {{if item.release}}release-card{{/if}}">
           <div class="title">
             <div class="text">
               <img src="{{item.icon}}" class="icon">
               {{item.name.repo}}
               {{if item.release}}
               <div class="release">Releases</div>
+              {{if item.draft}}<span class="release-state release-draft">草稿 · 未发布</span>{{else if item.prerelease}}<span class="release-state">预发布</span>{{/if}}
               {{/if}}
               {{if item.activity}}
               <span class="activity-kind">{{item.detail.kind}} #{{item.detail.number}}</span>
@@ -69,6 +70,18 @@
             <div class="desc">{{@item.text}}</div>
             {{if item.translate}}
             <div class="translate-tip" title="{{item.translate.title}}">{{item.translate.label}}</div>
+            {{/if}}
+            {{if item.release && item.assets}}
+            <div class="release-assets">
+              <div class="release-assets-heading">附件 <span>{{item.assets.total}} 个文件</span></div>
+              {{each item.assets.files file}}
+              <div class="release-asset">
+                {{if file.url}}<a class="release-asset-name" href="{{file.url}}">{{file.name}}</a>{{else}}<span class="release-asset-name">{{file.name}}</span>{{/if}}
+                <span class="release-asset-size">{{file.size}}</span>
+              </div>
+              {{/each}}
+              {{if item.assets.hidden}}<div class="release-assets-collapsed">已折叠 {{item.assets.hidden}} 个文件{{if item.url}} · 完整附件请查看发布页{{/if}}</div>{{/if}}
+            </div>
             {{/if}}
             {{if item.stats}}
             <div class="stats">

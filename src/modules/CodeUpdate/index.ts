@@ -4,7 +4,7 @@ import type { icqq, MessageEvent } from 'trss-yunzai'
 import { fetchUpdate } from './services'
 import { pushTouser } from './services/push'
 import { generateScreenshot } from './services/screenshot'
-import { redisHeler, getRepoKey, getRepoType, getRepoBranch } from './utils'
+import { redisHeler, getRepoKey, getRepoType, getRepoRedisKey } from './utils'
 import type { RepoConfig } from './utils/repo'
 import { subscriptionSnapshot } from './services/subscriptions'
 import { activityOptions, isActivityMethod } from './utils/activity'
@@ -52,13 +52,13 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
   const repositoryCount = new Set(Array.from(updates.values(), update => JSON.stringify([update.info.name.source.toLowerCase(), update.info.name.repo]))).size
   logger.info(logger.green(`共获取到 ${repositoryCount} 个仓库的 ${updates.size} 条更新`))
   if (!isAuto && e) {
-    for (const batch of updateBatches(Array.from(updates.values()))) {
-      const image = await generateScreenshot(batch.map(update => update.info), String(e.user_id))
+    for (const { visible } of updateBatches(Array.from(updates.values()))) {
+      const image = await generateScreenshot(visible.map(update => update.info), String(e.user_id))
       if (!image || (Array.isArray(image) && !image.length)) {
         await e.reply('截图失败，请稍后再试')
         return false
       }
-      await e.reply(withActivityLinks(image, batch))
+      await e.reply(withActivityLinks(image, visible))
     }
     return repositoryCount
   }
@@ -78,16 +78,16 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
         if (update.activity || !isAuto || !await redisHeler.isUpdate(deliveryKey, update.sha)) pending.push(key)
       }
       if (!pending.length) continue
-      for (const batch of updateBatches(pending.map(key => updates.get(key)!))) {
-        const imageKey = JSON.stringify(batch.map(update => JSON.stringify([update.repoKey, update.sha])).sort())
+      for (const { visible, updates: batch } of updateBatches(pending.map(key => updates.get(key)!))) {
+        const imageKey = JSON.stringify(visible.map(update => JSON.stringify([update.repoKey, update.sha])).sort())
         let image = images.get(imageKey)
         if (!image) {
-          const result = await generateScreenshot(batch.map(update => update.info), id)
+          const result = await generateScreenshot(visible.map(update => update.info), id)
           if (!result || (Array.isArray(result) && !result.length)) throw new Error('截图失败')
           image = result
           images.set(imageKey, image)
         }
-        if (!await pushTouser(type, id, withActivityLinks(image, batch))) throw new Error('消息发送失败')
+        if (!await pushTouser(type, id, withActivityLinks(image, visible))) throw new Error('消息发送失败')
         if (isAuto) {
           const activities = new Map<string, string[]>()
           for (const update of batch) {
@@ -119,9 +119,24 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
 }
 
 function updateBatches (updates: RepositoryUpdate[]) {
-  const size = updates.some(update => update.activity) ? activityOptions().batchSize : updates.length || 1
-  const batches: RepositoryUpdate[][] = []
-  for (let offset = 0; offset < updates.length; offset += size) batches.push(updates.slice(offset, offset + size))
+  // Draft and published-only subscriptions may point at the same release.
+  // Render it once, but confirm every subscription after successful delivery.
+  const groups = new Map<string, RepositoryUpdate[]>()
+  for (const update of updates) {
+    const key = 'release' in update.info
+      ? JSON.stringify(['release', update.info.name.source.toLowerCase(), update.info.name.repo, update.sha])
+      : JSON.stringify([update.repoKey, update.sha])
+    const group = groups.get(key) ?? []
+    group.push(update)
+    groups.set(key, group)
+  }
+  const values = Array.from(groups.values())
+  const size = updates.some(update => update.activity) ? activityOptions().batchSize : values.length || 1
+  const batches: { visible: RepositoryUpdate[], updates: RepositoryUpdate[] }[] = []
+  for (let offset = 0; offset < values.length; offset += size) {
+    const batch = values.slice(offset, offset + size)
+    batches.push({ visible: batch.map(group => group[0]), updates: batch.flat() })
+  }
   return batches
 }
 
@@ -146,7 +161,7 @@ export async function getAllRedisKey () {
   const { repos, subscriptions, targets, complete } = await subscriptionSnapshot()
   if (!complete) throw new Error('仓库或分支列表获取未完成，无法确认哪些记录有效；本次不清理')
   const keys = new Map(repos.map(repo => [
-    getRepoKey(repo), redisHeler.getRedisKey(repo.provider, getRepoType(repo.type), repo.repo, getRepoBranch(repo))
+    getRepoKey(repo), getRepoRedisKey(repo)
   ]))
   const result = new Set(keys.values())
   for (const repo of repos) {

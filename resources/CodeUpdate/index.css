@@ -291,6 +291,19 @@ body {
   border-radius: 12px 0px 2px 4px;
 }
 
+.release-card .title { width: 100%; min-width: 0; }
+.release-card .text { flex-wrap: wrap; gap: 5px; overflow-wrap: anywhere; }
+.release-card .branch, .release-card .desc { overflow-wrap: anywhere; }
+.release-card .dec { flex-wrap: wrap; white-space: normal !important; line-height: 1.6; }
+.release-state { padding: 3px 7px; border: 1px solid #a371f7; border-radius: 5px; color: #d8b4fe; font-size: 11px; }
+.release-draft { color: #f3cc8b; border-color: #79634b; }
+.release-assets { margin-top: 12px; border: 1px solid #3d3d48; border-radius: 8px; overflow: hidden; background: #15151dc9; }
+.release-assets-heading { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; color: #e2e8f0; font-size: 12px; background: #272732; }
+.release-assets-heading span, .release-asset-size { color: #aaaab8; font-size: 11px; white-space: nowrap; }
+.release-asset { display: flex; align-items: baseline; gap: 10px; padding: 7px 10px; border-top: 1px solid #3d3d48; }
+.release-asset-name { flex: 1; min-width: 0; color: #90d0e4; font-size: 12px; overflow-wrap: anywhere; text-decoration: none; }
+.release-assets-collapsed { padding: 8px 10px; border-top: 1px solid #3d3d48; color: #f3cc8b; font-size: 11px; }
+
 .activity-card .title { width: 100%; min-width: 0; }
 .activity-card .text { flex-wrap: wrap; gap: 5px; overflow-wrap: anywhere; }
 .activity-kind {

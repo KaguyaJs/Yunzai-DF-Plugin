@@ -53,6 +53,12 @@ export interface Config {
      * @default 12
      */
     multiPage: number
+    /** Release attachment presentation; drafts are enabled per repository. */
+    Release: {
+      ShowAssets: boolean
+      /** Visible attachments; 0 collapses all, -1 shows all. */
+      AssetLimit: number
+    }
     /** PR / Issue polling and presentation settings. */
     Activity: {
       PageSize: number
@@ -118,6 +124,7 @@ export interface Config {
         authors?: string[]
         excludeAuthors?: string[]
         excludeBots?: boolean
+        /** Include draft PRs and the latest draft Release (requires API access). */
         includeDrafts?: boolean
         baseBranches?: string[]
       }[]

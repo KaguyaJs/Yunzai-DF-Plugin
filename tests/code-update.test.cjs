@@ -357,6 +357,230 @@ test('卡片格式化处理翻译、Markdown和不可信HTML，模板兼容四�
   for (const value of ['PR #1', 'Issue #1', 'Releases', 'activity-state']) assert.ok(html.includes(value), value)
 })
 
+function releaseItem (changes = {}) {
+  return {
+    id: 1, node_id: 'RELEASE_1', tag_name: 'v1', name: '版本1', body: '发布正文',
+    draft: false, prerelease: false, created_at: '2026-11-10T07:00:00Z', published_at: '2026-11-10T08:00:00Z',
+    html_url: 'https://github.com/owner/repo/releases/tag/v1', author: { login: 'alice' }, assets: [], ...changes
+  }
+}
+
+test('Release分页跳过前置草稿，不因平台限制每页数量漏掉正式发布', async () => {
+  const h = createHarness({ config: { FirstAdd: true } })
+  subscribe(h, 'releases')
+  h.router = url => ({ data: url.searchParams.get('page') === '1'
+    ? [releaseItem({ id: 2, node_id: 'DRAFT_2', draft: true, tag_name: undefined })]
+    : [releaseItem()] })
+  await h.load('@CodeUpdate').CodeUpdate(true)
+  assert.equal(h.requests.length, 2)
+  assert.equal(h.requests[0].url.searchParams.get('per_page'), '100')
+  assert.equal(h.screenshots[0].data.lifeData[0].draft, false)
+  assert.equal(h.screenshots[0].data.lifeData[0].name.tag, 'v1')
+})
+
+test('Release草稿和正式订阅按群独立筛选、去重、重试并保留有效清理键', async () => {
+  const h = createHarness({ config: { FirstAdd: true } })
+  subscribe(h, 'releases', { includeDrafts: true }, 1)
+  subscribe(h, 'releases', { includeDrafts: false }, 2)
+  const draft = releaseItem({ id: 2, node_id: 'DRAFT_2', draft: true, tag_name: undefined, published_at: null })
+  const published = releaseItem()
+  h.router = () => ({ data: [draft, published] })
+  const module = h.load('@CodeUpdate')
+  h.failures.add('Group:1')
+  await module.CodeUpdate(true)
+  assert.equal(h.requests.length, 1)
+  assert.equal(h.screenshots.find(value => value.data.saveId === '1').data.lifeData[0].draft, true)
+  assert.equal(h.screenshots.find(value => value.data.saveId === '2').data.lifeData[0].draft, false)
+  h.failures.clear()
+  await module.CodeUpdate(true)
+  assert.deepEqual(h.deliveries.map(value => value.target), ['Group:1', 'Group:2', 'Group:1'])
+  assert.equal(await module.CodeUpdate(true), 0)
+  const keys = await module.getAllRedisKey()
+  for (const key of h.store.keys()) assert.ok(keys.includes(key), key)
+  const estimates = plain(h.load('@/utils/gitRequestEstimate').estimateGitRequests(h.config.CodeUpdate, [], 2))
+  assert.equal(estimates[0].methods.releases, 1)
+})
+
+test('同一接收者的草稿与正式订阅合并相同Release卡片，分批重试和手动预览均不重复', async () => {
+  const h = createHarness({ config: { FirstAdd: true, Activity: { BatchSize: 1 } } })
+  subscribe(h, 'releases', { includeDrafts: true }, 1)
+  subscribe(h, 'releases', { includeDrafts: false }, 1)
+  subscribe(h, 'issues', {}, 1)
+  h.router = url => ({ data: url.pathname.endsWith('/releases') ? [releaseItem()] : [item(1)] })
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  h.failures.add('Group:1')
+  await CodeUpdate(true)
+  assert.equal(h.screenshots[0].data.lifeData.length, 1)
+  assert.equal(h.screenshots[0].data.lifeData[0].release, true)
+  h.failures.clear()
+  await CodeUpdate(true)
+  const delivered = h.screenshots.slice(1).flatMap(value => value.data.lifeData)
+  assert.equal(delivered.filter(value => value.release).length, 1)
+  assert.equal(delivered.filter(value => value.activity).length, 1)
+  const cursors = [...h.store].filter(([key]) => key.includes(':delivery:') && key.includes('Releases'))
+  assert.equal(cursors.length, 2)
+  assert.equal(cursors[0][1], cursors[1][1])
+  assert.equal(await CodeUpdate(true), 0)
+  const beforePreview = h.screenshots.length
+  const beforeState = plain([...h.store])
+  await CodeUpdate(false, { user_id: 1, reply: async () => true })
+  assert.equal(h.screenshots.slice(beforePreview).flatMap(value => value.data.lifeData).filter(value => value.release).length, 1)
+  assert.deepEqual(plain([...h.store]), beforeState)
+})
+
+test('无标签草稿沿用首次基线，正文与附件修改和同ID转为正式会推送，时间和附件顺序不触发', async () => {
+  const h = createHarness()
+  subscribe(h, 'releases', { includeDrafts: true })
+  const draft = releaseItem({ draft: true, tag_name: undefined, published_at: null })
+  h.router = url => ({ data: url.searchParams.get('page') === '1' ? [draft] : [] })
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  assert.equal(await CodeUpdate(true), 0)
+  draft.updated_at = '2026-11-10T08:01:00Z'
+  assert.equal(await CodeUpdate(true), 0)
+  draft.body = '新的草稿正文'
+  assert.equal(await CodeUpdate(true), 1)
+  draft.assets = [
+    { id: 1, name: 'a.zip', size: 1024, browser_download_url: 'https://example.com/a.zip' },
+    { id: 2, name: 'b.zip', size: 2048 }
+  ]
+  assert.equal(await CodeUpdate(true), 1)
+  draft.assets.reverse()
+  assert.equal(await CodeUpdate(true), 0)
+  draft.assets[0].updated_at = '2026-11-10T08:01:30Z'
+  draft.assets[0].download_count = 100
+  assert.equal(await CodeUpdate(true), 0)
+  draft.assets[0].digest = 'sha256:new-content'
+  assert.equal(await CodeUpdate(true), 1)
+  const cursor = plain([...h.store])
+  await CodeUpdate(false, { user_id: 1, reply: async () => true })
+  assert.deepEqual(plain([...h.store]), cursor)
+  draft.draft = false
+  draft.tag_name = 'v1'
+  draft.published_at = '2026-11-10T08:02:00Z'
+  assert.equal(await CodeUpdate(true), 1)
+  assert.equal(h.screenshots.at(-1).data.lifeData[0].draft, false)
+  assert.equal(await CodeUpdate(true), 0)
+})
+
+test('仅草稿或尚无Release的静默基线不会吞掉未来的首次正式发布', async () => {
+  for (const onlyDrafts of [true, false]) {
+    const h = createHarness()
+    subscribe(h, 'releases')
+    const data = onlyDrafts ? [releaseItem({ draft: true, published_at: null })] : []
+    h.router = url => ({ data: url.searchParams.get('page') === '1' ? data : [] })
+    const { CodeUpdate } = h.load('@CodeUpdate')
+    assert.equal(await CodeUpdate(true), 0)
+    data.splice(0, data.length, releaseItem())
+    assert.equal(await CodeUpdate(true), 1)
+    assert.equal(await CodeUpdate(true), 0)
+  }
+})
+
+test('Release分页失败、异常响应或重复页时保留游标；恢复后正常推送', async () => {
+  for (const failure of ['network', 'repeated', 'invalid']) {
+    const h = createHarness({ config: { FirstAdd: true } })
+    subscribe(h, 'releases', { includeDrafts: true })
+    h.router = url => url.searchParams.get('page') === '1'
+      ? { data: [releaseItem({ draft: true })] }
+      : failure === 'network' ? { status: 500 } : { data: failure === 'repeated' ? [releaseItem({ draft: true })] : {} }
+    const { CodeUpdate } = h.load('@CodeUpdate')
+    assert.equal(await CodeUpdate(true), 0)
+    assert.equal(h.store.size, 0)
+    assert.equal(h.deliveries.length, 0)
+    h.router = () => ({ data: [releaseItem()] })
+    assert.equal(await CodeUpdate(true), 1)
+  }
+})
+
+test('Release各平台分页参数、认证和预发布转正式处理正确', async () => {
+  const h = createHarness({ config: { FirstAdd: true } })
+  h.config.CodeUpdate.repos.push({ provider: 'MyGitea', ApiUrl: 'https://gitea.example/api/v1/repos' }, { provider: 'Gitee', token: 'fixture-token' }, { provider: 'CNB' })
+  h.router = () => ({ data: [releaseItem({ prerelease: true })] })
+  const api = h.load('@/modules/GitApi').default
+  for (const [provider, size] of [['GitHub', 'per_page'], ['Gitee', 'per_page'], ['MyGitea', 'limit'], ['CNB', 'page_size']]) {
+    await api.getRepositoryData(provider, 'owner/repo', 'releases')
+    const { url, headers } = h.requests.at(-1)
+    assert.equal(url.searchParams.get(size), '100')
+    assert.equal(url.searchParams.get('page'), '1')
+    if (provider === 'Gitee') assert.equal(url.searchParams.get('access_token'), h.config.CodeUpdate.repos.find(value => value.provider === 'Gitee').token)
+    if (provider === 'GitHub') assert.ok(headers.Authorization)
+    if (provider === 'CNB') assert.equal(url.pathname, '/owner/repo/-/git/releases')
+  }
+  subscribe(h, 'releases')
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  await CodeUpdate(true)
+  assert.equal(h.screenshots.at(-1).data.lifeData[0].prerelease, true)
+  h.router = () => ({ data: [releaseItem()] })
+  assert.equal(await CodeUpdate(true), 1)
+  assert.equal(h.screenshots.at(-1).data.lifeData[0].prerelease, false)
+  assert.equal(await CodeUpdate(true), 0)
+})
+
+test('Release旧ID游标及接收者记录升级不重推，后续预发布与正式状态变化仍会推送', async () => {
+  for (const legacyProvider of [false, true]) {
+    const h = createHarness({ config: { FirstAdd: true } })
+    subscribe(h, 'releases', {}, 1)
+    const release = releaseItem({ prerelease: true })
+    h.router = () => ({ data: [release] })
+    const redis = h.load('@CodeUpdate/utils/redis').redisHeler
+    const key = redis.getRedisKey('GitHub', 'releases', 'owner/repo')
+    const source = legacyProvider ? redis.getLegacyRedisKey('github', 'releases', 'owner/repo') : key
+    h.store.set(source, JSON.stringify([{ shacode: release.node_id }]))
+    h.store.set(redis.getDeliveryKey(source, 'Group:1'), JSON.stringify([{ shacode: release.node_id }]))
+    if (legacyProvider) h.config.CodeUpdate.List[0].repos[0].provider = 'github'
+    const { CodeUpdate } = h.load('@CodeUpdate')
+    assert.equal(await CodeUpdate(true), 0)
+    assert.equal(h.deliveries.length, 0)
+    assert.equal(JSON.parse(h.store.get(key))[0].shacode, `${release.node_id}:prerelease`)
+    assert.equal(JSON.parse(h.store.get(redis.getDeliveryKey(key, 'Group:1')))[0].shacode, `${release.node_id}:prerelease`)
+    release.prerelease = false
+    assert.equal(await CodeUpdate(true), 1)
+    assert.equal(h.screenshots.at(-1).data.lifeData[0].prerelease, false)
+    release.prerelease = true
+    assert.equal(await CodeUpdate(true), 1)
+    assert.equal(await CodeUpdate(true), 0)
+  }
+})
+
+test('Release附件展示按数量折叠，0折叠全部、-1全展开；关闭和空附件不显示', async () => {
+  const assets = Array.from({ length: 8 }, (_, index) => ({ name: `file-${index}.zip`, size: 1024 ** 2, browser_download_url: `https://example.com/${index}.zip` }))
+  const template = require('art-template')
+  for (const [limit, count] of [[undefined, 5], [2, 2], [0, 0], [-1, 8], [8, 8], [20, 8], [-2, 5], [1.5, 5]]) {
+    const h = createHarness({ config: { Release: { ShowAssets: true, AssetLimit: limit } } })
+    const info = await h.load('@CodeUpdate/utils/format').formatReleaseInfo(releaseItem({ assets }), 'GitHub', 'owner/repo')
+    assert.equal(info.assets.files.length, count)
+    assert.equal(info.assets.hidden, assets.length - count)
+    assert.equal(info.assets.total, assets.length)
+    if (count) assert.equal(info.assets.files[0].size, '1 MB')
+    const html = template(path.join(project, 'resources/CodeUpdate/index.html'), { pluResPath: path.join(project, 'resources'), sys: { scale: '', copyright: 'test' }, lifeData: [plain(info)] })
+    if (count < assets.length) assert.ok(html.includes(`已折叠 ${assets.length - count} 个文件`))
+    else assert.ok(!html.includes('已折叠'))
+    assert.equal((html.match(/class="release-asset-name"/g) || []).length, count)
+  }
+  for (const [show, values] of [[false, assets], [true, []], [true, undefined]]) {
+    const h = createHarness({ config: { Release: { ShowAssets: show } } })
+    const info = await h.load('@CodeUpdate/utils/format').formatReleaseInfo(releaseItem({ assets: values }), 'GitHub', 'owner/repo')
+    assert.equal(info.assets, undefined)
+  }
+})
+
+test('Release草稿日期、附件名称转义和无效下载链接兼容', async () => {
+  const h = createHarness()
+  const info = await h.load('@CodeUpdate/utils/format').formatReleaseInfo(releaseItem({
+    draft: true, tag_name: undefined, name: null, published_at: null, updated_at: '2026-11-10T08:01:00Z',
+    assets: [{ name: '<script>file.zip</script>', size: -1, browser_download_url: 'javascript:alert(1)' }, { name: 'empty.zip', size: 0 }]
+  }), 'GitHub', 'owner/repo')
+  assert.match(info.time_info, /草稿更新于.*2026-11-10T08:01:00Z/)
+  assert.match(info.text, /未命名发布/)
+  assert.equal(info.assets.files[0].url, '')
+  assert.equal(info.assets.files[0].size, '大小未知')
+  assert.equal(info.assets.files[1].size, '0 B')
+  const html = require('art-template')(path.join(project, 'resources/CodeUpdate/index.html'), { pluResPath: path.join(project, 'resources'), sys: { scale: '', copyright: 'test' }, lifeData: [plain(info)] })
+  assert.match(html, /草稿 · 未发布/)
+  assert.match(html, /&#60;script&#62;file.zip&#60;\/script&#62;/)
+  assert.doesNotMatch(html, /<script>|javascript:/)
+})
+
 test('默认配置与锅巴表单覆盖所有活动设置和筛选项', () => {
   const defaults = require('yaml').parse(fs.readFileSync(path.join(project, 'resources/config/default_config.yaml'), 'utf8'))
   const h = createHarness()
@@ -365,6 +589,7 @@ test('默认配置与锅巴表单覆盖所有活动设置和筛选项', () => {
   const walk = values => values.forEach(value => { if (value.field) fields.add(value.field); if (value.componentProps?.schemas) walk(value.componentProps.schemas) })
   walk(schemas)
   for (const key of Object.keys(defaults.CodeUpdate.Activity)) assert.ok(fields.has(`CodeUpdate.Activity.${key}`), key)
+  for (const key of Object.keys(defaults.CodeUpdate.Release)) assert.ok(fields.has(`CodeUpdate.Release.${key}`), key)
   for (const key of ['events', 'labels', 'excludeLabels', 'authors', 'excludeAuthors', 'excludeBots', 'includeDrafts', 'baseBranches']) assert.ok(fields.has(key), key)
 })
 

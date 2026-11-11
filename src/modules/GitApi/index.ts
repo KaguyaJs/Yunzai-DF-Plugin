@@ -2,6 +2,7 @@ import { request, logger } from '@/utils'
 import config from '@/config'
 import type { Response } from 'node-fetch'
 import type { GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment, GitPullRequestDiff, GitPullRequestFile } from '@/types'
+import { releaseIdentity } from '../CodeUpdate/utils/release'
 type Provider = 'GitHub' | 'Gitee' | 'Gitcode' | 'CNB' | string
 
 const DEFAULT_API: Record<string, string> = {
@@ -101,6 +102,37 @@ export default new class RepoService {
       url.searchParams.set('access_token', token)
     }
     const headers = this.getHeaders(source, token)
+    if (method === 'releases') {
+      // An authenticated list may start with drafts. Read until the first published
+      // release so published-only subscriptions are never blocked by those drafts.
+      url.searchParams.delete('per_page')
+      url.searchParams.set(isGitea ? 'limit' : isCNB ? 'page_size' : 'per_page', '100')
+      const result: GitReleaseDataType = []
+      const seen = new Set<string>()
+      for (let page = 1; page <= 100; page++) {
+        url.searchParams.set('page', String(page))
+        const pagination: { hasNext?: boolean } = {}
+        const data = await this.fetchData<GitReleaseDataType>(url, headers, repo, source, pagination)
+        if (data === false) return false as any
+        if (!Array.isArray(data) || data.some(release => !release || !releaseIdentity(release))) {
+          logger.error(`${source} ${repo} 的 Release 接口未返回有效列表`)
+          return false as any
+        }
+        for (const release of data) {
+          const id = releaseIdentity(release)
+          if (seen.has(id)) {
+            logger.error(`${source} ${repo} 的 Release 分页未前进，跳过本次检查`)
+            return false as any
+          }
+          seen.add(id)
+          result.push(release)
+          if (!release.draft) return result as any
+        }
+        if (!data.length || pagination.hasNext === false) return result as any
+      }
+      logger.error(`${source} ${repo} 的 Release 草稿超过分页上限，跳过本次检查`)
+      return false as any
+    }
     logger.trace('请求 URL:', safeUrl(url))
     return await this.fetchData<GitCommitDataType | GitReleaseDataType>(url, headers, repo, source) as any
   }
