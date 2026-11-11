@@ -9,6 +9,12 @@ export interface Config {
      */
     Auto: boolean
     /**
+     * 是否输出仓库请求统计日志，不影响自动检查
+     *
+     * @default true
+     */
+    RequestEstimateLog: boolean
+    /**
      * 首次添加仓库是否进行一次推送
      *
      * @default false

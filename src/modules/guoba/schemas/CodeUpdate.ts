@@ -45,6 +45,13 @@ export const CodeUpdate: GuobaSchemas = [
     component: 'Switch'
   },
   {
+    field: 'CodeUpdate.RequestEstimateLog',
+    label: '仓库请求统计日志',
+    bottomHelpMessage: '默认开启；输出监听仓库和预计 API 请求量。仅控制估算日志，不影响自动检查和更新推送。',
+    component: 'Switch',
+    defaultValue: true
+  },
+  {
     field: 'CodeUpdate.Cron',
     label: '自动检查定时表达式',
     helpMessage: '修改后重启生效',

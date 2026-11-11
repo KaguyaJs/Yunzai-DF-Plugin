@@ -1259,13 +1259,26 @@ test('all估算先标记未知分支，使用已获取快照后按实际分支�
   assert.equal(resolved.perHour, 8)
 })
 
-test('请求量日志处理关闭/空配置/无效Cron，重复检查不刷屏且强制扫描会输出', () => {
+function requestEstimateLogs (harness) {
+  return harness.logs.filter(log => typeof log.args[0] === 'string' && log.args[0].includes('[DF:仓库请求估算]'))
+}
+
+function requestEstimateRow (report, label) {
+  const line = report.replace(/\x1b\[[0-9;]*m/g, '').split('\n').find(line => line.trim().split(/\s+/)[0] === label)
+  assert.ok(line, `缺少 ${label} 统计行`)
+  return line.trim().split(/\s+/)
+}
+
+test('请求量日志一次输出多行，处理关闭/空配置/无效Cron并避免重复刷屏', () => {
   const h = createHarness({ config: { Auto: false, Cron: 'bad cron' } })
   const { logGitRequestEstimate } = h.load('@/utils/gitRequestEstimate')
   const logger = Object.fromEntries(['info', 'warn'].map(name => [name, message => h.logs.push({ name, args: [message] })]))
   logGitRequestEstimate(h.config.CodeUpdate, [], logger)
-  assert.ok(h.logs.some(log => log.args[0].includes('自动检查已关闭')))
-  assert.ok(h.logs.some(log => log.args[0].includes('当前没有需要监听的仓库')))
+  assert.equal(h.logs.length, 1)
+  assert.equal(h.logs[0].name, 'info')
+  assert.match(h.logs[0].args[0], /自动检查已关闭.*CodeUpdate\.Auto=false/)
+  assert.match(h.logs[0].args[0], /当前没有需要监听的仓库/)
+  assert.ok(h.logs[0].args[0].includes('\n'))
   const count = h.logs.length
   logGitRequestEstimate(h.config.CodeUpdate, [], logger)
   assert.equal(h.logs.length, count)
@@ -1274,6 +1287,75 @@ test('请求量日志处理关闭/空配置/无效Cron，重复检查不刷屏�
   h.config.CodeUpdate.Auto = true
   logGitRequestEstimate(h.config.CodeUpdate, [], logger)
   assert.ok(h.logs.some(log => log.name === 'warn' && log.args[0].includes('无法计算请求量')))
+  assert.equal(h.requests.length, 0)
+})
+
+test('统计日志开关关闭时跳过无效Cron和所有输出，强制不越过开关且重新开启恢复报告', () => {
+  const h = createHarness({ config: { RequestEstimateLog: false, Cron: 'bad cron' } })
+  subscribe(h, 'commits', { branch: ['main'] })
+  const { logGitRequestEstimate } = h.load('@/utils/gitRequestEstimate')
+  const logger = Object.fromEntries(['info', 'warn'].map(name => [name, message => h.logs.push({ name, args: [message] })]))
+  let cronReads = 0
+  Object.defineProperty(h.config.CodeUpdate, 'Cron', {
+    configurable: true,
+    get () {
+      cronReads++
+      throw new Error('关闭统计日志时不应读取或解析Cron')
+    }
+  })
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger, { force: true })
+  assert.equal(h.logs.length, 0)
+  assert.equal(cronReads, 0)
+  h.config.CodeUpdate.RequestEstimateLog = true
+  Object.defineProperty(h.config.CodeUpdate, 'Cron', { configurable: true, writable: true, value: '0 */30 * * * *' })
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.equal(h.logs.length, 1)
+  assert.equal(h.logs[0].name, 'info')
+  assert.deepEqual(requestEstimateRow(h.logs[0].args[0], 'GitHub'), ['GitHub', '1', '1', '0', '0', '0', '1', '0', '2'])
+  h.config.CodeUpdate.RequestEstimateLog = false
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.equal(h.logs.length, 1)
+  h.config.CodeUpdate.RequestEstimateLog = true
+  logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.equal(h.logs.length, 2)
+  assert.equal(h.requests.length, 0)
+})
+
+test('旧配置没有日志开关时仍输出，关闭自动检查仍展示每轮请求量和合计', () => {
+  const h = createHarness({ config: { Auto: false, Cron: 'bad cron' } })
+  delete h.config.CodeUpdate.RequestEstimateLog
+  subscribe(h, ['commits', 'releases', 'pulls', 'issues'], { branch: ['main'] })
+  h.config.CodeUpdate.List.push({ Group: [2], repos: [{ provider: 'Gitee', repo: 'owner/other', type: ['commits'], branch: ['main'] }] })
+  const logger = Object.fromEntries(['info', 'warn'].map(name => [name, message => h.logs.push({ name, args: [message] })]))
+  h.load('@/utils/gitRequestEstimate').logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.equal(h.logs.length, 1)
+  const report = h.logs[0].args[0]
+  assert.match(report, /自动检查已关闭.*CodeUpdate\.Auto=false/)
+  assert.match(report, /预计自动访问[^\n]*0 次\/小时/)
+  assert.deepEqual(requestEstimateRow(report, 'GitHub'), ['GitHub', '1', '1', '1', '1', '1', '4', '0', '0'])
+  assert.deepEqual(requestEstimateRow(report, 'Gitee'), ['Gitee', '1', '1', '0', '0', '0', '1', '0', '0'])
+  assert.deepEqual(requestEstimateRow(report, '合计'), ['合计', '2', '2', '1', '1', '1', '5', '0', '0'])
+  assert.equal(h.requests.length, 0)
+})
+
+test('月度Cron的正数请求频率保留有效位，彩色多行报告仍只调用一次logger', () => {
+  const h = createHarness({ config: { Cron: '0 0 12 1 * *' } })
+  subscribe(h, 'commits', { branch: ['main'] })
+  const logger = Object.fromEntries(['info', 'warn'].map(name => [name, message => h.logs.push({ name, args: [message] })]))
+  for (const color of ['cyan', 'green', 'yellow']) logger[color] = value => `\x1b[36m${value}\x1b[0m`
+  h.load('@/utils/gitRequestEstimate').logGitRequestEstimate(h.config.CodeUpdate, [], logger)
+  assert.equal(h.logs.length, 1)
+  const report = h.logs[0].args[0]
+  assert.ok(report.includes('\x1b['))
+  const row = requestEstimateRow(report, 'GitHub')
+  assert.ok(Number(row.at(-1)) > 0 && Number(row.at(-1)) < 0.01)
+  const plainReport = report.replace(/\x1b\[[0-9;]*m/g, '')
+  const checksPerHour = plainReport.match(/([0-9.e+-]+) 轮\/小时/)
+  const requestsPerHour = plainReport.match(/预计自动访问[^\n]*?([0-9.e+-]+) 次\/小时/)
+  assert.ok(checksPerHour && requestsPerHour)
+  assert.equal(checksPerHour[1], row.at(-1))
+  assert.equal(requestsPerHour[1], row.at(-1))
   assert.equal(h.requests.length, 0)
 })
 
@@ -1289,13 +1371,17 @@ test('完整更新扫描后输出all实际请求量，分支变化时重新输�
   const { CodeUpdate } = h.load('@CodeUpdate')
   assert.equal(await CodeUpdate(true), 0)
   assert.equal(h.requests.length, 4)
-  const platformLogs = () => h.logs.filter(log => log.args[0].includes('[DF:仓库请求估算] GitHub:'))
-  assert.match(platformLogs()[0].args[0], /基础访问约 8 次\/小时/)
+  const platformLogs = () => requestEstimateLogs(h)
+  assert.equal(platformLogs().length, 1)
+  assert.deepEqual(requestEstimateRow(platformLogs()[0].args[0], 'GitHub'), ['GitHub', '1', '2', '1', '0', '0', '4', '0', '8'])
+  assert.match(platformLogs()[0].args[0], /预计自动访问[^\n]*8 次\/小时/)
   assert.equal(await CodeUpdate(true), 0)
   assert.equal(platformLogs().length, 1)
   names.push('feature')
   assert.equal(await CodeUpdate(true), 0)
-  assert.match(platformLogs().at(-1).args[0], /基础访问约 10 次\/小时/)
+  assert.equal(platformLogs().length, 2)
+  assert.deepEqual(requestEstimateRow(platformLogs().at(-1).args[0], 'GitHub'), ['GitHub', '1', '3', '1', '0', '0', '5', '0', '10'])
+  assert.match(platformLogs().at(-1).args[0], /预计自动访问[^\n]*10 次\/小时/)
   assert.equal(h.requests.length, 13)
 })
 
@@ -1306,9 +1392,12 @@ test('all仓库暂无分支时仍输出发现接口的用量，查询失败时�
     h.router = () => failed ? { status: 500 } : { data: [] }
     assert.equal(await h.load('@CodeUpdate').CodeUpdate(true), false)
     assert.equal(h.requests.length, 1)
-    const logs = h.logs.map(log => log.args[0]).filter(value => value.includes('[DF:仓库请求估算]'))
-    assert.ok(logs.some(value => value.includes(failed ? '已知部分至少约 2 次/小时' : '基础访问约 2 次/小时')))
-    assert.equal(logs.some(value => value.includes('分支数待远程检查')), failed)
+    const logs = requestEstimateLogs(h)
+    assert.equal(logs.length, 1)
+    const report = logs[0].args[0]
+    assert.match(report, failed ? /预计自动访问[^\n]*至少 2 次\/小时/ : /预计自动访问[^\n]*2 次\/小时/)
+    assert.deepEqual(requestEstimateRow(report, 'GitHub'), ['GitHub', '1', '0', '0', '0', '0', failed ? '≥1' : '1', '0', failed ? '≥2' : '2'])
+    assert.equal(report.includes('分支数待远程检查'), failed)
   }
 })
 
@@ -1343,8 +1432,10 @@ test('本地全部Git仓库扫描完成后才输出完整平台估算，重新�
   const completed = h.logs.findIndex(log => log.args[0].includes('本地Git仓库载入完成'))
   const firstEstimate = h.logs.findIndex(log => log.args[0].includes('[DF:仓库请求估算]'))
   assert.ok(completed >= 0 && firstEstimate > completed)
-  assert.ok(h.logs.some(log => /GitHub: 1 个仓库.*基础访问约 2 次\/小时/.test(log.args[0])))
-  assert.ok(h.logs.some(log => /Gitee: 1 个仓库.*基础访问约 2 次\/小时/.test(log.args[0])))
+  assert.equal(requestEstimateLogs(h).length, 1)
+  const report = requestEstimateLogs(h)[0].args[0]
+  assert.deepEqual(requestEstimateRow(report, 'GitHub'), ['GitHub', '1', '1', '0', '0', '0', '1', '0', '2'])
+  assert.deepEqual(requestEstimateRow(report, 'Gitee'), ['Gitee', '1', '1', '0', '0', '0', '1', '0', '2'])
   await git.loadLocalPlugins(root)
   assert.equal(git.PluginPath.length, 2)
   assert.equal(h.requests.length, 0)

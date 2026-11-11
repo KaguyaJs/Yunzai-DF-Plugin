@@ -6,6 +6,10 @@ CodeUpdate:
   AutoTips: |-
     自动检查仓库更新开关
   Auto: false
+  RequestEstimateLogTips: |-
+    是否输出仓库请求统计日志，默认开启
+    仅控制估算日志，不影响自动检查和仓库更新推送
+  RequestEstimateLog: true
   CronTips: |-
     仓库更新检查Cron表达式
     Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
