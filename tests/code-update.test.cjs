@@ -4,6 +4,12 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { createHarness, item, subscribe, project, plain } = require('./helpers/code-update.cjs')
 
+function deferred () {
+  let resolve
+  const promise = new Promise(done => { resolve = done })
+  return { promise, resolve }
+}
+
 function installRouter (harness, data) {
   harness.router = url => {
     const route = url.pathname.match(/\/(pulls|issues)(?:\/([^/]+))?(?:\/comments)?$/)
@@ -887,7 +893,7 @@ test('锅巴深层设置可保存，更新单个Activity字段保留其他设置
   assert.equal(config.CodeUpdate.Activity.BodyLimit, before.Activity.BodyLimit)
   assert.deepEqual(plain(config.CodeUpdate.List), before.List)
   assert.equal(saves, 2)
-  assert.throws(() => config.modify('CodeUpdate', '__proto__.polluted', true), /无效/)
+  await assert.rejects(config.modify('CodeUpdate', '__proto__.polluted', true), /无效/)
   h.configFacade = config
   const { configInfo } = h.load('@/modules/guoba').supportGuoba()
   const updated = await configInfo.setConfigData({ 'CodeUpdate.Activity.PageSize': 30, 'CodeUpdate.Activity.BatchSize': 3 }, { Result: { ok: () => 'saved' } })
@@ -895,6 +901,72 @@ test('锅巴深层设置可保存，更新单个Activity字段保留其他设置
   assert.equal(config.CodeUpdate.Activity.PageSize, 30)
   assert.equal(config.CodeUpdate.Activity.BatchSize, 3)
   assert.deepEqual(plain(config.CodeUpdate.List), before.List)
+})
+
+test('维护期间配置对象、数组和锅巴设置在修改内存之前被拒绝，磁盘保存也被阻止', async () => {
+  const h = createHarness()
+  let saves = 0
+  const config = await h.loadConfig(async () => { saves++ })
+  h.configFacade = config
+  const { configInfo } = h.load('@/modules/guoba').supportGuoba()
+  const lifecycle = h.load('@/utils/lifecycle')
+  const finishMaintenance = deferred()
+  const before = plain(config.config)
+  const initialSaves = saves
+  const cleaning = lifecycle.withMaintenance(async () => { await finishMaintenance.promise })
+  try {
+    await assert.rejects(config.modify('CodeUpdate', 'Activity.PageSize', 20), /维护/)
+    await assert.rejects(config.modifyarr('CodeUpdate', 'List', { Group: [123], repos: [] }), /维护/)
+    await assert.rejects(config.modifyarr('MissingConfig', 'items', 'value'), /维护/)
+    await assert.rejects(config.configSave(), /维护/)
+    await assert.rejects(configInfo.setConfigData({ 'CodeUpdate.Activity.PageSize': 30, 'CodeUpdate.Activity.BatchSize': 3 }, { Result: { ok: () => 'saved' } }), /维护/)
+    assert.deepEqual(plain(config.config), before)
+    assert.equal(saves, initialSaves)
+  } finally {
+    finishMaintenance.resolve()
+    await cleaning
+  }
+  await config.modify('CodeUpdate', 'Activity.PageSize', 20)
+  assert.equal(config.CodeUpdate.Activity.PageSize, 20)
+  assert.equal(saves, initialSaves + 1)
+})
+
+test('锅巴已接受的多字段保存完成后才进入维护，异步保存后续字段不会被维护中断', async () => {
+  const h = createHarness()
+  const firstSaving = deferred()
+  const resumeSaving = deferred()
+  let blockNext = false
+  let saves = 0
+  const config = await h.loadConfig(async () => {
+    saves++
+    if (blockNext) {
+      blockNext = false
+      firstSaving.resolve()
+      await resumeSaving.promise
+    }
+  })
+  h.configFacade = config
+  const { configInfo } = h.load('@/modules/guoba').supportGuoba()
+  const lifecycle = h.load('@/utils/lifecycle')
+  const initialSaves = saves
+  let observed
+  blockNext = true
+  const saving = configInfo.setConfigData({ 'CodeUpdate.Activity.PageSize': 25, 'CodeUpdate.Activity.BatchSize': 3 }, { Result: { ok: () => 'saved' } })
+  await firstSaving.promise
+  const cleaning = lifecycle.withMaintenance(async () => { observed = plain(config.CodeUpdate.Activity) })
+  try {
+    const before = plain(config.config)
+    await assert.rejects(config.modify('CodeUpdate', 'Activity.BodyLimit', 999), /维护/)
+    assert.deepEqual(plain(config.config), before)
+    assert.equal(observed, undefined)
+  } finally {
+    resumeSaving.resolve()
+  }
+  assert.equal(await saving, 'saved')
+  await cleaning
+  assert.equal(observed.PageSize, 25)
+  assert.equal(observed.BatchSize, 3)
+  assert.equal(saves, initialSaves + 2)
 })
 
 test('分支接口限制每页数量且没有Link时继续分页，忽略分页的接口不能误判为完整列表', async () => {
@@ -916,24 +988,32 @@ test('清理命令在分支查询失败时回复取消，确认失败也结束�
   h.store.set(active, 'active')
   h.store.set(stale, 'stale')
   h.router = () => ({ status: 500 })
-  const { GitRepoUpdate } = h.load('@/apps/CodeUpdate')
-  const app = new GitRepoUpdate()
+  const { DFUpdate } = h.load('@/apps/update')
+  const app = new DFUpdate()
   const replies = []
-  app.e = { msg: '#DF清理无效数据', reply: async value => replies.push(value) }
+  app.e = { msg: '#DF清理无效数据', user_id: 1, self_id: 2, group_id: 3, isMaster: true, reply: async value => replies.push(value) }
   await app.clear(app.e)
   assert.match(replies.at(-1), /清理已取消/)
   assert.equal(app.context, null)
-  app.setContext('startClear')
+
+  h.router = url => ({ data: url.searchParams.get('page') === '1' ? [{ name: 'other' }] : [] })
+  await app.clear(app.e)
+  const original = app.e
+  assert.equal(app.context, 'confirmMaintenance', replies.at(-1))
+  h.router = () => ({ status: 500 })
   app.e.msg = '#确认清理'
-  await app.startClear({ redisInvalidKeys: [active, stale] })
-  assert.match(replies.at(-1), /清理失败/)
+  await app.confirmMaintenance(original)
+  assert.match(replies.at(-1), /操作失败/)
   assert.equal(app.context, null)
-  assert.deepEqual(plain(app.finishes), ['startClear'])
+  assert.deepEqual(plain(app.finishes), ['confirmMaintenance'])
+  assert.equal(original.dfMaintenance, undefined)
   assert.deepEqual([...h.store], [[active, 'active'], [stale, 'stale']])
+
   // A later successful confirmation rechecks subscriptions and keeps keys that became active.
+  h.router = url => ({ data: url.searchParams.get('page') === '1' ? [{ name: 'other' }] : [] })
+  await app.clear(app.e)
   h.config.CodeUpdate.List[0].repos[0].branch = ['main']
-  app.setContext('startClear')
-  await app.startClear({ redisInvalidKeys: [active, stale] })
+  await app.confirmMaintenance(app.e)
   assert.deepEqual([...h.store.keys()], [active])
   assert.match(replies.at(-1), /成功清理1个/)
   assert.equal(app.context, null)

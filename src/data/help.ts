@@ -164,7 +164,22 @@ export const helpList: HelpListType = [
       {
         icon: 17,
         title: '#DF清理无效数据',
-        desc: '清理本插件占用的数据库内存'
+        desc: '统计已失效的仓库记录，确认后清理'
+      },
+      {
+        icon: 9,
+        title: '#DFRedis统计',
+        desc: '查看插件Redis记录数和占用大小'
+      },
+      {
+        icon: 17,
+        title: '#DF清空Redis',
+        desc: '显示大小，确认后清空插件Redis数据'
+      },
+      {
+        icon: 12,
+        title: '#DF卸载插件',
+        desc: '确认后删除插件及其数据并重启'
       },
       {
         icon: 2,

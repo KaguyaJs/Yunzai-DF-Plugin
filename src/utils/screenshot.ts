@@ -6,6 +6,7 @@ import config from '@/config'
 import { YunzaiPath, PluginName, ResPath } from '@/dir'
 import { CustomEvent, MessageRet } from 'trss-yunzai'
 import { ImageElem } from 'trss-yunzai/icqq'
+import { withPluginTask } from './lifecycle'
 
 interface ScreenshotOptions {
   /**
@@ -49,6 +50,10 @@ export async function screenshot (path: string, params: Params, cfg: ScreenshotO
 export async function screenshot (path: string, params: Params, cfg: ScreenshotOptions & { send: true, retMsgId?: false }): Promise<boolean>
 export async function screenshot (path: string, params: Params, cfg?: ScreenshotOptions & { send?: false }): Promise<ImageElem | false>
 export async function screenshot (path: string, params: Params, cfg: ScreenshotOptions = {}): Promise<boolean | ImageElem | ImageElem[] | MessageRet> {
+  return withPluginTask(() => renderScreenshot(path, params, cfg), () => false)
+}
+
+async function renderScreenshot (path: string, params: Params, cfg: ScreenshotOptions): Promise<boolean | ImageElem | ImageElem[] | MessageRet> {
   const [app, tpl] = path.split('/')
   const resPath = ResPath
   // const resPath = `../../../../../plugins/${PluginName}/resources`

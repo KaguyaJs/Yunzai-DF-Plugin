@@ -15,6 +15,7 @@
     "build:watch": "rimraf lib && tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")",
     "update:emoji": "up-emoji resources/json/Emoji.json",
     "test:code-update": "node --test tests/code-update.test.cjs tests/commits-update.test.cjs",
+    "test:maintenance": "node --test tests/maintenance.test.cjs",
     "lint": "eslint ./src --fix"
   },
   "devDependencies": {

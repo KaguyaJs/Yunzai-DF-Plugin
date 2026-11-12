@@ -5,6 +5,7 @@ import { FacePoke } from '@/modules'
 import moment from 'moment'
 import { icqq } from 'trss-yunzai'
 import { sendMasterRedisKey } from '@/constants'
+import { withPluginTask } from '@/utils/lifecycle'
 
 /** 是否在发送中 */
 let Sending = false
@@ -42,6 +43,10 @@ export class sendMasterMsg extends plugin {
 
   async sendMaster (e = this.e) {
     if (Sending) return e.reply('❎ 已有发送任务正在进行中，请等待上一条完成后重试')
+    return withPluginTask(() => this.sendToMaster(e), () => e.reply('DF插件正在维护，请稍后再试'))
+  }
+
+  private async sendToMaster (e: typeof this.e) {
     const { open, cd, BotId, banWords, banUser, banGroup, MsgTemplate, successMsgTemplate, failsMsgTemplate, Master } = Config.sendMaster
     const REDISCDKEY = `${REDISKEY}:cd`
     const rawCd = Number(cd)

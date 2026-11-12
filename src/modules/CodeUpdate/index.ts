@@ -11,6 +11,7 @@ import { activityOptions, isActivityMethod } from './utils/activity'
 import type { RepositoryUpdate } from './services/repo'
 import { PluginPath } from '@/utils/GitRepo'
 import { logGitRequestEstimate } from '@/utils/gitRequestEstimate'
+import { withPluginTask } from '@/utils/lifecycle'
 
 let checking = false
 
@@ -20,12 +21,17 @@ export async function CodeUpdate (isAuto: boolean = true, e?: MessageEvent): Pro
     if (e) await e.reply('正在检查仓库更新，请稍后再试')
     return false
   }
-  checking = true
-  try {
-    return await checkUpdates(isAuto, e)
-  } finally {
-    checking = false
-  }
+  return withPluginTask(async () => {
+    checking = true
+    try {
+      return await checkUpdates(isAuto, e)
+    } finally {
+      checking = false
+    }
+  }, async () => {
+    if (e) await e.reply('DF插件正在维护，暂时无法检查仓库更新')
+    return false as const
+  })
 }
 
 async function checkUpdates (isAuto: boolean, e?: MessageEvent) {

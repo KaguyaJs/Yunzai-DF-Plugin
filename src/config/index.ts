@@ -6,11 +6,21 @@ import fs from 'node:fs/promises'
 import { PluginName, ResPath } from '@/dir'
 import type { Config as config } from '@/types'
 import { migrateCodeUpdateConfig } from './codeUpdateMigration'
+import { withPluginTask } from '@/utils/lifecycle'
+
+interface ConfigWatcher {
+  close: () => Promise<unknown> | void
+}
+
+function configUnavailable (): never {
+  throw new Error('DF插件正在维护，暂时无法保存配置')
+}
 
 class Config {
   plugin_name = PluginName
   config: config & Record<string, any> = {} as config
   configSave: () => Promise<void> = async () => { }
+  private configWatcher?: ConfigWatcher
 
   /** 初始化配置 */
   async initCfg () {
@@ -27,11 +37,13 @@ class Config {
       }
     }
 
-    const { config, configSave } = await makeConfig(this.plugin_name, this.config, keep, {
+    const managed = await makeConfig(this.plugin_name, this.config, keep, {
       replacer: (i: any) => i.replace(/(\n.+?Tips:)/g, '\n$1')
     })
+    const { config, configSave } = managed
     this.config = config
-    this.configSave = configSave
+    this.configWatcher = (managed as typeof managed & { watcher?: ConfigWatcher }).watcher
+    this.configSave = () => withPluginTask(async () => { await configSave() }, configUnavailable)
 
     try {
       const migrated = await migrateCodeUpdateConfig(this.config.CodeUpdate, this.configSave, {
@@ -45,6 +57,12 @@ class Config {
     }
 
     return this
+  }
+
+  /** 卸载前关闭配置监听；正在进行的配置保存由维护锁等待完成。 */
+  async closeWatcher () {
+    await this.configWatcher?.close()
+    this.configWatcher = undefined
   }
 
   /** 主人列表 */
@@ -112,18 +130,20 @@ class Config {
    * @param value 修改的value值
    */
   modify (name: string, key: string, value: unknown) {
-    const keys = [name, ...key.split('.')]
-    // Block prototype keys while traversing nested settings.
-    if (keys.some(key => !key || ['__proto__', 'prototype', 'constructor'].includes(key))) {
-      throw new Error('无效的配置路径')
-    }
-    let target = this.config
-    for (const part of keys.slice(0, -1)) {
-      if (!target[part] || typeof target[part] !== 'object') target[part] = {}
-      target = target[part]
-    }
-    target[keys[keys.length - 1]] = value
-    return this.configSave()
+    return withPluginTask(async () => {
+      const keys = [name, ...key.split('.')]
+      // 拒绝可修改原型链的路径。
+      if (keys.some(key => !key || ['__proto__', 'prototype', 'constructor'].includes(key))) {
+        throw new Error('无效的配置路径')
+      }
+      let target = this.config
+      for (const part of keys.slice(0, -1)) {
+        if (!target[part] || typeof target[part] !== 'object') target[part] = {}
+        target = target[part]
+      }
+      target[keys[keys.length - 1]] = value
+      return this.configSave()
+    }, configUnavailable)
   }
 
   /**
@@ -134,14 +154,16 @@ class Config {
    * @param category 类别 add or del
    */
   modifyarr (name: string, key: string | number, value: unknown, category: 'add' | 'del' = 'add') {
-    if (typeof this.config[name] !== 'object') this.config[name] = {}
-    if (!Array.isArray(this.config[name][key])) this.config[name][key] = []
-    if (category === 'add') {
-      if (!this.config[name][key].includes(value)) this.config[name][key].push(value)
-    } else {
-      this.config[name][key] = this.config[name][key].filter((item: any) => item !== value)
-    }
-    return this.configSave()
+    return withPluginTask(async () => {
+      if (typeof this.config[name] !== 'object') this.config[name] = {}
+      if (!Array.isArray(this.config[name][key])) this.config[name][key] = []
+      if (category === 'add') {
+        if (!this.config[name][key].includes(value)) this.config[name][key].push(value)
+      } else {
+        this.config[name][key] = this.config[name][key].filter((item: any) => item !== value)
+      }
+      return this.configSave()
+    }, configUnavailable)
   }
 }
 

@@ -2,6 +2,7 @@ import { ResPath } from '@/dir'
 import { GuobaType } from '@/types/guoba'
 import * as schemas from './schemas'
 import Config from '@/config'
+import { withPluginTask } from '@/utils/lifecycle'
 
 export function supportGuoba (): GuobaType {
   return {
@@ -32,11 +33,13 @@ export function supportGuoba (): GuobaType {
         return Config.config
       },
       async setConfigData (data, { Result }) {
-        for (const k in data) {
-          const [name, ...keys] = k.split('.')
-          await Config.modify(name, keys.join('.'), data[k])
-        }
-        return Result.ok({}, 'Ciallo～(∠・ω< )⌒☆')
+        return withPluginTask(async () => {
+          for (const k in data) {
+            const [name, ...keys] = k.split('.')
+            await Config.modify(name, keys.join('.'), data[k])
+          }
+          return Result.ok({}, 'Ciallo～(∠・ω< )⌒☆')
+        }, () => { throw new Error('DF插件正在维护，请稍后再保存配置') })
       },
     }
   }

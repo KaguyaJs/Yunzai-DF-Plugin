@@ -68,6 +68,7 @@ function createHarness (options = {}) {
     logger,
     URL,
     setTimeout,
+    clearTimeout,
     structuredClone,
     Buffer,
     Date: class extends Date {
@@ -75,8 +76,8 @@ function createHarness (options = {}) {
       static now () { return now }
     },
     plugin: class {
-      constructor () { this.context = null; this.finishes = [] }
-      setContext (name) { this.context = name }
+      constructor (options) { Object.assign(this, options); this.context = null; this.finishes = [] }
+      setContext (name) { this.context = name; return this.e }
       finish (name) { this.context = null; this.finishes.push(name) }
     },
     redis: {
@@ -89,7 +90,10 @@ function createHarness (options = {}) {
         return 'OK'
       },
       keys: async pattern => [...store.keys()].filter(key => key.startsWith(pattern.replace(/\*$/, ''))),
-      del: async keys => [...keys].reduce((count, key) => count + Number(store.delete(key)), 0)
+      scan: async (_, options) => ({ cursor: 0, keys: [...store.keys()].filter(key => key.startsWith(options.MATCH.replace(/\*$/, ''))) }),
+      memoryUsage: async key => store.has(key) ? Buffer.byteLength(store.get(key)) + 64 : null,
+      unlink: async (...keys) => keys.flat().reduce((count, key) => count + Number(store.delete(key)), 0),
+      del: async (...keys) => keys.flat().reduce((count, key) => count + Number(store.delete(key)), 0)
     },
     Bot: Object.fromEntries(['Group', 'Friend'].map(type => [`pick${type}`, id => ({
       sendMsg: async message => {
@@ -119,7 +123,11 @@ function createHarness (options = {}) {
     if (specifier === '@/config') return harness.configFacade ?? config
     if (specifier === '@/constants' || specifier === '@/constants/Redis') return { CodeUpdateRedisKey: 'fixture:CodeUpdate', commonRedisKey: 'fixture' }
     if (specifier === '@/utils') return utils
-    if (specifier === '@/dir') return { ResPath: path.join(project, 'resources'), PluginName: 'DF-Plugin', YunzaiPath: path.resolve(project, '../..') }
+    if (specifier === '@/utils/data') return { isDirectory: async () => { throw new Error('unexpected filesystem operation') } }
+    if (specifier === '@/dir') return { ResPath: path.join(project, 'resources'), PluginName: 'DF-Plugin', PluginPath: project, FacePath: path.join(project, 'resources/poke'), YunzaiPath: path.resolve(project, '../..') }
+    if (specifier === '../../../other/update.js') return { update: class {} }
+    if (specifier === '../../../other/restart.js') return { Restart: class {} }
+    if (specifier === '../../../../lib/plugins/loader.js') return { unloadPlugin: async () => { throw new Error('unexpected plugin unload') } }
     if (specifier === '@/modules') return { FacePoke: async () => path.join(project, 'resources/CodeUpdate/icon/git.svg') }
     if (specifier === '@/utils/GitRepo') return { PluginPath: harness.localRepos }
     const filename = resolveModule(specifier, parent)
