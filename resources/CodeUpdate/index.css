@@ -155,6 +155,27 @@ body {
   --git-icon-filter: brightness(0) opacity(.68);
 }
 
+.container[data-theme="pink"] {
+  --git-bg: #f9edf2;
+  --git-surface: #fffafd;
+  --git-surface-raised: #fcf1f6;
+  --git-text: #583747;
+  --git-muted: #815d6f;
+  --git-accent: #a34370;
+  --git-border: #eed5e1;
+  --git-accent-soft: #f7e4ed;
+  --git-success: #2f7357;
+  --git-success-soft: #e7f2ec;
+  --git-danger: #ac4059;
+  --git-danger-soft: #fbe7ed;
+  --git-warning: #865e25;
+  --git-warning-soft: #f8efdf;
+  --git-purple: #8052a1;
+  --git-purple-soft: #f1e7f8;
+  --git-shadow: 0 8px 26px #73334f0a;
+  --git-icon-filter: brightness(0) opacity(.68);
+}
+
 /* 较旧的 Chromium 使用上面的固定配色；新版本跟随自定义基色生成柔和底色。 */
 @supports (color: color-mix(in srgb, white, black)) {
   .container[data-theme] {

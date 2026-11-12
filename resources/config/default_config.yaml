@@ -22,7 +22,7 @@ CodeUpdate:
   badgeStyle: true
   ThemeTips: |-
     仓库更新图片主题，自动推送与手动汇总共用，默认使用海盐蓝，经典原版可自行选择
-    Name: classic经典原版、dark深空、light晨光、ocean海盐蓝、forest松石绿、sunset暖砂橙、lavender薰衣草
+    Name: classic经典原版、dark深空、light晨光、ocean海盐蓝、forest松石绿、sunset暖砂橙、lavender薰衣草、pink樱花粉
     Accent: 强调色；Background: 图片背景；Surface: 卡片背景；Text: 主文字；Muted: 辅助文字；Border: 边框
     颜色留空跟随所选主题，支持#RGB或#RRGGBB格式；切换主题后已填写的颜色仍会覆盖预设
     自定义颜色、宽度和圆角仅对新主题生效；经典原版保持原始外观，切回时保留自定义设置供下次选择新主题使用
