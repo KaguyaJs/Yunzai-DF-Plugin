@@ -6,13 +6,14 @@ CodeUpdate:
   AutoTips: |-
     自动检查仓库更新开关
   Auto: false
+  RequestEstimateLogTips: |-
+    是否输出仓库请求统计日志，默认开启
+    仅控制估算日志，不影响自动检查和仓库更新推送
+  RequestEstimateLog: true
   CronTips: |-
     仓库更新检查Cron表达式
     Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
   Cron: "0 */30 * * * *"
-  AutoBranchTips: |-
-    是否自动给未配置分支的仓库添加默认分支
-  AutoBranch: true
   FirstAddTips: |-
     首次添加仓库(数据库不存在数据库)是否进行一次推送
   FirstAdd: false
@@ -34,6 +35,37 @@ CodeUpdate:
   multiPageTips: |-
     当获取到的数据达到多少条时分片发送，填 -1 关闭
   multiPage: 12
+  ReleaseTips: |-
+    Release附件展示设置
+    ShowAssets: 在推送图片中展示附件名称和大小
+    AssetLimit: 最多展开的附件数量，超出后显示折叠数量；0折叠全部，-1展示全部
+    草稿通过仓库条目的includeDrafts开启，默认忽略；接口认证账号需有读取草稿的权限
+  Release:
+    ShowAssets: true
+    AssetLimit: 5
+  ActivityTips: |-
+    PR/Issue推送设置（GitHub、Gitee、Gitcode及Gitea兼容接口）；分页和批次上限也用于提交
+    PageSize: 提交/PR/Issue每页获取数量（1-100）
+    MaxPages: 单次最多获取页数；达到上限且尚未确认完整时保留检查进度，需调高后重试；CNB提交父链节点预算为PageSize×MaxPages
+    InitialLimit: PR/Issue首次推送与手动预览的每仓库条目上限
+    BatchSize: 包含提交/PR/Issue时每条推送消息的条目上限
+    BodyLimit: 正文/评论摘要最大字符数，0为隐藏正文
+    OverlapSeconds: 增量查询回看秒数，避免时间边界遗漏
+    SendLinks: PR/Issue图片后附可点击的原始链接
+    ShowDiff: 在PR卡片中展示代码diff，默认关闭；不用于评论通知
+    DiffMaxFiles: 展开diff最多包含的文件数，超过后自动收起为文件摘要
+    DiffMaxLines: 展开diff最多显示的总行数（含上下文），超过后自动收起
+  Activity:
+    PageSize: 100
+    MaxPages: 20
+    InitialLimit: 10
+    BatchSize: 20
+    BodyLimit: 600
+    OverlapSeconds: 60
+    SendLinks: false
+    ShowDiff: false
+    DiffMaxFiles: 3
+    DiffMaxLines: 40
   timeFormatTips: |-
     时间格式
     1: 多久之前 x分钟前 X小时前
@@ -75,8 +107,14 @@ CodeUpdate:
     repos: 
         provider: 仓库提供商，唯一标识符
         repo: 仓库名
-        branch: 分支名 (commits时有效 为空自动获取)
-        type: commits 或 release
+        branch: 分支数组，仅commits生效；[]自动获取默认分支，[main, dev]监听多个分支，[all]每次获取并监听所有分支
+        type: 监听类型数组，可同时选择commits、releases、pulls（PR）、issues，例如[commits, pulls, issues]
+        events: 监听事件，留空使用新建/关闭/重开，PR另含合并/转为正式
+        labels / excludeLabels: 包含任一指定标签 / 排除标签
+        authors / excludeAuthors: 作者账号筛选（评论按评论作者）
+        excludeBots: 忽略机器人，默认true
+        includeDrafts: 包含草稿PR和最新草稿Release，默认false；草稿Release修改及转为正式会触发推送，需要有读取草稿权限的认证Token
+        baseBranches: PR目标分支，留空监听全部
     note: 备注
   List: []
 

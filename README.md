@@ -83,6 +83,98 @@ pnpm install
 - `#推送仓库更新`: 不管有没有更新都回复到当前会话，不会推送所有群组
 - 可在配置中开启 `CodeUpdate.Translate`，并通过 `TranslateApi` / `TranslateName` 自定义翻译接口和图片提示名称
 
+支持监听提交（`commits`）、发布（`releases`）、PR（`pulls`）和 Issues（`issues`）。一个仓库条目的 `type` 是数组，锅巴使用多选框，同一仓库可以同时监听多个类型。也可在用户配置中添加：
+
+```yaml
+CodeUpdate:
+  Auto: true
+  FirstAdd: false
+  Release:
+    ShowAssets: true
+    AssetLimit: 5
+  Activity:
+    PageSize: 100
+    MaxPages: 20
+    InitialLimit: 10
+    BatchSize: 20
+    BodyLimit: 600
+    OverlapSeconds: 60
+    SendLinks: true
+    ShowDiff: false
+    DiffMaxFiles: 3
+    DiffMaxLines: 40
+  List:
+    - Group: [123456789]
+      repos:
+        - provider: GitHub
+          repo: KaguyaJs/Yunzai-DF-Plugin
+          type: [commits, releases, pulls, issues]
+          branch: [main, dev]
+          events: [opened, reopened, closed, merged, ready_for_review, commented]
+          baseBranches: [main, dev]
+          excludeBots: true
+          includeDrafts: false
+          labels: [bug]
+          excludeLabels: [duplicate]
+```
+
+将示例群号替换为自己的群号；私聊使用 `QQ` 列表。`provider` 对应“GitApi配置”中的名称，认证令牌及接口地址沿用已有配置。同一仓库可以在不同群配置不同筛选条件，数据会合并获取，再分别筛选。
+
+`branch` 仅控制提交监听；PR 使用 `baseBranches` 筛选目标分支，发布和 Issue 按仓库监听。锅巴分支框可以输入多个名称，按回车添加，也支持逗号分隔。
+
+提交监听会获取上次检查到本轮 HEAD 之间的全部新增提交，按 SHA 去重并按父提交先于子提交的顺序推送；连续提交、相同时间戳和合并进来的旧日期提交也会保留。翻页固定本轮 HEAD，新出现的提交留到下轮。提交内容及各接收者的待发送记录会持久保存，网络、截图或发送失败后可继续补发，重启后也可恢复；已经成功确认的批次不会再次推送。首次静默和 `FirstAdd` 设置沿用原行为，手动预览只展示当前提交并保留自动进度。
+
+提交扫描共用 `CodeUpdate.Activity.PageSize`、`MaxPages` 和 `BatchSize`；扫描失败或达到上限但尚未确认完整时保留进度，可调高 `MaxPages` 后重试。CNB使用固定 SHA 的详情父链接口，节点预算为 `PageSize × MaxPages`。默认分支切换或完整历史确认旧提交已不可达时，会记录日志并从最新提交建立新基线，已有待补发内容继续保留；提交列表缺少父链信息的平台会记录提示，并按旧 SHA 的列表位置确定边界。
+
+Release 默认忽略草稿，列表前面的草稿不会挡住正式发布。仓库条目设置 `includeDrafts: true` 后，检查范围包含接口返回的最新草稿，卡片显示“草稿 · 未发布”，尚无标签或发布时间的草稿也可展示。最新草稿的标题、正文、标签及附件变更，以及同一条发布从草稿转为正式，都会触发推送；仅更新时间或下载次数变化不会重复推送。预发布会显示“预发布”，转为正式版本也会触发推送；旧版ID游标会自动转换，升级时不会重推已有发布。不同接收者可使用不同草稿设置，共用一次列表获取，并分别保存推送进度；同一接收者匹配多个订阅时，相同发布只展示一次。草稿需要在“GitApi配置”中设置有读取权限的认证 Token；接口未返回的草稿无法监听。
+
+`CodeUpdate.Release.ShowAssets` 控制是否在图片中展示附件，默认开启；`AssetLimit` 默认 5，展示前 5 个文件的名称和大小，超出部分显示“已折叠 N 个文件”。填 0 折叠全部，填 -1 展示全部。无附件时不展示附件区域，完整附件可在发布页查看。锅巴中可调整“Release展示附件”和“Release附件展开数量”；这些设置同样用于手动预览。
+
+| 分支配置 | 提交监听范围 |
+| --- | --- |
+| 不填或 `branch: []` | 自动获取远程默认分支，无需开启额外开关 |
+| `branch: [main]` | 仅 main |
+| `branch: [main, dev]` | main 和 dev，分别保存进度 |
+| `branch: [all]` | 每次检查分页获取全部远程分支，包括后来新增的分支 |
+
+手工配置也兼容 `branch: main`、`branch: "main,dev"`、`branch: all`。`all` 与其他名称同时出现时以全部分支为准；`branch: ["", dev]` 可同时监听默认分支和 dev。默认分支名称缓存五分钟后重新获取；默认分支或完整分支列表获取失败时跳过相应提交检查并保留进度，其他类型继续检查。清理无效数据遇到分支查询失败时会中止清理。
+
+本地 Git 仓库扫描完成后，日志会按平台输出监听仓库数量和大致每小时 API 访问次数；仅配置手动仓库时也会在初始化输出。`CodeUpdate.RequestEstimateLog` 控制仓库请求统计日志，默认 `true`；设为 `false` 或在锅巴关闭“仓库请求统计日志”即可关闭估算输出，不影响自动检查和更新推送。估算依据 `CodeUpdate.Cron` 的检查频率，对多个群/私聊重复监听去重，每个提交分支及发布、PR、Issue 类型各计一次基础请求，另外计入 `all` 分支发现和默认分支查询（五分钟缓存）。例如每半小时检查一个固定分支的提交约为 2 次/小时；同仓库监听两个固定分支以及发布、PR、Issue，基础约为 10 次/小时。
+
+`all` 分支数在本地扫描时尚不确定，日志先列出已知部分，远程检查完成后复用已有分支结果补充估算；仓库或分支数量变化时重新输出。统计本身不产生平台请求。提交增量扫描、分页（含 Release 草稿分页）、PR/Issue详情、评论、diff 和手动检查会增加实际次数；非每日定时规则使用未来 366 天的平均频率。关闭自动检查时预计自动访问量为 0。
+
+初始化会自动将旧的单个 `type` 转为数组，兼容 `commit` 别名；单个分支转为数组。同一策略组内，同仓库且筛选条件和其他设置完全相同的条目会合并，提交分支也会合并。筛选条件不同的条目继续保留，可手工按需求调整，避免 PR 和 Issue 的筛选被混用。旧 `AutoBranch` 设置移除，空分支始终自动解析默认分支。原有提交、发布及 PR/Issue 推送记录继续使用。
+
+迁移先衔接旧 Redis 游标，再等待配置保存成功，最后写入 `DF:ConfigMigration:CodeUpdate:v2`，不设置过期时间。存在标记时后续启动跳过迁移；迁移或保存失败会记录错误并在下次启动重试。该标记不属于无效推送数据清理范围。
+
+| 事件 | 含义 |
+| --- | --- |
+| `opened` / `closed` / `reopened` | 新建 / 关闭 / 重新打开 |
+| `merged` | PR 合并 |
+| `ready_for_review` / `converted_to_draft` | PR 转为正式 / 转为草稿 |
+| `edited` | 修改标题或正文 |
+| `labeled` / `unlabeled` | 添加 / 移除标签 |
+| `synchronize` | PR 来源分支出现新提交 |
+| `commented` | 新增普通讨论评论，逐条推送 |
+
+`events` 留空时，Issue 默认监听新建、关闭和重开，PR 另监听合并和转为正式。评论、标签、正文修改及新代码需要单独勾选；Review 和代码行评论不属于普通讨论评论。监听转为草稿时应开启 `includeDrafts`。
+
+`labels` 匹配任一标签，`excludeLabels` 命中任一标签即排除；移除标签事件也会考虑移除前的标签。`authors` / `excludeAuthors` 按账号筛选，PR/Issue 事件按条目创建者匹配，评论按评论作者匹配。标签和作者账号忽略大小写，分支名区分大小写。上述筛选只对 PR/Issue 生效，自动扫描本地插件仍监听提交。
+
+首次检查会完整建立条目基线。`FirstAdd: false` 时不发送历史活动；开启时最多推送每仓库 `InitialLimit` 条当前状态。`#推送仓库更新` 预览同样遵守筛选和条目上限，并且不会改变自动推送进度。卡片展示编号、状态、标签、分支、正文或评论摘要，PR 详情可用时还展示文件及增删行数；`SendLinks` 控制附带原始链接。
+
+在锅巴开启“PR展示代码diff”（`CodeUpdate.Activity.ShowDiff: true`）后，PR 活动卡片和手动预览会展示文件路径、增删统计及代码差异，新增/删除行使用不同颜色。默认最多展开 `DiffMaxFiles: 3` 个文件、`DiffMaxLines: 40` 行（包含上下文）。超过任一上限、补丁过长或平台只提供部分差异时，自动收起代码并展示文件摘要。推送是图片，完整代码通过 PR 原文查看；开启 `SendLinks` 后消息会附上可点击的完整 diff 链接。
+
+diff 仅在需要展示的 PR 活动中获取，Issue、普通评论和静默基线不请求 diff。代码保持原文，不参与自动翻译。diff 获取或版本确认失败时仍推送 PR 通知，并显示“Diff暂不可用”。失败待重试的消息保存当时的 diff，避免重试时混入 PR 的后续代码。GitHub、Gitee、Gitcode 使用文件接口，Gitea 使用原始 unified diff；二进制文件或平台省略的补丁会提示未提供文本差异。
+
+PR/Issue 接口适配 GitHub、Gitee、Gitcode 和 Gitea 兼容接口，CNB 当前仅支持原有提交/发布功能。自建 Gitea 的 `provider` 名称应包含 `Gitea`，`ApiUrl` 指向 `https://你的域名/api/v1/repos`。各平台的访问权限和限流以实际接口为准，建议配置令牌。
+
+自动检查按更新时间分页并回看 `OverlapSeconds` 秒；达到 `MaxPages` 且尚不能确认列表完成、网络失败或评论获取失败时保留原检查进度。大型仓库首次检查可能需要调高页数上限。包含 PR/Issue 的消息按 `BatchSize` 分批发送，每批独立确认。检测状态和待发送内容一起保存在 Redis，某个群失败后继续重试其原始消息，已经成功的群不会重复接收同一事件。
+
+生命周期检测采用轮询快照比较，不能还原两次检查之间发生又撤回的中间状态；普通新评论有独立编号去重。发送成功但 Redis 确认失败时可能重发。若需要每一次状态操作的精确通知，应再接入事件时间线或 Webhook。
+
+开发验证：`pnpm run test:code-update`。
+
 </details>
 
 <details><summary>图片外显</summary>
