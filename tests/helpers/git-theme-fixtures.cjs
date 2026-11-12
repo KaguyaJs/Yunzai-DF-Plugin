@@ -23,7 +23,7 @@ function displayFixtures () {
   const commit = {
     ...common,
     name: { ...common.name, branch: 'main', sha: 'F15D6C0' },
-    text: '<span class="commit-prefix prefix-feat haveScope">feat</span><span class="scope commit-prefix">theme</span> <span class="head">为每一条仓库动态，换上一种好心情</span><br><p>新增六套主题与自定义配色，让提交、发布和协作进展清楚呈现。</p><ul><li>深色与浅色自由切换</li><li>多个推送组统一汇总，按配置分片后一次回复</li></ul>',
+    text: '<span class="commit-prefix prefix-feat haveScope">feat</span><span class="scope commit-prefix">theme</span> <span class="head">为每一条仓库动态，换上一种好心情</span><br><p>新增七套主题与自定义配色，让提交、发布和协作进展清楚呈现。</p><ul><li>深色与浅色自由切换</li><li>多个推送组统一汇总，按配置分片后一次回复</li></ul>',
     stats: { files: 8, additions: 236, deletions: 42 },
     translate: { label: '中文翻译', title: '已在渲染前自动翻译' }
   }

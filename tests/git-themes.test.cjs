@@ -35,10 +35,10 @@ function installPreviewRouter (h) {
   }
 }
 
-test('经典原版与六套新主题均可选择，未配置或非法配置默认海盐蓝', () => {
+test('经典原版与七套新主题均可选择，未配置或非法配置默认海盐蓝', () => {
   const h = createHarness()
   const { CODE_UPDATE_THEMES, resolveCodeUpdateTheme } = h.load('@CodeUpdate/utils/theme')
-  assert.deepEqual(plain(CODE_UPDATE_THEMES.map(value => value.name)), ['classic', 'dark', 'light', 'ocean', 'forest', 'sunset', 'lavender'])
+  assert.deepEqual(plain(CODE_UPDATE_THEMES.map(value => value.name)), ['classic', 'dark', 'light', 'ocean', 'forest', 'sunset', 'lavender', 'pink'])
   for (const preset of CODE_UPDATE_THEMES) {
     assert.ok(preset.label && preset.description)
     const theme = resolveCodeUpdateTheme({ Name: preset.name })
@@ -154,7 +154,7 @@ test('默认YAML、锅巴和渲染器均使用海盐蓝，并保留经典原版�
   assert.equal(selection.defaultValue, defaults.CodeUpdate.Theme.Name)
   assert.equal(resolveCodeUpdateTheme().name, defaults.CodeUpdate.Theme.Name)
   assert.equal(resolveCodeUpdateTheme({ Name: 'invalid' }).name, defaults.CodeUpdate.Theme.Name)
-  assert.deepEqual(plain(selection.componentProps.options.map(option => option.value)), ['classic', 'dark', 'light', 'ocean', 'forest', 'sunset', 'lavender'])
+  assert.deepEqual(plain(selection.componentProps.options.map(option => option.value)), ['classic', 'dark', 'light', 'ocean', 'forest', 'sunset', 'lavender', 'pink'])
 })
 
 test('截图每次读取主题和分片配置，达到阈值时返回全部分片', async () => {

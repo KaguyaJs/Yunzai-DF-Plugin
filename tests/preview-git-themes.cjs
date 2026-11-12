@@ -15,6 +15,7 @@ async function main () {
   const output = path.resolve((args[0] === '--output' ? args[1] : args[0]) || path.join(os.tmpdir(), 'yunzai-df-git-themes'))
   await fs.mkdir(output, { recursive: true })
   const { CODE_UPDATE_THEMES, resolveCodeUpdateTheme } = createHarness().load('@CodeUpdate/utils/theme')
+  const newThemeCount = CODE_UPDATE_THEMES.filter(preset => preset.name !== 'classic').length
   const data = {
     lifeData: displayFixtures(),
     pluResPath: pathToFileURL(path.join(project, 'resources')).href,
@@ -114,7 +115,7 @@ async function main () {
     assert.deepEqual(blockedRequests, [], 'the fixture must render entirely from local resources')
     const overviewHtml = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>仓库推送主题</title><style>
 *{box-sizing:border-box}body{margin:0;background:#eef2f8;color:#203047;font-family:"Microsoft YaHei",system-ui,sans-serif}.overview{width:1160px;padding:38px 38px 34px}.eyebrow{font-size:12px;letter-spacing:3px;color:#64748b;font-weight:700}h1{margin:12px 0;font-size:34px;letter-spacing:1px}header p{margin:0;color:#64748b;font-size:15px}.themes{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:30px}.theme{background:#fff;border:1px solid #dce3ec;border-radius:18px;overflow:hidden;box-shadow:0 8px 24px #2030470b}.theme h2{font-size:18px;margin:0 0 6px}.theme p{font-size:12px;color:#718096;margin:0}.theme-title{padding:18px 18px 16px}.preview{height:680px;overflow:hidden;background:#e2e8f0}.preview img{width:100%;display:block}footer{margin-top:26px;color:#718096;font-size:13px}
-</style><div class="overview"><header><div class="eyebrow">GIT UPDATE · CLASSIC + SIX THEMES</div><h1>熟悉的经典，更多的选择</h1><p>经典原版默认保留，六套新主题自由选择；新主题支持自定义配色、宽度与圆角</p></header><div class="themes">${reports.filter(report => report.overview).map(report => `<section class="theme"><div class="theme-title"><h2>${escapeHtml(report.label)}</h2><p>${escapeHtml(report.description)}</p></div><div class="preview"><img src="${escapeHtml(pathToFileURL(report.image).href)}" alt="${escapeHtml(report.label)}"></div></section>`).join('')}</div><footer>主题预览 · 完整长图分别保存在各主题 PNG 中</footer></div></html>`
+</style><div class="overview"><header><div class="eyebrow">GIT UPDATE · CLASSIC + ${newThemeCount} THEMES</div><h1>熟悉的经典，更多的选择</h1><p>默认海盐蓝，经典原版与 ${newThemeCount} 套新主题自由选择；新主题支持自定义配色、宽度与圆角</p></header><div class="themes">${reports.filter(report => report.overview).map(report => `<section class="theme"><div class="theme-title"><h2>${escapeHtml(report.label)}</h2><p>${escapeHtml(report.description)}</p></div><div class="preview"><img src="${escapeHtml(pathToFileURL(report.image).href)}" alt="${escapeHtml(report.label)}"></div></section>`).join('')}</div><footer>主题预览 · 完整长图分别保存在各主题 PNG 中</footer></div></html>`
     const overviewPath = path.join(output, 'overview.html')
     await fs.writeFile(overviewPath, overviewHtml)
     await page.setViewport({ width: 1200, height: 900, deviceScaleFactor: 1 })

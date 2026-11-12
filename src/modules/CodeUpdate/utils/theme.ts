@@ -8,7 +8,8 @@ export const CODE_UPDATE_THEMES = [
   { name: 'ocean', label: '海盐蓝', description: '清透蓝色与海洋气息' },
   { name: 'forest', label: '松石绿', description: '柔和自然的绿色层次' },
   { name: 'sunset', label: '暖砂橙', description: '温暖的砂色与橙色点缀' },
-  { name: 'lavender', label: '薰衣草', description: '轻盈柔和的紫色卡片' }
+  { name: 'lavender', label: '薰衣草', description: '轻盈柔和的紫色卡片' },
+  { name: 'pink', label: '樱花粉', description: '柔和粉色与玫瑰色点缀' }
 ] as const satisfies readonly { name: Config['CodeUpdate']['Theme']['Name'], label: string, description: string }[]
 
 const colorVariables = {

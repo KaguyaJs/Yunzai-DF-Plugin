@@ -45,10 +45,11 @@ export interface Config {
        * forest: 松石绿
        * sunset: 暖砂橙
        * lavender: 薰衣草
+       * pink: 樱花粉
        *
        * @default "ocean"
        */
-      Name: 'classic' | 'dark' | 'light' | 'ocean' | 'forest' | 'sunset' | 'lavender'
+      Name: 'classic' | 'dark' | 'light' | 'ocean' | 'forest' | 'sunset' | 'lavender' | 'pink'
       /**
        * 自定义强调色，用于标题点缀、链接等，留空跟随主题
        * 仅对新主题生效，经典原版保持原始配色
