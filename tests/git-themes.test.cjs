@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const { createHarness, item, subscribe, project, plain } = require('./helpers/code-update.cjs')
-const { displayFixtures } = require('./helpers/git-theme-fixtures.cjs')
+const { displayFixtures, commitDisplayFixtures } = require('./helpers/git-theme-fixtures.cjs')
 
 function declarations (style) {
   return Object.fromEntries(style.split(';').filter(value => value.trim()).map(value => {
@@ -173,6 +173,54 @@ test('截图每次读取主题和分片配置，达到阈值时返回全部分�
   assert.equal(imageCount(await generateScreenshot(content, 'preview')), 1)
   assert.equal(h.screenshots[1].options.multiPage, false)
   assert.equal(h.screenshots[1].data.theme.name, 'sunset')
+})
+
+test('公共提交卡片按平台、仓库和分支区分，保留原顺序、其他动态与原始分片计数', async () => {
+  const h = createHarness({ config: { multiPage: 6 } })
+  const { generateScreenshot } = h.load('@CodeUpdate/services/screenshot')
+  const [first, second, third, fourth, development, release] = commitDisplayFixtures()
+  const otherRepo = { ...fourth, name: { ...fourth.name, repo: 'KaguyaJs/Other-Plugin' } }
+  const otherProvider = { ...fourth, name: { ...fourth.name, source: 'Gitee' } }
+  const content = [first, release, development, second, otherRepo, { ...third, name: { ...third.name, source: 'github' } }, otherProvider, fourth]
+  const original = plain(content)
+  await generateScreenshot(content, 'grouped')
+  const { data, options } = h.screenshots[0]
+  assert.deepEqual(plain(content), original)
+  assert.deepEqual(data.lifeData, original)
+  assert.equal(data.renderInfo.updates, 8)
+  assert.equal(data.renderInfo.repositories, 3)
+  assert.equal(data.renderCards.length, 5)
+  assert.deepEqual(data.renderCards[0].commits.map(value => value.name.sha), ['F15D6C0', '977665B', '509CE77', 'A26C8D1'])
+  assert.equal(data.renderCards[1].release, true)
+  assert.equal(data.renderCards[2].name.branch, 'dev')
+  assert.equal(data.renderCards[2].commits.length, 1)
+  assert.equal(data.renderCards[3].name.repo, 'KaguyaJs/Other-Plugin')
+  assert.equal(data.renderCards[4].name.source, 'Gitee')
+  assert.equal(options.multiPage, true, '分片阈值继续按八条更新计算')
+})
+
+test('全部主题将同分支四条提交显示为一张卡片，逐条详情和其他分支完整保留', async () => {
+  const h = createHarness({ config: { multiPage: -1 } })
+  const { CODE_UPDATE_THEMES } = h.load('@CodeUpdate/utils/theme')
+  const { generateScreenshot } = h.load('@CodeUpdate/services/screenshot')
+  const template = require('art-template')
+  const content = commitDisplayFixtures()
+  for (const preset of CODE_UPDATE_THEMES) {
+    h.config.CodeUpdate.Theme = { Name: preset.name }
+    await generateScreenshot(content, preset.name)
+    const { data, template: name } = h.screenshots.at(-1)
+    const html = template(path.join(project, 'resources', `${name}.html`), { ...data, pluResPath: path.join(project, 'resources'), sys: { scale: '', copyright: 'fixture' } })
+    assert.equal((html.match(/class="item /g) || []).length, 3, `${preset.name}: 公共提交、独立 dev 提交、发布各一张`)
+    assert.equal((html.match(/class="commit-entry"/g) || []).length, 4, `${preset.name}: 四条提交详情`)
+    assert.equal((html.match(/class="branch-ref"/g) || []).length, preset.name === 'classic' ? 1 : 3)
+    assert.ok(html.includes('4 COMMITS') && html.includes('按提交顺序'))
+    for (const sha of ['F15D6C0', '977665B', '509CE77', 'A26C8D1', 'D12A640']) assert.ok(html.includes(sha), `${preset.name}: ${sha}`)
+    for (const text of ['Lin', 'Alice', '12 分钟前', '5 分钟前', '中文翻译', '+86', '-24', 'RELEASE', '多条提交共用一张卡片']) {
+      if (text === 'RELEASE' && preset.name === 'classic') continue
+      assert.ok(html.includes(text), `${preset.name}: ${text}`)
+    }
+    assert.ok(html.indexOf('F15D6C0') < html.indexOf('977665B') && html.indexOf('977665B') < html.indexOf('509CE77'))
+  }
 })
 
 test('多个推送组主动推送只汇总一次，去重后全部分片与活动链接同次回复', async () => {

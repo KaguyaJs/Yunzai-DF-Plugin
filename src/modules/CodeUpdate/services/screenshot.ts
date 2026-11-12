@@ -3,6 +3,7 @@ import { screenshot } from '@/utils'
 import { ImageElem } from 'trss-yunzai/icqq'
 import config from '@/config'
 import { resolveCodeUpdateTheme } from '../utils/theme'
+import { groupCommitCards } from '../utils/cards'
 
 /**
  * 按所选主题渲染仓库更新；自动推送与手动汇总均按配置决定是否分片
@@ -15,6 +16,7 @@ export async function generateScreenshot (content: RepositoryInfo[], saveId: str
   return screenshot(theme.name === 'classic' ? 'CodeUpdate/classic' : 'CodeUpdate/index', {
     saveId,
     lifeData: content,
+    renderCards: groupCommitCards(content),
     theme,
     renderInfo: {
       repositories: new Set(content.map(item => JSON.stringify([item.name.source.toLowerCase(), item.name.repo]))).size,

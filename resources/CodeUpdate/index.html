@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Git仓库更新推送</title>
   <link rel="stylesheet" type="text/css" href="{{pluResPath}}/CodeUpdate/index.css" />
+  <link rel="stylesheet" type="text/css" href="{{pluResPath}}/CodeUpdate/commit-group.css" />
   <link rel="shortcut icon" href="#" />
 </head>
 
@@ -32,8 +33,9 @@
 
     <div class="data_box">
       <div class="list">
-        {{each lifeData item}}
-        <div class="item {{if item.activity}}activity-card{{else if item.release}}release-card{{else}}commit-card{{/if}}">
+        {{set cards = renderCards || lifeData}}
+        {{each cards item}}
+        <div class="item {{if item.activity}}activity-card{{else if item.release}}release-card{{else}}commit-card{{/if}}{{if item.commits && item.commits.length > 1}} commit-group{{/if}}">
           <div class="title">
             <div class="text">
               <span class="provider-icon"><img src="{{item.icon}}" class="icon" alt="{{item.name.source}}"></span>
@@ -44,9 +46,12 @@
               {{else if item.activity}}
               <span class="activity-kind">{{item.detail.kind}} #{{item.detail.number}}</span>
               {{else}}
-              <span class="commit-kind">COMMIT</span>
+              <span class="commit-kind">{{if item.commits && item.commits.length > 1}}{{item.commits.length}} COMMITS{{else}}COMMIT{{/if}}</span>
               {{/if}}
             </div>
+            {{if item.commits && item.commits.length > 1}}
+            {{@include('./commit-group.html', {item: item, pluResPath: pluResPath})}}
+            {{else}}
             {{if item.activity}}
             <div class="activity-meta">
               <span class="activity-state state-{{item.detail.state}}">{{item.detail.stateLabel}}</span>
@@ -135,6 +140,7 @@
               {{/if}}
               {{if item.diff.url}}<a class="diff-link" href="{{item.diff.url}}">查看完整 Diff · PR 原文</a>{{/if}}
             </div>
+            {{/if}}
             {{/if}}
           </div>
         </div>

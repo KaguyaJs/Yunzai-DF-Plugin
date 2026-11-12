@@ -6,7 +6,7 @@ const { pathToFileURL } = require('node:url')
 const template = require('art-template')
 const puppeteer = require('puppeteer')
 const { createHarness, project } = require('./helpers/code-update.cjs')
-const { displayFixtures } = require('./helpers/git-theme-fixtures.cjs')
+const { displayFixtures, commitDisplayFixtures } = require('./helpers/git-theme-fixtures.cjs')
 
 const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
 
@@ -14,7 +14,9 @@ async function main () {
   const args = process.argv.slice(2).filter(value => value !== '--')
   const output = path.resolve((args[0] === '--output' ? args[1] : args[0]) || path.join(os.tmpdir(), 'yunzai-df-git-themes'))
   await fs.mkdir(output, { recursive: true })
-  const { CODE_UPDATE_THEMES, resolveCodeUpdateTheme } = createHarness().load('@CodeUpdate/utils/theme')
+  const harness = createHarness()
+  const { CODE_UPDATE_THEMES, resolveCodeUpdateTheme } = harness.load('@CodeUpdate/utils/theme')
+  const { groupCommitCards } = harness.load('@CodeUpdate/utils/cards')
   const newThemeCount = CODE_UPDATE_THEMES.filter(preset => preset.name !== 'classic').length
   const data = {
     lifeData: displayFixtures(),
@@ -52,7 +54,13 @@ async function main () {
       {
         name: 'dark-wide', label: '深空 · 自定义', themeName: 'dark', scale: 1,
         settings: { Width: 1000, Radius: 28, Background: '#10232f', Surface: '#172f3e', Text: '#e7f3fa', Muted: '#a5c1d1', Accent: '#7ce0ca', Border: '#365563' }
-      }
+      },
+      ...CODE_UPDATE_THEMES.map(preset => ({ ...preset, name: `${preset.name}-commits`, themeName: preset.name, scale: 1, grouped: true })),
+      { name: 'ocean-commits-focus', label: '海盐蓝 · 连续提交', themeName: 'ocean', scale: 1, grouped: true, focused: true },
+      { name: 'classic-commits-2x', label: '经典原版 · 连续提交', themeName: 'classic', scale: 2, grouped: true },
+      { name: 'pink-commits-compact', label: '樱花粉 · 紧凑', themeName: 'pink', scale: 1, settings: { Width: 520, Radius: 0 }, grouped: true, longCommits: true },
+      { name: 'dark-commits-wide', label: '深空 · 宽版', themeName: 'dark', scale: 2, settings: { Width: 1000, Radius: 28 }, grouped: true },
+      { name: 'light-commits-backlog', label: '晨光 · 提交积压', themeName: 'light', scale: 1, grouped: true, backlog: true }
     ]
     for (const preset of cases) {
       const classic = preset.themeName === 'classic'
@@ -62,15 +70,38 @@ async function main () {
       await page.setViewport({ width: preset.scale > 1 ? 1440 : 1200, height: 900, deviceScaleFactor: 1 })
       // The original stylesheet has its own default scale; runtime always overrides it too.
       const sys = { ...data.sys, scale: `style="transform:scale(${preset.scale})"` }
-      const lifeData = structuredClone(data.lifeData)
+      let lifeData = structuredClone(preset.grouped ? commitDisplayFixtures() : data.lifeData)
+      if (preset.focused) lifeData = lifeData.filter(item => item.name.branch === 'main')
+      if (preset.longCommits) {
+        for (const item of lifeData.filter(item => item.name.branch === 'main')) {
+          item.name.repo = 'VeryLongOrganizationName/a-repository-name-that-is-deliberately-long-for-layout-verification'
+          item.name.branch = 'feature/very-long-branch-name-without-extra-spaces-to-check-wrapping'
+        }
+        lifeData[1].time_info = '<span>VeryLongAuthorNameWithoutSpacesForLayoutVerification</span> 编写于 <span>18 分钟前</span>，并由 <span>AnotherVeryLongCommitterNameWithoutSpaces</span> 提交于 <span>12 分钟前</span>'
+        lifeData[2].text += '<pre><code>src/modules/CodeUpdate/services/a-very-long-filename-without-spaces-for-verifying-commit-card-overflow.ts</code></pre>'
+      }
+      if (preset.backlog) {
+        lifeData = Array.from({ length: 20 }, (_, index) => ({
+          ...lifeData[index % 4],
+          name: { ...lifeData[index % 4].name, sha: `ABC${String(index).padStart(4, '0')}` }
+        }))
+      }
       if (preset.longContent) {
         lifeData[0].name.repo = 'VeryLongOrganizationName/a-repository-name-that-is-deliberately-long-for-layout-verification'
         lifeData[0].name.branch = 'feature/very-long-branch-name-without-extra-spaces-to-check-wrapping'
         lifeData[2].diff.files[0].filename = 'packages/a-really-long-package-name/src/modules/CodeUpdate/services/aggregate-all-configured-repositories-into-one-image.ts'
         lifeData[2].diff.files[0].lines[3].text += '.map((repository) => repository.subscriptions.filter((subscription) => subscription.enabled))'
       }
+      const renderCards = groupCommitCards(lifeData)
       const templatePath = path.join(project, 'resources/CodeUpdate', classic ? 'classic.html' : 'index.html')
-      await fs.writeFile(htmlPath, template(templatePath, { ...data, lifeData, sys, theme }))
+      await fs.writeFile(htmlPath, template(templatePath, {
+        ...data,
+        lifeData,
+        renderCards,
+        sys,
+        theme,
+        renderInfo: { repositories: new Set(lifeData.map(item => JSON.stringify([item.name.source.toLowerCase(), item.name.repo]))).size, updates: lifeData.length }
+      }))
       await page.goto(pathToFileURL(htmlPath).href, { waitUntil: 'networkidle0' })
       await page.evaluate(async () => {
         await document.fonts.ready
@@ -79,7 +110,7 @@ async function main () {
       const metrics = await page.evaluate(() => {
         const container = document.querySelector('#container')
         const bounds = container.getBoundingClientRect()
-        const selectors = '.item, .text, .repo-name, .branch, .branch-ref, .desc, .activity-body, .release-assets, .pr-diff, .diff-file, .diff-line, .diff-file-heading, .activity-labels'
+        const selectors = '.item, .text, .repo-name, .branch, .branch-ref, .desc, .activity-body, .release-assets, .pr-diff, .diff-file, .diff-line, .diff-file-heading, .activity-labels, .commit-list, .commit-entry, .commit-entry-body, .commit-entry-footer, .commit-entry-extras, .commit-sha, .time-info'
         const overflow = [...container.querySelectorAll(selectors)].filter(element => {
           const rect = element.getBoundingClientRect()
           return rect.right > bounds.right + 1 || rect.left < bounds.left - 1 || element.scrollWidth > element.clientWidth + 1
@@ -87,6 +118,7 @@ async function main () {
         return {
           width: Math.round(bounds.width), height: Math.round(bounds.height),
           cards: container.querySelectorAll('.item').length,
+          commitEntries: container.querySelectorAll('.commit-entry').length,
           borderRadius: getComputedStyle(container.querySelector('.item')).borderRadius,
           colors: Object.fromEntries(['bg', 'surface', 'text', 'muted', 'accent', 'border'].map(name => [name, getComputedStyle(container).getPropertyValue(`--git-${name}`).trim()])),
           loadedFonts: [...document.fonts].map(font => ({ family: font.family, status: font.status })),
@@ -102,7 +134,8 @@ async function main () {
       for (const [option, color] of Object.entries({ Background: 'bg', Surface: 'surface', Text: 'text', Muted: 'muted', Accent: 'accent', Border: 'border' })) {
         if (preset.settings?.[option]) assert.equal(metrics.colors[color], preset.settings[option], `${preset.name}: ${option} override`)
       }
-      assert.equal(metrics.cards, 4, `${preset.name}: all display fixtures must be present`)
+      assert.equal(metrics.cards, renderCards.length, `${preset.name}: every rendered card must be present`)
+      assert.equal(metrics.commitEntries, preset.grouped ? preset.backlog ? 20 : 4 : 0, `${preset.name}: every grouped commit must be present`)
       for (const family of classic ? ['font', 'Orbitron-Bold'] : ['DF Sans', 'DF Mono']) assert.ok(metrics.loadedFonts.some(font => font.family.replace(/["']/g, '') === family && font.status === 'loaded'), `${preset.name}: ${family} must load`)
       assert.deepEqual(metrics.brokenImages, [], `${preset.name}: local artwork must load`)
       assert.deepEqual(metrics.overflow, [], `${preset.name}: content must remain within the image`)

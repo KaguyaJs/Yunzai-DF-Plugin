@@ -1,0 +1,263 @@
+/* 共用提交列表；主题变量缺省时使用经典模板的配色。 */
+.commit-group {
+  --commit-text: var(--git-text, #faf8fc);
+  --commit-muted: var(--git-muted, #c4c3c8);
+  --commit-accent: var(--git-accent, #90d0e4);
+  --commit-border: var(--git-border, #ffffff26);
+  --commit-soft: var(--git-accent-soft, #90d0e414);
+}
+
+.list .item.commit-group .title {
+  width: 100%;
+  min-width: 0;
+}
+
+.list .item.commit-group .title .text {
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.commit-group .repo-name {
+  flex: 1;
+  min-width: 150px;
+  overflow-wrap: anywhere;
+}
+
+.commit-group .commit-kind {
+  flex-shrink: 0;
+  padding: 4px 7px;
+  border: 1px solid var(--commit-border);
+  border-radius: 5px;
+  color: var(--commit-accent);
+  background: var(--commit-soft);
+  font-family: "DF Mono", "font", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: .4px;
+  white-space: nowrap;
+}
+
+.list .item.commit-group .title .commit-group-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 9px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--commit-border);
+  color: var(--commit-muted);
+  font-size: 11px;
+}
+
+.commit-group-meta .branch-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.commit-group-meta .branch-ref img {
+  flex: 0 0 12px;
+}
+
+.commit-order {
+  margin-left: auto;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.commit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 17px;
+}
+
+.commit-entry {
+  position: relative;
+  min-width: 0;
+  padding-left: 34px;
+}
+
+.commit-entry:not(:last-child)::before {
+  position: absolute;
+  top: 29px;
+  bottom: -14px;
+  left: 10px;
+  width: 1px;
+  background: var(--commit-border);
+  content: "";
+}
+
+.commit-marker {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--commit-border);
+  border-radius: 50%;
+  color: var(--commit-accent);
+  background: var(--commit-soft);
+  font-family: "DF Mono", "font", monospace;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.commit-entry-body {
+  min-width: 0;
+}
+
+.commit-entry:not(:last-child) .commit-entry-body {
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--commit-border);
+}
+
+.list .item.commit-group .title .commit-entry .desc {
+  margin-top: 0;
+  color: var(--commit-muted);
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.list .item.commit-group .title .commit-entry .desc .head {
+  color: var(--commit-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.commit-entry .desc > :last-child {
+  margin-bottom: 0;
+}
+
+.commit-entry .desc pre {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.commit-entry-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 7px 12px;
+  margin-top: 10px;
+}
+
+.list .item.commit-group .title .commit-entry-footer .dec {
+  flex: 1;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 180px;
+  margin: 0;
+  color: var(--commit-muted);
+  font-size: 11px;
+  line-height: 1.8;
+  white-space: normal;
+}
+
+.commit-entry .time-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.commit-entry .time-info span {
+  color: var(--commit-text);
+}
+
+.list .item.commit-group .title .dec .avatar {
+  flex-shrink: 0;
+  margin: 0;
+  padding-top: 1px;
+}
+
+.commit-group .avatar-circle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  overflow: hidden;
+  border: 2px solid var(--git-surface, #363636);
+  border-radius: 50%;
+  color: var(--commit-accent);
+  background: var(--commit-soft);
+  font-family: "DF Mono", "font", monospace;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.commit-group .avatar-circle:first-child { z-index: 1; }
+.commit-group .committer-avatar { margin-left: -5px; }
+
+.list .item.commit-group .title .avatar-circle img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: cover;
+}
+
+.commit-sha {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 1px solid var(--commit-border);
+  border-radius: 4px;
+  color: var(--commit-muted);
+  font-family: "DF Mono", "font", monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.commit-sha img {
+  width: 11px;
+  height: 11px;
+  opacity: .7;
+  filter: var(--git-icon-filter, brightness(0) invert(1));
+}
+
+.commit-entry-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 12px;
+  margin-top: 7px;
+}
+
+.list .item.commit-group .title .commit-entry .stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--commit-muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.list .item.commit-group .title .commit-entry .translate-tip {
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+  padding: 2px 5px;
+  border: 1px solid var(--commit-border);
+  border-radius: 4px;
+  color: var(--commit-accent);
+  background: var(--commit-soft);
+  font-size: 9px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}

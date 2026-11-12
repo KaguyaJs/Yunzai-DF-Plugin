@@ -88,4 +88,41 @@ function displayFixtures () {
   return [commit, release, pull, issue]
 }
 
-module.exports = { displayFixtures }
+/** 同分支连续提交、另一分支与发布混排，验证公共卡片和逐条详情。 */
+function commitDisplayFixtures () {
+  const [first, release] = displayFixtures()
+  const second = {
+    ...first,
+    name: { ...first.name, sha: '977665B', authorStart: 'L', committerStart: 'A' },
+    avatar: { is: true, author: avatar('LN', '#369780'), committer: first.avatar.author },
+    time_info: '<span>Lin</span> 编写于 <span>18 分钟前</span>，并由 <span>Alice</span> 提交于 <span>12 分钟前</span>',
+    text: '<span class="commit-prefix prefix-fix haveScope">fix</span><span class="scope commit-prefix">push</span> <span class="head">连续提交完整推送，失败后继续补发</span><br><p>保留每一条提交的原始内容与发送进度，避免短时间内多次更新遗漏。</p>',
+    stats: { files: 4, additions: 86, deletions: 24 },
+    translate: false
+  }
+  const third = {
+    ...first,
+    name: { ...first.name, sha: '509CE77' },
+    time_info: '<span>Alice</span> 提交于 <span>8 分钟前</span>',
+    text: '<span class="commit-prefix prefix-style">style</span> <span class="head">多条提交共用一张卡片，阅读更连贯</span><br><p>统一仓库与分支标题，分别保留作者、时间和 SHA。</p>',
+    stats: { files: 3, additions: 48, deletions: 16 },
+    translate: false
+  }
+  const fourth = {
+    ...first,
+    name: { ...first.name, sha: 'A26C8D1' },
+    time_info: '<span>Alice</span> 提交于 <span>5 分钟前</span>',
+    text: '<span class="commit-prefix prefix-docs">docs</span> <span class="head">补充推送卡片的配置说明</span>',
+    stats: false,
+    translate: false
+  }
+  const development = {
+    ...fourth,
+    name: { ...fourth.name, branch: 'dev', sha: 'D12A640' },
+    text: '<span class="commit-prefix prefix-feat haveScope">feat</span><span class="scope commit-prefix">preview</span> <span class="head">验证开发分支中的独立更新</span>',
+    stats: { files: 2, additions: 18, deletions: 3 }
+  }
+  return [first, second, third, fourth, development, release]
+}
+
+module.exports = { displayFixtures, commitDisplayFixtures }

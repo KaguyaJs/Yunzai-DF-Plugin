@@ -82,6 +82,8 @@ test('连续同秒提交逐条推送，首次静默且成功后不重复', async
   state.values[1].commit.author.date = '2020-01-01T00:00:00Z'
   assert.equal(await CodeUpdate(true), 1)
   assert.deepEqual(screenshots(h), [['BBBBB', 'CCCCC']])
+  assert.equal(h.screenshots[0].data.renderCards.length, 1)
+  assert.deepEqual(h.screenshots[0].data.renderCards[0].commits.map(value => value.name.sha), ['BBBBB', 'CCCCC'])
   assert.equal(journal(h).cursor, 'cccccc')
   assert.deepEqual(journal(h).pending, {})
   assert.equal(await CodeUpdate(true), 0)
