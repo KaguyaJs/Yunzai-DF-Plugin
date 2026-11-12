@@ -65,7 +65,7 @@ export interface Config {
       /** Visible attachments; 0 collapses all, -1 shows all. */
       AssetLimit: number
     }
-    /** PR / Issue polling and presentation settings. */
+    /** PR / Issue presentation; page and batch limits also apply to commits. */
     Activity: {
       PageSize: number
       MaxPages: number

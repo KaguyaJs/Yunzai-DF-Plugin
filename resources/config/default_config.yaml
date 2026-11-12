@@ -44,11 +44,11 @@ CodeUpdate:
     ShowAssets: true
     AssetLimit: 5
   ActivityTips: |-
-    PR/Issue推送设置（GitHub、Gitee、Gitcode及Gitea兼容接口）
-    PageSize: 每页获取数量（1-100）
-    MaxPages: 单次最多获取页数；达到上限且尚有数据时保留检查进度，需调高后重试
-    InitialLimit: 首次推送与手动预览的每仓库条目上限
-    BatchSize: 包含PR/Issue时每条推送消息的条目上限
+    PR/Issue推送设置（GitHub、Gitee、Gitcode及Gitea兼容接口）；分页和批次上限也用于提交
+    PageSize: 提交/PR/Issue每页获取数量（1-100）
+    MaxPages: 单次最多获取页数；达到上限且尚未确认完整时保留检查进度，需调高后重试；CNB提交父链节点预算为PageSize×MaxPages
+    InitialLimit: PR/Issue首次推送与手动预览的每仓库条目上限
+    BatchSize: 包含提交/PR/Issue时每条推送消息的条目上限
     BodyLimit: 正文/评论摘要最大字符数，0为隐藏正文
     OverlapSeconds: 增量查询回看秒数，避免时间边界遗漏
     SendLinks: PR/Issue图片后附可点击的原始链接

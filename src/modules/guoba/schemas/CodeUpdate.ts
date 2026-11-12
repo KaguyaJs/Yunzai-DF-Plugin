@@ -141,14 +141,14 @@ export const CodeUpdate: GuobaSchemas = [
   },
   {
     field: 'CodeUpdate.Activity.PageSize',
-    label: 'PR/Issue每页数量',
+    label: '提交/PR/Issue每页数量',
     component: 'InputNumber',
     componentProps: { min: 1, max: 100 },
-    bottomHelpMessage: '首次检查完整建立基线；后续按更新时间增量获取。'
+    bottomHelpMessage: '提交按SHA获取新增历史，PR/Issue按更新时间增量获取；CNB提交使用父链扫描预算。'
   },
   {
     field: 'CodeUpdate.Activity.MaxPages',
-    label: 'PR/Issue最多获取页数',
+    label: '提交/PR/Issue最多获取页数',
     component: 'InputNumber',
     componentProps: { min: 1, max: 1000 },
     bottomHelpMessage: '达到上限且尚有数据时保留原进度；大型仓库可调高。'
@@ -161,7 +161,7 @@ export const CodeUpdate: GuobaSchemas = [
   },
   {
     field: 'CodeUpdate.Activity.BatchSize',
-    label: 'PR/Issue每条消息的条目上限',
+    label: '提交/PR/Issue每条消息的条目上限',
     component: 'InputNumber',
     componentProps: { min: 1, max: 50 },
     bottomHelpMessage: '超过上限时分批发送，每批成功后独立确认；手动预览同样生效。'

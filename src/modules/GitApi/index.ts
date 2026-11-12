@@ -1,7 +1,7 @@
 import { request, logger } from '@/utils'
 import config from '@/config'
 import type { Response } from 'node-fetch'
-import type { GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment, GitPullRequestDiff, GitPullRequestFile } from '@/types'
+import type { Commit, GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment, GitPullRequestDiff, GitPullRequestFile } from '@/types'
 import { releaseIdentity } from '../CodeUpdate/utils/release'
 type Provider = 'GitHub' | 'Gitee' | 'Gitcode' | 'CNB' | string
 
@@ -34,6 +34,100 @@ function safeUrl (input: string | URL) {
     if (url.searchParams.has(key)) url.searchParams.set(key, 'REDACTED')
   }
   return url.toString()
+}
+
+function validCommit (commit: Commit) {
+  return typeof commit?.sha === 'string' && !!commit.sha && typeof commit.commit?.message === 'string' &&
+    (commit.parents === undefined || (Array.isArray(commit.parents) && commit.parents.every(parent =>
+      typeof parent?.sha === 'string' && !!parent.sha && parent.sha !== commit.sha)))
+}
+
+/** Inspect only known parent links; dates cannot identify a Git ancestry boundary. */
+function commitRange (commits: Map<string, Commit>, base: string, head: string) {
+  const old = new Set<string>()
+  const oldFrontier = new Set<string>()
+  let metadataMissing = false
+  const ancestors = [base]
+  while (ancestors.length) {
+    const sha = ancestors.pop()!
+    if (old.has(sha)) continue
+    old.add(sha)
+    const commit = commits.get(sha)
+    if (!commit) oldFrontier.add(sha)
+    else if (!commit.parents) metadataMissing = true
+    else ancestors.push(...commit.parents.map(parent => parent.sha))
+  }
+
+  const added = new Set<string>()
+  const newFrontier = new Set<string>()
+  let reachedBase = false
+  const pending = [head]
+  while (pending.length) {
+    const sha = pending.pop()!
+    if (sha === base) reachedBase = true
+    if (old.has(sha) || added.has(sha) || newFrontier.has(sha)) continue
+    const commit = commits.get(sha)
+    if (!commit) { newFrontier.add(sha); continue }
+    added.add(sha)
+    if (!commit.parents) metadataMissing = true
+    else pending.push(...commit.parents.map(parent => parent.sha))
+  }
+
+  // A candidate must descend from every unresolved old frontier. Otherwise a
+  // not-yet-read old parent could still lead to that candidate (e.g. an old merge).
+  // Reverse edges let us prove this without recursively walking each candidate.
+  let complete = !metadataMissing && !newFrontier.size && reachedBase
+  if (complete && oldFrontier.size) {
+    const children = new Map<string, string[]>()
+    for (const commit of commits.values()) {
+      for (const parent of commit.parents ?? []) {
+        const values = children.get(parent.sha) ?? []
+        values.push(commit.sha)
+        children.set(parent.sha, values)
+      }
+    }
+    for (const sha of oldFrontier) {
+      const descendants = [sha]
+      const seen = new Set<string>()
+      let count = 0
+      while (descendants.length && count < added.size) {
+        const current = descendants.pop()!
+        if (seen.has(current)) continue
+        seen.add(current)
+        if (added.has(current)) count++
+        descendants.push(...children.get(current) ?? [])
+      }
+      if (count !== added.size) { complete = false; break }
+    }
+  }
+  return { added, newFrontier, oldFrontier, reachedBase, metadataMissing, complete }
+}
+
+/** Parent-before-child order is stable even when author/committer dates are equal or old. */
+function orderCommits (commits: Map<string, Commit>, added: Set<string>): Commit[] | false {
+  const counts = new Map<string, number>()
+  const children = new Map<string, string[]>()
+  for (const sha of added) {
+    const parents = new Set(commits.get(sha)!.parents?.map(parent => parent.sha).filter(parent => added.has(parent)))
+    counts.set(sha, parents.size)
+    for (const parent of parents) {
+      const values = children.get(parent) ?? []
+      values.push(sha)
+      children.set(parent, values)
+    }
+  }
+  const ready = Array.from(added).filter(sha => !counts.get(sha))
+  const result: Commit[] = []
+  for (let offset = 0; offset < ready.length; offset++) {
+    const sha = ready[offset]
+    result.push(commits.get(sha)!)
+    for (const child of children.get(sha) ?? []) {
+      const remaining = counts.get(child)! - 1
+      counts.set(child, remaining)
+      if (!remaining) ready.push(child)
+    }
+  }
+  return result.length === added.size ? result : false
 }
 
 /**
@@ -135,6 +229,118 @@ export default new class RepoService {
     }
     logger.trace('请求 URL:', safeUrl(url))
     return await this.fetchData<GitCommitDataType | GitReleaseDataType>(url, headers, repo, source) as any
+  }
+
+  /** Freeze the tip for every page and return only a completely observed commit range. */
+  async getCommitUpdates (
+    source: Provider,
+    repo: string,
+    baseSha: string,
+    headSha: string,
+    options: { pageSize?: number, maxPages?: number } = {}
+  ): Promise<{ commits: Commit[], reset: boolean } | false> {
+    if (baseSha === headSha) return { commits: [], reset: false }
+    const pageSize = Math.max(1, Math.min(100, Math.floor(options.pageSize || 100)))
+    const maxPages = Math.max(1, Math.min(1000, Math.floor(options.maxPages || 20)))
+    if (/cnb/i.test(source)) return this.getCNBCommitUpdates(source, repo, baseSha, headSha, pageSize * maxPages)
+    const { apiUrl, token } = apiUrlFor(source)
+    if (!apiUrl) return false
+    const url = new URL(apiUrl)
+    url.pathname = `${basePath(url.pathname)}/${repo.split('/').map(encodeURIComponent).join('/')}/commits`
+    url.searchParams.set('sha', headSha)
+    url.searchParams.set(/gitea/i.test(source) ? 'limit' : 'per_page', String(pageSize))
+    if (/gitee/i.test(source) && token) url.searchParams.set('access_token', token)
+    const commits = new Map<string, Commit>()
+    let warnedParents = false
+    for (let page = 1; page <= maxPages; page++) {
+      url.searchParams.set('page', String(page))
+      const pagination: { hasNext?: boolean } = {}
+      const data = await this.fetchData<Commit[]>(url, this.getHeaders(source, token), repo, source, pagination)
+      if (data === false) return false
+      if (!Array.isArray(data) || data.some(commit => !validCommit(commit))) {
+        logger.error(`${source} ${repo} 的 Commit 接口未返回有效列表，保留检查进度`)
+        return false
+      }
+      const previous = commits.size
+      for (const commit of data) if (!commits.has(commit.sha)) commits.set(commit.sha, commit)
+      const range = commitRange(commits, baseSha, headSha)
+      if (range.metadataMissing) {
+        if (!warnedParents) {
+          logger.warn(`${source} ${repo} 的 Commit 列表缺少父提交信息，按旧 SHA 的列表边界扫描`)
+          warnedParents = true
+        }
+        const values = Array.from(commits.values())
+        const boundary = values.findIndex(commit => commit.sha === baseSha)
+        const head = values.findIndex(commit => commit.sha === headSha)
+        if (head >= 0 && boundary > head && orderCommits(commits, new Set(commits.keys())) !== false) {
+          return { commits: values.slice(0, boundary).reverse(), reset: false }
+        }
+      } else if (range.complete) {
+        const ordered = orderCommits(commits, range.added)
+        if (ordered !== false && orderCommits(commits, new Set(commits.keys())) !== false) return { commits: ordered, reset: false }
+        logger.error(`${source} ${repo} 的 Commit 父链接形成循环，保留检查进度`)
+        return false
+      }
+      if (!data.length || pagination.hasNext === false) {
+        const head = commits.get(headSha)
+        if (head && !range.reachedBase && (range.metadataMissing ? !commits.has(baseSha) : !range.newFrontier.size) &&
+          orderCommits(commits, new Set(commits.keys())) !== false) {
+          return { commits: [head], reset: true }
+        }
+        logger.error(`${source} ${repo} 的 Commit 列表未能证明完整新增范围，保留检查进度`)
+        return false
+      }
+      if (commits.size === previous) {
+        logger.error(`${source} ${repo} 的 Commit 分页未前进，保留检查进度`)
+        return false
+      }
+      // A provider may cap page size below the request; a short page is not an end marker.
+    }
+    logger.error(`${source} ${repo} 的 Commit 数据超过单次分页上限，未推进检查进度；请调高 CodeUpdate.Activity.MaxPages`)
+    return false
+  }
+
+  /** CNB's existing SHA-detail endpoint avoids assuming an undocumented list-ref parameter. */
+  private async getCNBCommitUpdates (source: Provider, repo: string, base: string, head: string, budget: number): Promise<{ commits: Commit[], reset: boolean } | false> {
+    const commits = new Map<string, Commit>()
+    while (commits.size < budget) {
+      const range = commitRange(commits, base, head)
+      if (range.metadataMissing) {
+        logger.error(`${source} ${repo} 的 Commit 详情缺少父提交信息，保留检查进度`)
+        return false
+      }
+      if (range.complete) {
+        const ordered = orderCommits(commits, range.added)
+        return ordered === false || orderCommits(commits, new Set(commits.keys())) === false ? false : { commits: ordered, reset: false }
+      }
+      if (!range.newFrontier.size && !range.reachedBase && commits.has(head)) {
+        if (orderCommits(commits, new Set(commits.keys())) === false) return false
+        return { commits: [commits.get(head)!], reset: true }
+      }
+      const next = Array.from(range.newFrontier.size ? range.newFrontier : range.oldFrontier)
+        .filter(sha => !commits.has(sha)).slice(0, Math.min(4, budget - commits.size))
+      if (!next.length) return false
+      const results = await Promise.all(next.map(sha => this.getRepositoryData(source, repo, 'commits', sha)))
+      for (let index = 0; index < results.length; index++) {
+        const commit = results[index]
+        if (commit === false || Array.isArray(commit) || !validCommit(commit) || commit.sha !== next[index]) {
+          logger.error(`${source} ${repo} 的 Commit 详情与固定 SHA 不一致或获取失败，保留检查进度`)
+          return false
+        }
+        commits.set(commit.sha, commit)
+      }
+    }
+    const range = commitRange(commits, base, head)
+    if (range.complete) {
+      const ordered = orderCommits(commits, range.added)
+      if (ordered !== false && orderCommits(commits, new Set(commits.keys())) !== false) return { commits: ordered, reset: false }
+    }
+    if (!range.metadataMissing && !range.newFrontier.size && !range.reachedBase && commits.has(head) &&
+      orderCommits(commits, new Set(commits.keys())) !== false) {
+      return { commits: [commits.get(head)!], reset: true }
+    }
+    logger.error(`${source} ${repo} 的 Commit 父链超过单次扫描上限，未推进检查进度；请调高 CodeUpdate.Activity.MaxPages`)
+    return false
   }
 
   supportsActivity (source: Provider) {

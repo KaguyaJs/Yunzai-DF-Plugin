@@ -66,8 +66,8 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
   const images = new Map<string, icqq.ImageElem | icqq.ImageElem[]>()
   const failed = new Set<string>()
   for (const [targetKey, { type, id, repos }] of targets) {
-    const assigned = Array.from(updates).filter(([, update]) => update.activity
-      ? update.activity.targets.includes(targetKey)
+    const assigned = Array.from(updates).filter(([, update]) => update.activity || update.commit
+      ? (update.activity ?? update.commit)!.targets.includes(targetKey)
       : repos.has(update.repoKey)).map(([key]) => key)
     if (!assigned.length) continue
     try {
@@ -75,7 +75,7 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
       for (const key of assigned) {
         const update = updates.get(key)!
         const deliveryKey = redisHeler.getDeliveryKey(update.redisKey, targetKey)
-        if (update.activity || !isAuto || !await redisHeler.isUpdate(deliveryKey, update.sha)) pending.push(key)
+        if (update.activity || update.commit || !isAuto || !await redisHeler.isUpdate(deliveryKey, update.sha)) pending.push(key)
       }
       if (!pending.length) continue
       for (const { visible, updates: batch } of updateBatches(pending.map(key => updates.get(key)!))) {
@@ -90,17 +90,28 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
         if (!await pushTouser(type, id, withActivityLinks(image, visible))) throw new Error('消息发送失败')
         if (isAuto) {
           const activities = new Map<string, string[]>()
+          const commits = new Map<string, RepositoryUpdate[]>()
           for (const update of batch) {
             if (update.activity) {
               const { journalKey, eventId } = update.activity
               const ids = activities.get(journalKey) ?? []
               ids.push(eventId)
               activities.set(journalKey, ids)
+            } else if (update.commit) {
+              const items = commits.get(update.commit.journalKey) ?? []
+              items.push(update)
+              commits.set(update.commit.journalKey, items)
             } else {
               await redisHeler.updatesSha(redisHeler.getDeliveryKey(update.redisKey, targetKey), update.sha)
             }
           }
           for (const [key, ids] of activities) await redisHeler.acknowledgeActivities(key, ids, targetKey)
+          for (const [key, items] of commits) {
+            const journal = await redisHeler.acknowledgeCommits(key, items.map(update => update.sha), targetKey)
+            const last = items.at(-1)!
+            await redisHeler.updatesSha(redisHeler.getDeliveryKey(last.redisKey, targetKey), last.sha)
+            if (!Object.keys(journal.pending).length) await redisHeler.updatesSha(last.redisKey, journal.cursor)
+          }
         }
       }
     } catch (error) {
@@ -110,7 +121,7 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
   }
   if (isAuto) {
     for (const [key, update] of updates) {
-      if (!update.activity && !failed.has(key) && Array.from(targets.values()).some(target => target.repos.has(update.repoKey))) {
+      if (!update.activity && !update.commit && !failed.has(key) && Array.from(targets.values()).some(target => target.repos.has(update.repoKey))) {
         await redisHeler.updatesSha(update.redisKey, update.sha)
       }
     }
@@ -131,7 +142,7 @@ function updateBatches (updates: RepositoryUpdate[]) {
     groups.set(key, group)
   }
   const values = Array.from(groups.values())
-  const size = updates.some(update => update.activity) ? activityOptions().batchSize : values.length || 1
+  const size = updates.some(update => update.activity || update.commit) ? activityOptions().batchSize : values.length || 1
   const batches: { visible: RepositoryUpdate[], updates: RepositoryUpdate[] }[] = []
   for (let offset = 0; offset < values.length; offset += size) {
     const batch = values.slice(offset, offset + size)
@@ -166,6 +177,7 @@ export async function getAllRedisKey () {
   const result = new Set(keys.values())
   for (const repo of repos) {
     if (isActivityMethod(getRepoType(repo.type))) result.add(redisHeler.getActivityKey(keys.get(getRepoKey(repo))!))
+    if (getRepoType(repo.type) === 'commits') result.add(redisHeler.getCommitKey(keys.get(getRepoKey(repo))!))
   }
   for (const repo of subscriptions) {
     result.add(redisHeler.getLegacyRedisKey(repo.provider, getRepoType(repo.type), repo.repo, repo.branch))

@@ -1,10 +1,11 @@
 import GitApi from '@/modules/GitApi'
-import type { Commit, Release, RepositoryInfo } from '@/types'
-import { redisHeler, formatCommitInfo, formatReleaseInfo, repoPath, getRepoKey, getRepoType, getRepoRedisKey, resolveBranch } from '@CodeUpdate/utils'
+import type { RepositoryInfo } from '@/types'
+import { redisHeler, formatCommitInfo, formatReleaseInfo, repoPath, getRepoKey, getRepoType, getRepoRedisKey } from '@CodeUpdate/utils'
 import { releaseCursor, releaseIdentity } from '../utils/release'
 import config from '@/config'
 import { logger } from '@/utils'
 import { fetchActivity } from './activity'
+import { fetchCommits } from './commits'
 import { formatActivityInfo } from '../utils/formatActivity'
 import { isActivityMethod } from '../utils/activity'
 import type { RepoConfig, SubscriptionTarget } from '../utils/repo'
@@ -17,6 +18,7 @@ export interface RepositoryUpdate {
   redisKey: string
   repoKey: string
   activity?: { journalKey: string, eventId: string, targets: string[] }
+  commit?: { journalKey: string, sha: string, targets: string[] }
 }
 
 /** Fetch each subscription once without acknowledging undelivered updates. */
@@ -45,46 +47,61 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean, tar
         }
         return
       }
-      const branch = await resolveBranch(item)
-      logger.debug(`请求 ${logger.magenta(provider)} ${type}: ${logger.cyan(logRepo)}`)
-      let result
-      if (type === 'releases') {
-        const requestKey = JSON.stringify([provider.toLowerCase(), repo])
-        let pending = releases.get(requestKey)
-        if (!pending) {
-          pending = GitApi.getRepositoryData(provider, repo, 'releases')
-          releases.set(requestKey, pending)
+      if (type === 'commits') {
+        const commits = await fetchCommits(item, isAuto, targets, previous.filter(candidate => getRepoKey(candidate) === key))
+        for (const pending of commits) {
+          try {
+            const { commit, branch, journalKey, targets } = pending
+            const info = await formatCommitInfo(commit, provider, repo, branch)
+            content.set(JSON.stringify([key, commit.sha]), {
+              info,
+              sha: commit.sha,
+              redisKey,
+              repoKey: key,
+              commit: { journalKey, sha: commit.sha, targets }
+            })
+          } catch (error) {
+            logger.error(`渲染 ${provider} ${repo} commit ${pending.commit.sha} 数据失败: `, error)
+            // Preserve ordering for this repository: later commits wait for this payload to render.
+            break
+          }
         }
-        result = await pending
-      } else result = await GitApi.getRepositoryData(provider, repo, type, branch)
+        return
+      }
+      logger.debug(`请求 ${logger.magenta(provider)} ${type}: ${logger.cyan(logRepo)}`)
+      const requestKey = JSON.stringify([provider.toLowerCase(), repo])
+      let pending = releases.get(requestKey)
+      if (!pending) {
+        pending = GitApi.getRepositoryData(provider, repo, 'releases')
+        releases.set(requestKey, pending)
+      }
+      const result = await pending
       if (result === false) return
-      const data = Array.isArray(result)
-        ? type === 'releases' ? result.find(value => item.includeDrafts || !(value as Release).draft) : result[0]
-        : result
+      const data = result.find(value => item.includeDrafts || !value.draft)
       if (!data) {
         // An empty published list (including draft-only repositories) is still a
         // baseline, so its first future publication is treated as a new update.
-        if (type === 'releases' && isAuto && await redisHeler.isUpdate(redisKey, 'release:empty') === null) {
+        if (isAuto && await redisHeler.isUpdate(redisKey, 'release:empty') === null) {
           await redisHeler.updatesSha(redisKey, 'release:empty')
         }
         logger.warn(`[${logger.magenta(provider)}]: ${logger.cyan(logRepo)} 数据为空`)
         return
       }
-      const sha = type === 'commits' ? data.sha : releaseCursor(data as Release)
+      const sha = releaseCursor(data)
       if (!sha) {
         logger.warn(`[${logger.magenta(provider)}]: ${logger.cyan(logRepo)} 缺少更新标识`)
         return
       }
       if (isAuto) {
         let current = await redisHeler.isUpdate(redisKey, sha)
-        if (type === 'releases' && current !== true && !(data as Release).draft) {
+        if (current !== true && !data.draft) {
           const legacyKeys = current === null && !item.includeDrafts
             ? previous.filter(candidate => getRepoKey(candidate) === key)
               .map(candidate => redisHeler.getLegacyRedisKey(candidate.provider, type, repo, candidate.branch))
             : []
-          if (await migrateReleaseCursor(redisKey, sha, releaseIdentity(data as Release), key, targets, legacyKeys)) current = true
+          if (await migrateReleaseCursor(redisKey, sha, releaseIdentity(data), key, targets, legacyKeys)) current = true
         }
-        if (current === null && !(type === 'releases' && item.includeDrafts)) {
+        if (current === null && !item.includeDrafts) {
           for (const candidate of previous.filter(candidate => getRepoKey(candidate) === key)) {
             const legacyKey = redisHeler.getLegacyRedisKey(candidate.provider, type, repo, candidate.branch)
             if (legacyKey === redisKey) continue
@@ -100,9 +117,7 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean, tar
         }
         logger.mark(`[${logger.magenta(provider)}]: ${logger.cyan(logRepo)} 检测到更新`)
       }
-      const info = await (type === 'commits'
-        ? formatCommitInfo(data as Commit, provider, repo, branch)
-        : formatReleaseInfo(data as Release, provider, repo))
+      const info = await formatReleaseInfo(data, provider, repo)
       content.set(key, { info, sha, redisKey, repoKey: key })
     } catch (error) {
       logger.error(`获取 ${logger.magenta(provider)} ${type} ${logger.cyan(logRepo)} 数据出错: `, error)

@@ -324,14 +324,16 @@ test('原有Commit和Release自动去重与手动预览保持可用', async () =
   subscribe(h, 'commits', { branch: 'main' })
   subscribe(h, 'releases')
   const commit = {
-    sha: 'abcdef', commit: { message: 'feat: 新功能', author: { name: 'alice', date: '2026-11-10T08:00:00Z' }, committer: { name: 'alice', date: '2026-11-10T08:00:00Z' } }, author: { avatar_url: '' }, committer: { avatar_url: '' }
+    sha: 'abcdef', commit: { message: 'feat: 新功能', author: { name: 'alice', date: '2026-11-10T08:00:00Z' }, committer: { name: 'alice', date: '2026-11-10T08:00:00Z' } }, author: { avatar_url: '' }, committer: { avatar_url: '' }, parents: []
   }
+  const previousCommit = plain(commit)
   const release = { id: 1, tag_name: 'v1', name: '版本1', body: '发布正文', published_at: '2026-11-10T08:00:00Z', author: { login: 'alice' } }
-  h.router = url => ({ data: url.pathname.includes('/commits') ? commit : [release] })
+  h.router = url => ({ data: url.pathname.endsWith('/commits') ? [commit, previousCommit] : url.pathname.includes('/commits/') ? commit : [release] })
   const { CodeUpdate } = h.load('@CodeUpdate')
   await CodeUpdate(true)
   assert.equal(h.deliveries.length, 0)
   commit.sha = 'abcdef2'
+  commit.parents = [{ sha: previousCommit.sha }]
   release.id = 2
   assert.equal(await CodeUpdate(true), 1)
   assert.equal(h.screenshots[0].data.lifeData.length, 2)
@@ -608,8 +610,8 @@ test('无效时间或损坏记录不会静默推进游标或覆盖数据', async
   assert.equal(h.deliveries.length, 0)
 })
 
-function commit (sha) {
-  return { sha, commit: { message: `fix: ${sha}`, author: { name: 'alice', date: '2026-11-10T08:00:00Z' }, committer: { name: 'alice' } } }
+function commit (sha, parents = []) {
+  return { sha, commit: { message: `fix: ${sha}`, author: { name: 'alice', date: '2026-11-10T08:00:00Z' }, committer: { name: 'alice' } }, parents: parents.map(sha => ({ sha })) }
 }
 
 test('一个仓库同时监听四种类型，多分支独立去重且每种活动只查询一次', async () => {
@@ -626,7 +628,7 @@ test('一个仓库同时监听四种类型，多分支独立去重且每种活�
   const module = h.load('@CodeUpdate')
   assert.equal(await module.CodeUpdate(true), 1)
   assert.equal(h.requests.filter(value => !/\/(pulls|issues)\/\d+$/.test(value.url.pathname)).length, 5)
-  assert.match(h.requests[1].url.pathname, /feature%2Fa/)
+  assert.ok(h.requests.some(value => value.url.pathname.endsWith('/commits/feature%2Fa')))
   assert.equal(h.screenshots.find(value => value.data.saveId === '1').data.lifeData.length, 5)
   assert.equal(h.screenshots.find(value => value.data.saveId === '2').data.lifeData.length, 3)
   assert.equal(await module.CodeUpdate(true), 0)
@@ -663,7 +665,7 @@ test('默认分支失败不请求不明确的提交、不推进游标，下次�
   assert.equal(h.store.size, 1)
   h.router = url => ({ data: url.pathname.endsWith('/owner/repo') ? { default_branch: 'main' } : url.pathname.includes('/commits/') ? commit('abc') : [] })
   await module.CodeUpdate(true)
-  assert.equal(h.store.size, 2)
+  assert.equal(h.store.size, 3)
 })
 
 test('all每次刷新并跨接收者共享一次分支发现，新增分支独立初始化', async () => {
@@ -672,7 +674,17 @@ test('all每次刷新并跨接收者共享一次分支发现，新增分支独�
   subscribe(h, 'commits', { branch: 'all' }, 2)
   const names = ['main', 'dev']
   let changed = false
-  h.router = url => ({ data: url.pathname.endsWith('/branches') ? Number(url.searchParams.get('page')) === 1 ? names.map(name => ({ name })) : [] : url.pathname.endsWith('/issues') ? [] : commit(`${decodeURIComponent(url.pathname.split('/commits/')[1])}-${changed}`) })
+  h.router = url => {
+    if (url.pathname.endsWith('/branches')) return { data: Number(url.searchParams.get('page')) === 1 ? names.map(name => ({ name })) : [] }
+    if (url.pathname.endsWith('/issues')) return { data: [] }
+    if (url.pathname.endsWith('/commits')) {
+      const sha = url.searchParams.get('sha')
+      const previous = sha.replace(/-true$/, '-false')
+      return { data: [commit(sha, [previous]), commit(previous)], link: '<https://example.com/last>; rel="last"' }
+    }
+    const name = decodeURIComponent(url.pathname.split('/commits/')[1])
+    return { data: commit(`${name}-${changed}`, changed ? [`${name}-false`] : []) }
+  }
   const module = h.load('@CodeUpdate')
   await module.CodeUpdate(true)
   assert.equal(h.requests.filter(value => value.url.pathname.endsWith('/branches')).length, 2)
@@ -942,7 +954,7 @@ test('手动检查全部分支在发现分支前给出提示，失败后回复�
   h.config.CodeUpdate.List[0].repos[0].branch = ['main']
   h.router = () => ({ data: commit('abc') })
   assert.equal(await CodeUpdate(true), 0)
-  assert.equal(h.store.size, 1)
+  assert.equal(h.store.size, 2)
 })
 
 function diffRouter (h, data) {
