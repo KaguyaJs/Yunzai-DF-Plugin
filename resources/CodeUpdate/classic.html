@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Git仓库更新推送</title>
   <link rel="stylesheet" type="text/css" href="{{pluResPath}}/CodeUpdate/classic.css" />
+  <link rel="stylesheet" type="text/css" href="{{pluResPath}}/CodeUpdate/commit-group.css" />
   <link rel="shortcut icon" href="#" />
 </head>
 
@@ -17,20 +18,25 @@
 
     <div class="data_box">
       <div class="list">
-        {{each lifeData item}}
-        <div class="item {{if item.activity}}activity-card{{/if}} {{if item.release}}release-card{{/if}}">
+        {{set cards = renderCards || lifeData}}
+        {{each cards item}}
+        <div class="item {{if item.activity}}activity-card{{/if}} {{if item.release}}release-card{{/if}}{{if item.commits && item.commits.length > 1}} commit-group{{/if}}">
           <div class="title">
             <div class="text">
               <img src="{{item.icon}}" class="icon">
-              {{item.name.repo}}
+              <span class="repo-name">{{item.name.repo}}</span>
               {{if item.release}}
               <div class="release">Releases</div>
               {{if item.draft}}<span class="release-state release-draft">草稿 · 未发布</span>{{else if item.prerelease}}<span class="release-state">预发布</span>{{/if}}
               {{/if}}
+              {{if item.commits && item.commits.length > 1}}<span class="commit-kind">{{item.commits.length}} COMMITS</span>{{/if}}
               {{if item.activity}}
               <span class="activity-kind">{{item.detail.kind}} #{{item.detail.number}}</span>
               {{/if}}
             </div>
+            {{if item.commits && item.commits.length > 1}}
+            {{@include('./commit-group.html', {item: item, pluResPath: pluResPath})}}
+            {{else}}
             {{if item.activity}}
             <div class="activity-meta">
               <span class="activity-state state-{{item.detail.state}}">{{item.detail.stateLabel}}</span>
@@ -120,6 +126,7 @@
               {{/if}}
               {{if item.diff.url}}<a class="diff-link" href="{{item.diff.url}}">查看完整 Diff · PR 原文</a>{{/if}}
             </div>
+            {{/if}}
             {{/if}}
           </div>
         </div>

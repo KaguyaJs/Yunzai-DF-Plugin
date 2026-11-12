@@ -1,0 +1,44 @@
+<div class="branch commit-group-meta">
+  {{if item.name.branch}}
+  <span class="branch-ref"><img src="{{pluResPath}}/CodeUpdate/icon/branch.svg" alt="">{{item.name.branch}}</span>
+  {{/if}}
+  <span class="commit-order">按提交顺序</span>
+</div>
+<div class="commit-list">
+  {{each item.commits commit index}}
+  <div class="commit-entry">
+    <span class="commit-marker">{{index + 1}}</span>
+    <div class="commit-entry-body">
+      <div class="desc">{{@commit.text}}</div>
+      <div class="commit-entry-footer">
+        <div class="dec">
+          <div class="avatar">
+            <span class="avatar-circle"><span>{{commit.name.authorStart || '?'}}</span>{{if commit.avatar.author}}<img src="{{commit.avatar.author}}" alt="">{{/if}}</span>
+            {{if commit.avatar.is}}
+            <span class="avatar-circle committer-avatar"><span>{{commit.name.committerStart || '?'}}</span>{{if commit.avatar.committer}}<img src="{{commit.avatar.committer}}" alt="">{{/if}}</span>
+            {{/if}}
+          </div>
+          <div class="time-info">{{@commit.time_info}}</div>
+        </div>
+        <span class="sha-ref commit-sha"><img src="{{pluResPath}}/CodeUpdate/icon/sha.svg" alt="">{{commit.name.sha}}</span>
+      </div>
+      {{if commit.stats || commit.translate}}
+      <div class="commit-entry-extras">
+        {{if commit.stats}}
+        <div class="stats">
+          <span><span class="file-count">{{commit.stats.files}}</span> 个文件</span>
+          {{if commit.stats.additions || commit.stats.deletions}}
+          <span class="additions">+{{commit.stats.additions}}</span>
+          <span class="deletions">-{{commit.stats.deletions}}</span>
+          {{/if}}
+        </div>
+        {{/if}}
+        {{if commit.translate}}
+        <span class="translate-tip" title="{{commit.translate.title}}">{{commit.translate.label}}</span>
+        {{/if}}
+      </div>
+      {{/if}}
+    </div>
+  </div>
+  {{/each}}
+</div>
