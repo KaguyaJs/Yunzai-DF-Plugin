@@ -31,6 +31,91 @@ export interface Config {
      */
     badgeStyle: boolean
     /**
+     * 仓库更新图片主题
+     * 自动推送与手动汇总共用，默认使用海盐蓝，经典原版可自行选择
+     * 新主题颜色留空时使用所选主题的默认配色
+     */
+    Theme: {
+      /**
+       * 内置主题名称
+       * classic: 经典原版（主题改造前的原始深色布局）
+       * dark: 深空（深色）
+       * light: 晨光（浅色）
+       * ocean: 海盐蓝
+       * forest: 松石绿
+       * sunset: 暖砂橙
+       * lavender: 薰衣草
+       *
+       * @default "ocean"
+       */
+      Name: 'classic' | 'dark' | 'light' | 'ocean' | 'forest' | 'sunset' | 'lavender'
+      /**
+       * 自定义强调色，用于标题点缀、链接等，留空跟随主题
+       * 仅对新主题生效，经典原版保持原始配色
+       * 支持 #RGB 或 #RRGGBB 格式
+       *
+       * @default ""
+       * @example "#58a6ff"
+       */
+      Accent: string
+      /**
+       * 图片背景色，留空跟随主题
+       * 仅对新主题生效，经典原版保持原始配色
+       * 支持 #RGB 或 #RRGGBB 格式
+       *
+       * @default ""
+       */
+      Background: string
+      /**
+       * 更新卡片背景色，留空跟随主题
+       * 仅对新主题生效，经典原版保持原始配色
+       * 支持 #RGB 或 #RRGGBB 格式
+       *
+       * @default ""
+       */
+      Surface: string
+      /**
+       * 主要文字颜色，留空跟随主题
+       * 仅对新主题生效，经典原版保持原始配色
+       * 支持 #RGB 或 #RRGGBB 格式
+       *
+       * @default ""
+       */
+      Text: string
+      /**
+       * 辅助文字颜色，留空跟随主题
+       * 仅对新主题生效，经典原版保持原始配色
+       * 支持 #RGB 或 #RRGGBB 格式
+       *
+       * @default ""
+       */
+      Muted: string
+      /**
+       * 卡片边框与分隔线颜色，留空跟随主题
+       * 仅对新主题生效，经典原版保持原始配色
+       * 支持 #RGB 或 #RRGGBB 格式
+       *
+       * @default ""
+       */
+      Border: string
+      /**
+       * 图片的布局宽度，单位：像素，实际输出还会应用渲染精度缩放
+       * 仅对新主题生效，经典原版保持原始宽度
+       * 范围：520~1000
+       *
+       * @default 640
+       */
+      Width: number
+      /**
+       * 更新卡片的圆角大小，单位：像素，0为直角
+       * 仅对新主题生效，经典原版保持原始圆角
+       * 范围：0~28
+       *
+       * @default 16
+       */
+      Radius: number
+    }
+    /**
      * 是否在渲染仓库更新前，将提交、Release、PR、Issue及评论内容翻译为简体中文
      *
      * @default false
@@ -61,7 +146,8 @@ export interface Config {
      */
     timeFormat: 1 | 2 | 3
     /**
-     * 单次推送截图的数据达到多少条时启用分片截图发送，-1 关闭
+     * 推送截图的数据达到多少条时启用分片截图发送，-1 关闭
+     * 自动推送与手动推送仓库更新均生效，手动汇总后的全部分片在同一次回复中发送
      *
      * @default 12
      */
@@ -116,7 +202,8 @@ export interface Config {
       InitialLimit: number
       /**
        * 包含提交、PR或Issue时，每条推送消息最多包含的条目数量
-       * 超过上限时分批发送，每批成功后独立确认，手动预览同样生效
+       * 自动推送超过上限时分批发送，每批成功后独立确认
+       * 手动预览会将各推送组汇总后一次回复，不受此项影响；图片是否分片由 multiPage 控制
        * 范围：1~50
        *
        * @default 20

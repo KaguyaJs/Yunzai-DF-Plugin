@@ -4,6 +4,7 @@ import { repoPath, ACTIVITY_ACTIONS } from '@CodeUpdate/utils'
 import config from '@/config'
 import type { Schemas } from 'trss-yunzai/guoba'
 import type { RepositoryConfig } from '@CodeUpdate/utils/repo'
+import { CODE_UPDATE_THEMES } from '@CodeUpdate/utils/theme'
 
 const activityFilters: Schemas<RepositoryConfig> = [
   {
@@ -43,168 +44,6 @@ export const CodeUpdate: GuobaSchemas = [
     field: 'CodeUpdate.Auto',
     label: '自动检查开关',
     component: 'Switch'
-  },
-  {
-    field: 'CodeUpdate.RequestEstimateLog',
-    label: '仓库请求统计日志',
-    bottomHelpMessage: '默认开启；输出监听仓库和预计 API 请求量。仅控制估算日志，不影响自动检查和更新推送。',
-    component: 'Switch',
-    defaultValue: true
-  },
-  {
-    field: 'CodeUpdate.Cron',
-    label: '自动检查定时表达式',
-    helpMessage: '修改后重启生效',
-    bottomHelpMessage: '自动检查Cron表达式',
-    component: 'EasyCron',
-    componentProps: {
-      placeholder: '请输入Cron表达式',
-      hideYear: true
-    }
-  },
-  {
-    field: 'CodeUpdate.FirstAdd',
-    label: '首次添加仓库是否推送',
-    bottomHelpMessage: '首次监听是否推送当前状态；PR/Issue按首次条目上限推送，关闭时只建立基线。',
-    component: 'Switch'
-  },
-  {
-    field: 'CodeUpdate.badgeStyle',
-    label: '是否启用徽章样式',
-    bottomHelpMessage: '是否启用提交信息中的徽章样式, fix、feat等字段字段替换。',
-    component: 'Switch'
-  },
-  {
-    field: 'CodeUpdate.Translate',
-    label: '更新内容翻译',
-    bottomHelpMessage: '开启后会在截图渲染前将提交、Release、PR、Issue及评论内容翻译为简体中文。',
-    component: 'Switch'
-  },
-  {
-    field: 'CodeUpdate.TranslateApi',
-    label: '翻译接口地址',
-    bottomHelpMessage: '默认使用Google公共翻译接口；也支持包含 {text} / {q} / {target} 占位符的GET接口模板。',
-    component: 'Input',
-    componentProps: {
-      placeholder: '请输入翻译接口地址'
-    }
-  },
-  {
-    field: 'CodeUpdate.TranslateName',
-    label: '翻译提示名称',
-    bottomHelpMessage: '经过翻译的更新内容会在图片中显示此名称，例如：Google 翻译。',
-    component: 'Input',
-    componentProps: {
-      placeholder: '请输入翻译提示名称'
-    }
-  },
-  {
-    field: 'CodeUpdate.timeFormat',
-    label: '日期格式',
-    bottomHelpMessage: '推送显示的日期格式',
-    component: 'RadioGroup',
-    componentProps: {
-      options: [
-        { label: '多久前', value: 1 },
-        { label: '日期加时间', value: 2 },
-        { label: '自适应日期加时间', value: 3 }
-      ]
-    },
-    required: true
-  },
-  {
-    field: 'CodeUpdate.multiPage',
-    label: '分片截图发送阈值',
-    bottomHelpMessage: '当单次推送达到多少条时使用分片截图发送，填 -1 关闭',
-    component: 'InputNumber',
-    componentProps: {
-      min: -1,
-      max: 20,
-      placeholder: '请输入数量，-1 关闭'
-    },
-    required: true,
-  },
-  {
-    field: 'CodeUpdate.Release.ShowAssets',
-    label: 'Release展示附件',
-    component: 'Switch',
-    defaultValue: true,
-    bottomHelpMessage: '在推送图片中展示附件名称和大小；草稿开关位于下方仓库配置。'
-  },
-  {
-    field: 'CodeUpdate.Release.AssetLimit',
-    label: 'Release附件展开数量',
-    component: 'InputNumber',
-    defaultValue: 5,
-    componentProps: { min: -1, precision: 0 },
-    bottomHelpMessage: '默认5；超出部分显示“已折叠N个文件”。0折叠全部，-1展示全部。'
-  },
-  {
-    field: 'CodeUpdate.Activity.PageSize',
-    label: '提交/PR/Issue每页数量',
-    component: 'InputNumber',
-    componentProps: { min: 1, max: 100 },
-    bottomHelpMessage: '提交按SHA获取新增历史，PR/Issue按更新时间增量获取；CNB提交使用父链扫描预算。'
-  },
-  {
-    field: 'CodeUpdate.Activity.MaxPages',
-    label: '提交/PR/Issue最多获取页数',
-    component: 'InputNumber',
-    componentProps: { min: 1, max: 1000 },
-    bottomHelpMessage: '达到上限且尚有数据时保留原进度；大型仓库可调高。'
-  },
-  {
-    field: 'CodeUpdate.Activity.InitialLimit',
-    label: 'PR/Issue首次及预览条目上限',
-    component: 'InputNumber',
-    componentProps: { min: 1, max: 100 }
-  },
-  {
-    field: 'CodeUpdate.Activity.BatchSize',
-    label: '提交/PR/Issue每条消息的条目上限',
-    component: 'InputNumber',
-    componentProps: { min: 1, max: 50 },
-    bottomHelpMessage: '超过上限时分批发送，每批成功后独立确认；手动预览同样生效。'
-  },
-  {
-    field: 'CodeUpdate.Activity.BodyLimit',
-    label: 'PR/Issue正文摘要长度',
-    component: 'InputNumber',
-    componentProps: { min: 0, max: 10000 },
-    bottomHelpMessage: '评论同样生效；填0只展示标题和状态。'
-  },
-  {
-    field: 'CodeUpdate.Activity.OverlapSeconds',
-    label: 'PR/Issue增量回看秒数',
-    component: 'InputNumber',
-    componentProps: { min: 1, max: 3600 },
-    bottomHelpMessage: '处理更新时间的边界重叠，已检测过的事件不会重复入队。'
-  },
-  {
-    field: 'CodeUpdate.Activity.SendLinks',
-    label: 'PR/Issue附带原始链接',
-    component: 'Switch',
-    bottomHelpMessage: '图片消息后附可点击链接。'
-  },
-  {
-    field: 'CodeUpdate.Activity.ShowDiff',
-    label: 'PR展示代码diff',
-    component: 'Switch',
-    bottomHelpMessage: '默认关闭。仅PR活动卡片展示代码差异；过大时自动收起为摘要。评论通知沿用正文摘要。'
-  },
-  {
-    field: 'CodeUpdate.Activity.DiffMaxFiles',
-    label: 'PR diff展开文件上限',
-    component: 'InputNumber',
-    componentProps: { min: 1, max: 20 },
-    bottomHelpMessage: '默认3；超过上限时展示部分文件列表并收起代码。'
-  },
-  {
-    field: 'CodeUpdate.Activity.DiffMaxLines',
-    label: 'PR diff展开行数上限',
-    component: 'InputNumber',
-    componentProps: { min: 1, max: 200 },
-    bottomHelpMessage: '默认40；按所有文件的代码及上下文总行数判断。完整内容可通过PR原始链接查看，附带可点击链接需开启上方选项。'
   },
   {
     field: 'CodeUpdate.repos',
@@ -393,5 +232,221 @@ export const CodeUpdate: GuobaSchemas = [
         }
       ]
     }
+  },
+  {
+    field: 'CodeUpdate.RequestEstimateLog',
+    label: '仓库请求统计日志',
+    bottomHelpMessage: '默认开启；输出监听仓库和预计 API 请求量。仅控制估算日志，不影响自动检查和更新推送。',
+    component: 'Switch',
+    defaultValue: true
+  },
+  {
+    field: 'CodeUpdate.Cron',
+    label: '自动检查定时表达式',
+    helpMessage: '修改后重启生效',
+    bottomHelpMessage: '自动检查Cron表达式',
+    component: 'EasyCron',
+    componentProps: {
+      placeholder: '请输入Cron表达式',
+      hideYear: true
+    }
+  },
+  {
+    field: 'CodeUpdate.FirstAdd',
+    label: '首次添加仓库是否推送',
+    bottomHelpMessage: '首次监听是否推送当前状态；PR/Issue按首次条目上限推送，关闭时只建立基线。',
+    component: 'Switch'
+  },
+  {
+    component: 'Divider',
+    label: '主题配置'
+  },
+  {
+    field: 'CodeUpdate.badgeStyle',
+    label: '是否启用徽章样式',
+    bottomHelpMessage: '是否启用提交信息中的徽章样式, fix、feat等字段字段替换。',
+    component: 'Switch'
+  },
+  {
+    field: 'CodeUpdate.Theme.Name',
+    label: '推送图片主题',
+    component: 'Select',
+    defaultValue: 'ocean',
+    componentProps: {
+      options: CODE_UPDATE_THEMES.map(theme => ({ value: theme.name, label: `${theme.label} · ${theme.description}` }))
+    },
+    bottomHelpMessage: '默认海盐蓝，可自行选择经典原版或其他主题。经典原版保留原始深色布局；保存后下次截图生效，下方自定义项仅对新主题生效。'
+  },
+  ...([
+    ['Accent', '主题强调色', '标题点缀、链接等的颜色'],
+    ['Background', '图片背景色', '整张图片的背景颜色'],
+    ['Surface', '卡片背景色', '每条更新卡片的背景颜色'],
+    ['Text', '主要文字颜色', '仓库名、标题等主要文字的颜色'],
+    ['Muted', '辅助文字颜色', '正文摘要、作者和时间等的颜色'],
+    ['Border', '边框颜色', '卡片边框和分隔线的颜色']
+  ] as const).map(([field, label, description]) => ({
+    field: `CodeUpdate.Theme.${field}` as const,
+    label,
+    component: 'Input' as const,
+    defaultValue: '',
+    componentProps: { placeholder: '留空跟随主题，例如 #58a6ff' },
+    bottomHelpMessage: `${description}。仅对新主题生效；支持#RGB或#RRGGBB，清空恢复预设。切回经典原版时保留设置，原版外观不受影响。`,
+    rules: [{ pattern: '^\\s*(?:#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}))?\\s*$', message: '请填写#RGB或#RRGGBB格式的颜色，或留空使用主题预设' }]
+  })),
+  {
+    field: 'CodeUpdate.Theme.Width',
+    label: '推送图片布局宽度',
+    component: 'InputNumber',
+    defaultValue: 640,
+    componentProps: { min: 520, max: 1000, precision: 0 },
+    bottomHelpMessage: '仅对新主题生效，单位像素；实际输出还会应用渲染精度缩放。内容较多时可适当加宽。'
+  },
+  {
+    field: 'CodeUpdate.Theme.Radius',
+    label: '更新卡片圆角',
+    component: 'InputNumber',
+    defaultValue: 16,
+    componentProps: { min: 0, max: 28, precision: 0 },
+    bottomHelpMessage: '仅对新主题生效，单位像素，0为直角。'
+  },
+  {
+    component: 'Divider',
+    label: '内容展示'
+  },
+  {
+    field: 'CodeUpdate.timeFormat',
+    label: '日期格式',
+    bottomHelpMessage: '推送显示的日期格式',
+    component: 'RadioGroup',
+    componentProps: {
+      options: [
+        { label: '多久前', value: 1 },
+        { label: '日期加时间', value: 2 },
+        { label: '自适应日期加时间', value: 3 }
+      ]
+    },
+    required: true
+  },
+  {
+    field: 'CodeUpdate.Release.ShowAssets',
+    label: 'Release展示附件',
+    component: 'Switch',
+    defaultValue: true,
+    bottomHelpMessage: '在推送图片中展示附件名称和大小；草稿开关位于下方仓库配置。'
+  },
+  {
+    field: 'CodeUpdate.Release.AssetLimit',
+    label: 'Release附件展开数量',
+    component: 'InputNumber',
+    defaultValue: 5,
+    componentProps: { min: -1, precision: 0 },
+    bottomHelpMessage: '默认5；超出部分显示“已折叠N个文件”。0折叠全部，-1展示全部。'
+  },
+  {
+    field: 'CodeUpdate.Activity.PageSize',
+    label: '提交/PR/Issue每页数量',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 100 },
+    bottomHelpMessage: '提交按SHA获取新增历史，PR/Issue按更新时间增量获取；CNB提交使用父链扫描预算。'
+  },
+  {
+    field: 'CodeUpdate.Activity.MaxPages',
+    label: '提交/PR/Issue最多获取页数',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 1000 },
+    bottomHelpMessage: '达到上限且尚有数据时保留原进度；大型仓库可调高。'
+  },
+  {
+    field: 'CodeUpdate.Activity.InitialLimit',
+    label: 'PR/Issue首次及预览条目上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 100 }
+  },
+  {
+    field: 'CodeUpdate.Activity.BatchSize',
+    label: '提交/PR/Issue自动推送每条消息上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 50 },
+    bottomHelpMessage: '自动推送超过上限时分批发送，每批成功后独立确认；手动预览汇总后一次回复，仍按分片阈值截图。'
+  },
+  {
+    field: 'CodeUpdate.Activity.BodyLimit',
+    label: 'PR/Issue正文摘要长度',
+    component: 'InputNumber',
+    componentProps: { min: 0, max: 10000 },
+    bottomHelpMessage: '评论同样生效；填0只展示标题和状态。'
+  },
+  {
+    field: 'CodeUpdate.Activity.OverlapSeconds',
+    label: 'PR/Issue增量回看秒数',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 3600 },
+    bottomHelpMessage: '处理更新时间的边界重叠，已检测过的事件不会重复入队。'
+  },
+  {
+    field: 'CodeUpdate.Activity.SendLinks',
+    label: 'PR/Issue附带原始链接',
+    component: 'Switch',
+    bottomHelpMessage: '图片消息后附可点击链接。'
+  },
+  {
+    field: 'CodeUpdate.Activity.ShowDiff',
+    label: 'PR展示代码diff',
+    component: 'Switch',
+    bottomHelpMessage: '默认关闭。仅PR活动卡片展示代码差异；过大时自动收起为摘要。评论通知沿用正文摘要。'
+  },
+  {
+    field: 'CodeUpdate.Activity.DiffMaxFiles',
+    label: 'PR diff展开文件上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 20 },
+    bottomHelpMessage: '默认3；超过上限时展示部分文件列表并收起代码。'
+  },
+  {
+    field: 'CodeUpdate.Activity.DiffMaxLines',
+    label: 'PR diff展开行数上限',
+    component: 'InputNumber',
+    componentProps: { min: 1, max: 200 },
+    bottomHelpMessage: '默认40；按所有文件的代码及上下文总行数判断。完整内容可通过PR原始链接查看，附带可点击链接需开启上方选项。'
+  },
+  {
+    component: 'Divider',
+    label: '其它功能配置'
+  },
+  {
+    field: 'CodeUpdate.Translate',
+    label: '更新内容翻译',
+    bottomHelpMessage: '开启后会在截图渲染前将提交、Release、PR、Issue及评论内容翻译为简体中文。',
+    component: 'Switch'
+  },
+  {
+    field: 'CodeUpdate.TranslateApi',
+    label: '翻译接口地址',
+    bottomHelpMessage: '默认使用Google公共翻译接口；也支持包含 {text} / {q} / {target} 占位符的GET接口模板。',
+    component: 'Input',
+    componentProps: {
+      placeholder: '请输入翻译接口地址'
+    }
+  },
+  {
+    field: 'CodeUpdate.TranslateName',
+    label: '翻译提示名称',
+    bottomHelpMessage: '经过翻译的更新内容会在图片中显示此名称，例如：Google 翻译。',
+    component: 'Input',
+    componentProps: {
+      placeholder: '请输入翻译提示名称'
+    }
+  },
+  {
+    field: 'CodeUpdate.multiPage',
+    label: '推送分片截图阈值',
+    bottomHelpMessage: '自动推送与手动推送仓库更新均按此数量决定是否分片，填 -1 关闭；手动汇总后的全部分片在同一次回复中发送。',
+    component: 'InputNumber',
+    componentProps: {
+      min: -1,
+      max: 20,
+      placeholder: '请输入数量，-1 关闭'
+    },
+    required: true,
   }
 ]

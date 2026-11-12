@@ -58,14 +58,16 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
   const repositoryCount = new Set(Array.from(updates.values(), update => JSON.stringify([update.info.name.source.toLowerCase(), update.info.name.repo]))).size
   logger.info(logger.green(`共获取到 ${repositoryCount} 个仓库的 ${updates.size} 条更新`))
   if (!isAuto && e) {
-    for (const { visible } of updateBatches(Array.from(updates.values()))) {
-      const image = await generateScreenshot(visible.map(update => update.info), String(e.user_id))
-      if (!image || (Array.isArray(image) && !image.length)) {
-        await e.reply('截图失败，请稍后再试')
-        return false
-      }
-      await e.reply(withActivityLinks(image, visible))
+    const visible = groupUpdates(Array.from(updates.values())).map(group => group[0])
+    const image = await generateScreenshot(visible.map(update => update.info), String(e.user_id)).catch(error => {
+      logger.error('汇总仓库更新截图失败：', error)
+      return false as const
+    })
+    if (!image || (Array.isArray(image) && !image.length)) {
+      await e.reply('截图失败，请稍后再试')
+      return false
     }
+    await e.reply(withActivityLinks(image, visible))
     return repositoryCount
   }
 
@@ -135,9 +137,8 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
   return repositoryCount
 }
 
-function updateBatches (updates: RepositoryUpdate[]) {
-  // Draft and published-only subscriptions may point at the same release.
-  // Render it once, but confirm every subscription after successful delivery.
+/** 相同内容只渲染一次；保留每个订阅记录，以便自动推送成功后分别确认。 */
+function groupUpdates (updates: RepositoryUpdate[]) {
   const groups = new Map<string, RepositoryUpdate[]>()
   for (const update of updates) {
     const key = 'release' in update.info
@@ -147,7 +148,11 @@ function updateBatches (updates: RepositoryUpdate[]) {
     group.push(update)
     groups.set(key, group)
   }
-  const values = Array.from(groups.values())
+  return Array.from(groups.values())
+}
+
+function updateBatches (updates: RepositoryUpdate[]) {
+  const values = groupUpdates(updates)
   const size = updates.some(update => update.activity || update.commit) ? activityOptions().batchSize : values.length || 1
   const batches: { visible: RepositoryUpdate[], updates: RepositoryUpdate[] }[] = []
   for (let offset = 0; offset < values.length; offset += size) {

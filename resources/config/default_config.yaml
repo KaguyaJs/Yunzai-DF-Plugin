@@ -20,6 +20,24 @@ CodeUpdate:
   badgeStyleTips: |-
     提交信息中是否启用徽章样式
   badgeStyle: true
+  ThemeTips: |-
+    仓库更新图片主题，自动推送与手动汇总共用，默认使用海盐蓝，经典原版可自行选择
+    Name: classic经典原版、dark深空、light晨光、ocean海盐蓝、forest松石绿、sunset暖砂橙、lavender薰衣草
+    Accent: 强调色；Background: 图片背景；Surface: 卡片背景；Text: 主文字；Muted: 辅助文字；Border: 边框
+    颜色留空跟随所选主题，支持#RGB或#RRGGBB格式；切换主题后已填写的颜色仍会覆盖预设
+    自定义颜色、宽度和圆角仅对新主题生效；经典原版保持原始外观，切回时保留自定义设置供下次选择新主题使用
+    Width: 布局宽度（520-1000像素），最终图片还会应用渲染精度缩放
+    Radius: 卡片圆角（0-28像素），0为直角
+  Theme:
+    Name: ocean
+    Accent: ""
+    Background: ""
+    Surface: ""
+    Text: ""
+    Muted: ""
+    Border: ""
+    Width: 640
+    Radius: 16
   TranslateTips: |-
     是否在渲染Git仓库更新推送前，将提交信息和Release内容翻译为简体中文
     默认使用Google公共翻译接口，如网络无法访问可开启代理或修改TranslateApi
@@ -33,7 +51,8 @@ CodeUpdate:
     翻译后在推送图片中显示的提示名称
   TranslateName: "Google 翻译"
   multiPageTips: |-
-    当获取到的数据达到多少条时分片发送，填 -1 关闭
+    自动推送与手动推送仓库更新达到多少条时分片截图，填 -1 关闭
+    手动推送先汇总全部推送组，所有图片分片在同一次回复中发送
   multiPage: 12
   ReleaseTips: |-
     Release附件展示设置
@@ -48,7 +67,7 @@ CodeUpdate:
     PageSize: 提交/PR/Issue每页获取数量（1-100）
     MaxPages: 单次最多获取页数；达到上限且尚未确认完整时保留检查进度，需调高后重试；CNB提交父链节点预算为PageSize×MaxPages
     InitialLimit: PR/Issue首次推送与手动预览的每仓库条目上限
-    BatchSize: 包含提交/PR/Issue时每条推送消息的条目上限
+    BatchSize: 自动推送包含提交/PR/Issue时每条消息的条目上限；手动预览汇总后一次回复，仍按multiPage决定是否分片
     BodyLimit: 正文/评论摘要最大字符数，0为隐藏正文
     OverlapSeconds: 增量查询回看秒数，避免时间边界遗漏
     SendLinks: PR/Issue图片后附可点击的原始链接

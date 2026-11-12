@@ -38,6 +38,7 @@ function createHarness (options = {}) {
     timeAgo: value => value,
     screenshot: async (template, data, options) => {
       screenshots.push({ template, data: JSON.parse(JSON.stringify(data)), options })
+      if (harness.renderError) throw harness.renderError
       return harness.render ? (options.multiPage ? [{ type: 'image', file: 'page1' }, { type: 'image', file: 'page2' }] : { type: 'image', file: 'page1' }) : false
     },
     request: {

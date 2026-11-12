@@ -10,25 +10,41 @@
 </head>
 
 <body {{@sys.scale}}>
-  <div class="container" id="container">
+  <div class="container" id="container" data-theme="{{theme ? theme.name : 'ocean'}}" style="{{theme ? theme.style : ''}}">
     <div class="head_box">
-      <div class="id_text">Git仓库更新推送</div>
+      <div class="header-topline">
+        <span class="eyebrow">REPOSITORY UPDATES</span>
+        <span class="theme-label" title="{{theme ? theme.description : '清透蓝色与海洋气息'}}"><i></i>{{theme ? theme.label : '海盐蓝'}}</span>
+      </div>
+      <div class="header-title-row">
+        <div>
+          <div class="id_text">仓库更新</div>
+          <div class="header-summary">
+            {{if renderInfo}}<span><strong>{{renderInfo.repositories}}</strong> 个仓库</span><i></i>{{/if}}
+            <span><strong>{{renderInfo ? renderInfo.updates : lifeData.length}}</strong> 条更新动态</span>
+          </div>
+        </div>
+        <div class="header-symbol" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none"><path d="M15 12v24M15 27c0-10 18-2 18-14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="15" cy="10" r="4"/><circle cx="15" cy="38" r="4"/><circle cx="33" cy="10" r="4"/></svg>
+        </div>
+      </div>
     </div>
 
     <div class="data_box">
       <div class="list">
         {{each lifeData item}}
-        <div class="item {{if item.activity}}activity-card{{/if}} {{if item.release}}release-card{{/if}}">
+        <div class="item {{if item.activity}}activity-card{{else if item.release}}release-card{{else}}commit-card{{/if}}">
           <div class="title">
             <div class="text">
-              <img src="{{item.icon}}" class="icon">
-              {{item.name.repo}}
+              <span class="provider-icon"><img src="{{item.icon}}" class="icon" alt="{{item.name.source}}"></span>
+              <span class="repo-name">{{item.name.repo}}</span>
               {{if item.release}}
-              <div class="release">Releases</div>
+              <span class="release">RELEASE</span>
               {{if item.draft}}<span class="release-state release-draft">草稿 · 未发布</span>{{else if item.prerelease}}<span class="release-state">预发布</span>{{/if}}
-              {{/if}}
-              {{if item.activity}}
+              {{else if item.activity}}
               <span class="activity-kind">{{item.detail.kind}} #{{item.detail.number}}</span>
+              {{else}}
+              <span class="commit-kind">COMMIT</span>
               {{/if}}
             </div>
             {{if item.activity}}
@@ -50,22 +66,21 @@
             {{if item.name.branch || item.name.tag || item.name.sha}}
             <div class="branch">
               {{if item.name.branch || item.name.tag}}
-                <img src="{{pluResPath}}/CodeUpdate/icon/{{item.name.branch ? "branch" : "tag"}}.svg"> {{item.name.branch ?? item.name.tag}}
-                &nbsp;
+                <span class="branch-ref"><img src="{{pluResPath}}/CodeUpdate/icon/{{item.name.branch ? "branch" : "tag"}}.svg" alt="">{{item.name.branch ?? item.name.tag}}</span>
               {{/if}}
               {{if item.name.sha}}
-                <img src="{{pluResPath}}/CodeUpdate/icon/sha.svg"> {{item.name.sha}}
+                <span class="sha-ref"><img src="{{pluResPath}}/CodeUpdate/icon/sha.svg" alt="">{{item.name.sha}}</span>
               {{/if}}
             </div>
             {{/if}}
             <div class="dec">
               <div class="avatar">
-                <img src="{{item.avatar.author}}" data-nameStart="{{item.name.authorStart}}">
+                <span class="avatar-circle"><span>{{item.name.authorStart || '?'}}</span>{{if item.avatar.author}}<img src="{{item.avatar.author}}" alt="">{{/if}}</span>
                 {{if item.avatar.is}}
-                <img src="{{item.avatar.committer}}" class="committer-avatar" data-nameStart="{{item.name.committerStart}}">
+                <span class="avatar-circle committer-avatar"><span>{{item.name.committerStart || '?'}}</span>{{if item.avatar.committer}}<img src="{{item.avatar.committer}}" alt="">{{/if}}</span>
                 {{/if}}
               </div>
-              {{@item.time_info}}
+              <div class="time-info">{{@item.time_info}}</div>
             </div>
             <div class="desc">{{@item.text}}</div>
             {{if item.translate}}

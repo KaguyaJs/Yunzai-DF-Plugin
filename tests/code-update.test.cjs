@@ -362,7 +362,7 @@ test('卡片格式化处理翻译、Markdown和不可信HTML，模板兼容四�
   const release = await format.formatReleaseInfo({ tag_name: 'v1', author: { login: 'alice' } }, 'GitHub', 'owner/repo')
   const issue = { ...plain(info), detail: { ...plain(info.detail), kind: 'Issue', baseBranch: '', headBranch: '' } }
   const html = template(path.join(project, 'resources/CodeUpdate/index.html'), { pluResPath: path.join(project, 'resources'), sys: { scale: '', copyright: 'test' }, lifeData: [commit, release, plain(info), issue] })
-  for (const value of ['PR #1', 'Issue #1', 'Releases', 'activity-state']) assert.ok(html.includes(value), value)
+  for (const value of ['PR #1', 'Issue #1', 'release-card', 'activity-state']) assert.ok(html.includes(value), value)
 })
 
 function releaseItem (changes = {}) {

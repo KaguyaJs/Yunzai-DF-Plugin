@@ -76,7 +76,7 @@ export const helpList: HelpListType = [
       {
         icon: 9,
         title: '#推送仓库更新',
-        desc: '获取所有仓库的最新数据并回复到当前对话（不推送群或人）'
+        desc: '汇总全部推送组并去重，按配置分片后一次回复当前会话'
       }
     ]
   },
