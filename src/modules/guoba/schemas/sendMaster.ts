@@ -53,15 +53,14 @@ export const sendMaster: GuobaSchemas = [
     avatar: 发送者头像
     platform: 平台信息
     user: 触发者信息
-    gloup: 群聊信息 私聊时显示私聊
+    group: 群聊信息 私聊时显示私聊
     bot: 触发Bot信息
     time: 发送时间
     msg: 消息内容`,
     component: 'InputTextArea',
     required: true,
     componentProps: {
-      // readonly: true,
-      // autosize: true,
+      dfContactTemplate: 'notice',
       autosize: {
         minRows: 5,
         maxRows: 11
@@ -77,6 +76,7 @@ export const sendMaster: GuobaSchemas = [
     component: 'InputTextArea',
     required: true,
     componentProps: {
+      dfContactTemplate: 'success',
       autosize: {
         minRows: 1,
         maxRows: 10
@@ -92,6 +92,7 @@ export const sendMaster: GuobaSchemas = [
     component: 'InputTextArea',
     required: true,
     componentProps: {
+      dfContactTemplate: 'failure',
       autosize: {
         minRows: 1,
         maxRows: 10
@@ -109,6 +110,7 @@ export const sendMaster: GuobaSchemas = [
     component: 'InputTextArea',
     required: true,
     componentProps: {
+      dfContactTemplate: 'reply',
       autosize: {
         minRows: 1,
         maxRows: 10

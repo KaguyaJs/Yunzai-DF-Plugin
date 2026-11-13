@@ -3,8 +3,10 @@ import { GuobaType } from '@/types/guoba'
 import * as schemas from './schemas'
 import Config from '@/config'
 import { withPluginTask } from '@/utils/lifecycle'
+import { installContactTemplateExtension } from './templateExtension'
 
 export function supportGuoba (): GuobaType {
+  installContactTemplateExtension()
   return {
     pluginInfo: {
       name: 'Yunzai-DF-Plugin',
