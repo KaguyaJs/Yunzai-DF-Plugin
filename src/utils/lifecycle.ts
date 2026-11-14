@@ -4,6 +4,7 @@ let activeTasks = 0
 let maintaining = false
 let stopped = false
 const idleListeners = new Set<() => void>()
+const stopListeners = new Set<() => void>()
 const taskContext = new AsyncLocalStorage<{ active: boolean }>()
 
 /** 登记可能写入插件数据的任务；维护期间不再接受新任务。 */
@@ -35,6 +36,14 @@ export async function withPluginTask<T, B> (operation: () => Promise<T>, unavail
 /** 卸载开始后保持停止状态，直到进程重启；维护命令仍可重试。 */
 export function stopPluginTasks () {
   stopped = true
+  for (const dispose of stopListeners) dispose()
+  stopListeners.clear()
+}
+
+/** 注册随插件卸载释放的资源；已经停止时立即释放。 */
+export function onPluginStop (dispose: () => void) {
+  if (stopped) dispose()
+  else stopListeners.add(dispose)
 }
 
 /** 等待已有写入结束，再独占执行清理，避免删除后的数据被旧任务写回。 */
