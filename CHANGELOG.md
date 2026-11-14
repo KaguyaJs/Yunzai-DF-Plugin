@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.13.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.12.1...yunzai-df-plugin-v2.13.0) (2026-11-14)
+
+
+### ✨ 新功能
+
+* **CodeUpdate:** 扫描完成后按平台记录每小时请求量估算 ([64a6a25](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/64a6a25c1ccea2c230f50558ed0779329e0ce7b4))
+* **CodeUpdate:** 支持Release草稿与附件折叠展示 ([6e2b5e1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/6e2b5e170b2f534107e0d2b3a35a991405398b2a))
+* **CodeUpdate:** 支持可选主题与多组更新汇总回复 ([977665b](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/977665b811b39f38bcf1f8ec86b63b7fcae97233))
+* **CodeUpdate:** 支持同仓库同分支多提交共用卡片 ([4860857](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/4860857fe8983b443d30516994d891d7a499c37c))
+* **CodeUpdate:** 支持多类型多分支监听及配置迁移 ([3201a8b](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/3201a8b85f96ea6a6456e413a7c17df0b6c7e4e1))
+* **CodeUpdate:** 添加可选PR diff展示与大改动收起 ([9ef6b4b](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/9ef6b4b4951ea962ec730c5abafa53a0a0216819))
+* **CodeUpdate:** 添加樱花粉推送主题 ([509ce77](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/509ce77f729fc4cf296d2da6b80d76a93579a91f))
+* **guoba:** 支持联系主人模板可视化编辑 ([#77](https://github.com/KaguyaJs/Yunzai-DF-Plugin/issues/77)) ([940667a](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/940667a0465a9907a2251feb9753bd9600a4020a))
+* **update:** 新增图库卸载和精简命令 ([7f769af](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/7f769af25d5b25cf53520583e2f1e3339a67d574))
+* **update:** 添加Redis统计清理与插件卸载 ([f15d6c0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/f15d6c030d8892f007a71cd825a6c9e7ad938f7c))
+
+
+### 🐛 Bug 修复
+
+* **CodeUpdate:** 优化仓库请求统计日志并添加开关 ([2e7772c](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/2e7772c37f5295443d90e76031d9fcfd793caab8))
+* **CodeUpdate:** 支持连续提交完整推送与失败补发 ([09edba9](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/09edba9a7fe7b3255a301f5d4a430e1368872428))
+* **poke:** 细节优化 ([cd1c364](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/cd1c364e9fc08a229a43cecf3cfc989f93fd0384))
+* 细节优化 ([ef7b13c](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/ef7b13ccfd1020f39489c90162c025d3896ae13b))
+
 ## [2.12.1](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.12.0...yunzai-df-plugin-v2.12.1) (2026-10-05)
 
 

@@ -6,50 +6,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Git仓库更新推送</title>
   <link rel="stylesheet" type="text/css" href="{{pluResPath}}/CodeUpdate/index.css" />
+  <link rel="stylesheet" type="text/css" href="{{pluResPath}}/CodeUpdate/commit-group.css" />
   <link rel="shortcut icon" href="#" />
 </head>
 
 <body {{@sys.scale}}>
-  <div class="container" id="container">
+  <div class="container" id="container" data-theme="{{theme ? theme.name : 'ocean'}}" style="{{theme ? theme.style : ''}}">
     <div class="head_box">
-      <div class="id_text">Git仓库更新推送</div>
+      <div class="header-topline">
+        <span class="eyebrow">REPOSITORY UPDATES</span>
+        <span class="theme-label" title="{{theme ? theme.description : '清透蓝色与海洋气息'}}"><i></i>{{theme ? theme.label : '海盐蓝'}}</span>
+      </div>
+      <div class="header-title-row">
+        <div>
+          <div class="id_text">仓库更新</div>
+          <div class="header-summary">
+            {{if renderInfo}}<span><strong>{{renderInfo.repositories}}</strong> 个仓库</span><i></i>{{/if}}
+            <span><strong>{{renderInfo ? renderInfo.updates : lifeData.length}}</strong> 条更新动态</span>
+          </div>
+        </div>
+        <div class="header-symbol" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none"><path d="M15 12v24M15 27c0-10 18-2 18-14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="15" cy="10" r="4"/><circle cx="15" cy="38" r="4"/><circle cx="33" cy="10" r="4"/></svg>
+        </div>
+      </div>
     </div>
 
     <div class="data_box">
       <div class="list">
-        {{each lifeData item}}
-        <div class="item">
+        {{set cards = renderCards || lifeData}}
+        {{each cards item}}
+        <div class="item {{if item.activity}}activity-card{{else if item.release}}release-card{{else}}commit-card{{/if}}{{if item.commits && item.commits.length > 1}} commit-group{{/if}}">
           <div class="title">
             <div class="text">
-              <img src="{{item.icon}}" class="icon">
-              {{item.name.repo}}
+              <span class="provider-icon"><img src="{{item.icon}}" class="icon" alt="{{item.name.source}}"></span>
+              <span class="repo-name">{{item.name.repo}}</span>
               {{if item.release}}
-              <div class="release">Releases</div>
+              <span class="release">RELEASE</span>
+              {{if item.draft}}<span class="release-state release-draft">草稿 · 未发布</span>{{else if item.prerelease}}<span class="release-state">预发布</span>{{/if}}
+              {{else if item.activity}}
+              <span class="activity-kind">{{item.detail.kind}} #{{item.detail.number}}</span>
+              {{else}}
+              <span class="commit-kind">{{if item.commits && item.commits.length > 1}}{{item.commits.length}} COMMITS{{else}}COMMIT{{/if}}</span>
               {{/if}}
             </div>
+            {{if item.commits && item.commits.length > 1}}
+            {{@include('./commit-group.html', {item: item, pluResPath: pluResPath})}}
+            {{else}}
+            {{if item.activity}}
+            <div class="activity-meta">
+              <span class="activity-state state-{{item.detail.state}}">{{item.detail.stateLabel}}</span>
+              {{if item.detail.draft}}<span class="activity-action">草稿</span>{{/if}}
+              {{each item.detail.actions action}}<span class="activity-action">{{action}}</span>{{/each}}
+              {{if item.detail.comments !== undefined}}<span class="activity-comment-count">{{item.detail.comments}} 条评论</span>{{/if}}
+            </div>
+            {{if item.detail.baseBranch}}
+            <div class="activity-branches">{{item.detail.headBranch || '来源分支'}} <span>→</span> {{item.detail.baseBranch}}</div>
+            {{/if}}
+            {{if item.detail.labels.length}}
+            <div class="activity-labels">
+              {{each item.detail.labels label}}<span class="activity-label" style="border-color: #{{label.color}}"><i style="background-color: #{{label.color}}"></i>{{label.name}}</span>{{/each}}
+            </div>
+            {{/if}}
+            {{/if}}
             {{if item.name.branch || item.name.tag || item.name.sha}}
             <div class="branch">
               {{if item.name.branch || item.name.tag}}
-                <img src="{{pluResPath}}/CodeUpdate/icon/{{item.name.branch ? "branch" : "tag"}}.svg"> {{item.name.branch ?? item.name.tag}}
-                &nbsp;
+                <span class="branch-ref"><img src="{{pluResPath}}/CodeUpdate/icon/{{item.name.branch ? "branch" : "tag"}}.svg" alt="">{{item.name.branch ?? item.name.tag}}</span>
               {{/if}}
               {{if item.name.sha}}
-                <img src="{{pluResPath}}/CodeUpdate/icon/sha.svg"> {{item.name.sha}}
+                <span class="sha-ref"><img src="{{pluResPath}}/CodeUpdate/icon/sha.svg" alt="">{{item.name.sha}}</span>
               {{/if}}
             </div>
             {{/if}}
             <div class="dec">
               <div class="avatar">
-                <img src="{{item.avatar.author}}" data-nameStart="{{item.name.authorStart}}">
+                <span class="avatar-circle"><span>{{item.name.authorStart || '?'}}</span>{{if item.avatar.author}}<img src="{{item.avatar.author}}" alt="">{{/if}}</span>
                 {{if item.avatar.is}}
-                <img src="{{item.avatar.committer}}" class="committer-avatar" data-nameStart="{{item.name.committerStart}}">
+                <span class="avatar-circle committer-avatar"><span>{{item.name.committerStart || '?'}}</span>{{if item.avatar.committer}}<img src="{{item.avatar.committer}}" alt="">{{/if}}</span>
                 {{/if}}
               </div>
-              {{@item.time_info}}
+              <div class="time-info">{{@item.time_info}}</div>
             </div>
             <div class="desc">{{@item.text}}</div>
             {{if item.translate}}
             <div class="translate-tip" title="{{item.translate.title}}">{{item.translate.label}}</div>
+            {{/if}}
+            {{if item.release && item.assets}}
+            <div class="release-assets">
+              <div class="release-assets-heading">附件 <span>{{item.assets.total}} 个文件</span></div>
+              {{each item.assets.files file}}
+              <div class="release-asset">
+                {{if file.url}}<a class="release-asset-name" href="{{file.url}}">{{file.name}}</a>{{else}}<span class="release-asset-name">{{file.name}}</span>{{/if}}
+                <span class="release-asset-size">{{file.size}}</span>
+              </div>
+              {{/each}}
+              {{if item.assets.hidden}}<div class="release-assets-collapsed">已折叠 {{item.assets.hidden}} 个文件{{if item.url}} · 完整附件请查看发布页{{/if}}</div>{{/if}}
+            </div>
             {{/if}}
             {{if item.stats}}
             <div class="stats">
@@ -60,6 +112,35 @@
                 <span class="deletions">-{{item.stats.deletions}}</span>
               {{/if}}
             </div>
+            {{/if}}
+            {{if item.diff}}
+            <div class="pr-diff {{if item.diff.collapsed}}diff-collapsed{{/if}}">
+              <div class="diff-heading">
+                <span>代码 Diff</span>
+                <span class="diff-state">{{if item.diff.unavailable}}暂不可用{{else if item.diff.collapsed}}已收起{{else}}已展开{{/if}}</span>
+              </div>
+              {{if item.diff.unavailable}}
+              <div class="diff-notice">{{item.diff.unavailable}}</div>
+              {{else}}
+              <div class="diff-summary">{{if item.diff.hasMoreFiles}}至少 {{/if}}{{item.diff.fileCount}} 个文件{{if item.diff.collapsed}} · 改动较多，代码已收起{{/if}}</div>
+              {{each item.diff.files file}}
+              <div class="diff-file">
+                <div class="diff-file-heading"><span class="diff-file-name">{{file.filename}}</span><span class="diff-file-status">{{file.status}}</span><span class="additions">+{{file.additions}}</span><span class="deletions">-{{file.deletions}}</span></div>
+                {{if file.previousFilename}}<div class="diff-previous-name">原路径：{{file.previousFilename}}</div>{{/if}}
+                {{if !item.diff.collapsed}}
+                  {{if file.missingPatch}}<div class="diff-notice">此文件未提供文本diff</div>{{/if}}
+                  {{each file.lines line}}
+                  <div class="diff-line diff-{{line.kind}}"><span class="diff-line-number">{{line.oldNumber}}</span><span class="diff-line-number">{{line.newNumber}}</span><code>{{line.text}}</code></div>
+                  {{/each}}
+                {{/if}}
+              </div>
+              {{/each}}
+              {{if item.diff.hasMoreFiles}}<div class="diff-notice">其余文件已收起</div>{{/if}}
+              {{if !item.diff.fileCount}}<div class="diff-notice">没有文件改动</div>{{/if}}
+              {{/if}}
+              {{if item.diff.url}}<a class="diff-link" href="{{item.diff.url}}">查看完整 Diff · PR 原文</a>{{/if}}
+            </div>
+            {{/if}}
             {{/if}}
           </div>
         </div>
