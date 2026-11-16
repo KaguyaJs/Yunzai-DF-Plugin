@@ -35,7 +35,7 @@
               {{/if}}
             </div>
             {{if item.commits && item.commits.length > 1}}
-            {{@include('./commit-group.html', {item: item, pluResPath: pluResPath})}}
+            {{@include((_res_path || pluResPath) + '/CodeUpdate/commit-group.html', {item: item, pluResPath: pluResPath})}}
             {{else}}
             {{if item.activity}}
             <div class="activity-meta">
