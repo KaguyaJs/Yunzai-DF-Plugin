@@ -3,6 +3,7 @@ import path from 'node:path'
 import type { Config, GitApiMethod } from '@/types'
 import { YunzaiPath } from '@/dir'
 import { normalizeRepository } from '../config/codeUpdateRepository'
+import { normalizeCodeUpdateCron } from '../config/codeUpdateCron'
 import type { RepoConfig } from '../modules/CodeUpdate/utils/repo'
 import { getRepoBranch, getRepoKey, getRepoType, repoPath } from '../modules/CodeUpdate/utils/repo'
 import type { PluginItem } from './GitRepo'
@@ -25,6 +26,7 @@ let cachedRates: { cron: string, start: number, rates: { checksPerHour: number, 
 
 /** Reuse Yunzai's scheduler parser; enumerate days rather than every second of a dense cron. */
 export function cronRequestRates (cron: string, now = new Date()) {
+  cron = normalizeCodeUpdateCron(cron)
   const start = new Date(now)
   start.setHours(0, 0, 0, 0)
   if (cachedRates?.cron === cron && cachedRates.start === start.getTime()) return { ...cachedRates.rates }
@@ -239,6 +241,6 @@ export function logGitRequestEstimate (config: CodeConfig, local: PluginItem[], 
     log.info(lines.join('\n'))
     lastReport = signature
   } catch (error) {
-    log.warn(`[DF:仓库请求估算] 无法计算请求量（Cron或监听配置无效、定时解析器不可用）: ${error instanceof Error ? error.message : String(error)}`)
+    log.warn(`[DF:仓库请求估算] 无法计算请求量（Cron或监听配置无效、定时解析器不可用）: ${error instanceof Error ? error.message : String(error)}；CodeUpdate.Cron=${JSON.stringify(config.Cron)}（支持 5/6 段，第 7 段仅兼容通配年份 *）`)
   }
 }

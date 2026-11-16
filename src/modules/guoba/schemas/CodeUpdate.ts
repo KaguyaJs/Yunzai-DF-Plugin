@@ -244,7 +244,7 @@ export const CodeUpdate: GuobaSchemas = [
     field: 'CodeUpdate.Cron',
     label: '自动检查定时表达式',
     helpMessage: '修改后重启生效',
-    bottomHelpMessage: '自动检查Cron表达式',
+    bottomHelpMessage: '支持5/6段，例如每半小时：0 */30 * * * *；第7段年份仅支持通配符*',
     component: 'EasyCron',
     componentProps: {
       placeholder: '请输入Cron表达式',

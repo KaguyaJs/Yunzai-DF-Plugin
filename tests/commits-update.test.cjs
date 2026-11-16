@@ -90,6 +90,37 @@ test('连续同秒提交逐条推送，首次静默且成功后不重复', async
   assert.equal(h.deliveries.length, 1)
 })
 
+for (const failure of ['截图返回失败', '截图抛出异常', '部分群发送失败']) {
+  test(`检查命令在${failure}时回复失败，保留待投递提交并在重试后报告成功`, async () => {
+    const h = createHarness()
+    subscribe(h, 'commits', { branch: 'main' }, 1)
+    subscribe(h, 'commits', { branch: 'main' }, 2)
+    const state = fixture(h)
+    const { CodeUpdate } = h.load('@CodeUpdate')
+    await CodeUpdate(true)
+    append(state, 'bbbbbb', 'cccccc')
+    if (failure === '截图返回失败') h.render = false
+    else if (failure === '截图抛出异常') h.renderError = new Error('fixture template not found')
+    else h.failures.add('Group:2')
+    const replies = []
+    const event = { msg: '#检查仓库更新', user_id: 999, reply: async message => { replies.push(message); return true } }
+    const { GitRepoUpdate } = h.load('@/apps/CodeUpdate')
+    const app = new GitRepoUpdate()
+    assert.equal(await app.check(event), false)
+    assert.match(replies.at(-1), /共有1个仓库有更新.*推送未全部成功/)
+    assert.ok(replies.every(message => typeof message !== 'string' || !/正在按照你的配置|已按照你的配置/.test(message)))
+    assert.deepEqual(Object.keys(journal(h).pending), ['bbbbbb', 'cccccc'])
+    h.render = true
+    h.renderError = undefined
+    h.failures.clear()
+    assert.equal(await app.check(event), true)
+    assert.match(replies.at(-1), /共有1个仓库有更新.*已按照你的配置完成推送/)
+    assert.deepEqual(journal(h).pending, {})
+    assert.equal(h.deliveries.filter(value => value.target === 'Group:1').length, 1, '成功的群在重试时不重复发送')
+    assert.equal(h.deliveries.filter(value => value.target === 'Group:2').length, failure === '部分群发送失败' ? 2 : 1)
+  })
+}
+
 test('分页固定已观察的HEAD，扫描期间出现的新提交留给下轮', async () => {
   const h = createHarness({ config: { Activity: { PageSize: 1, MaxPages: 20 } } })
   subscribe(h, 'commits', { branch: 'main' })

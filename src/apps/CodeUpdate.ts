@@ -1,5 +1,6 @@
 import { CodeUpdate } from '@CodeUpdate'
 import config from '@/config'
+import { normalizeCodeUpdateCron } from '@/config/codeUpdateCron'
 
 export class GitRepoUpdate extends plugin<'message'> {
   constructor () {
@@ -20,7 +21,7 @@ export class GitRepoUpdate extends plugin<'message'> {
     if (config.CodeUpdate.Auto) {
       this.task = {
         name: 'DF:Git仓库更新检查',
-        cron: config.CodeUpdate.Cron,
+        cron: normalizeCodeUpdateCron(config.CodeUpdate.Cron),
         fnc: async () => {
           await CodeUpdate(true)
         }
@@ -34,7 +35,7 @@ export class GitRepoUpdate extends plugin<'message'> {
     if (ret === false) return false
     if (!push) {
       return e.reply(ret > 0
-        ? `检查完成，共有${ret}个仓库有更新，正在按照你的配置进行推送哦~`
+        ? `检查完成，共有${ret}个仓库有更新，已按照你的配置完成推送哦~`
         : '检查完成，没有发现仓库有更新')
     }
   }

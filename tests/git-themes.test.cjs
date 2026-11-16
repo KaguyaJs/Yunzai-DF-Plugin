@@ -2,6 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
+const { pathToFileURL } = require('node:url')
 const { createHarness, item, subscribe, project, plain } = require('./helpers/code-update.cjs')
 const { displayFixtures, commitDisplayFixtures } = require('./helpers/git-theme-fixtures.cjs')
 
@@ -220,6 +221,27 @@ test('全部主题将同分支四条提交显示为一张卡片，逐条详情�
       assert.ok(html.includes(text), `${preset.name}: ${text}`)
     }
     assert.ok(html.indexOf('F15D6C0') < html.indexOf('977665B') && html.indexOf('977665B') < html.indexOf('509CE77'))
+  }
+})
+
+test('模板字符串渲染兼容没有filename的Yunzai后端，资源URL与子模板文件路径分别解析', async () => {
+  const h = createHarness({ config: { multiPage: -1 } })
+  const { CODE_UPDATE_THEMES } = h.load('@CodeUpdate/utils/theme')
+  const { generateScreenshot } = h.load('@CodeUpdate/services/screenshot')
+  const template = require('art-template')
+  const resources = path.join(project, 'resources')
+  for (const preset of CODE_UPDATE_THEMES) {
+    h.config.CodeUpdate.Theme = { Name: preset.name }
+    await generateScreenshot(commitDisplayFixtures(), preset.name)
+    const { data, template: name } = h.screenshots.at(-1)
+    const source = fs.readFileSync(path.join(resources, `${name}.html`), 'utf8')
+    for (const pluResPath of [resources, pathToFileURL(resources).href]) {
+      const html = template.render(source, { ...data, _res_path: resources, pluResPath, sys: { scale: '', copyright: 'fixture' } })
+      assert.equal((html.match(/class="commit-entry"/g) || []).length, 4, preset.name)
+      assert.equal((html.match(/class="item /g) || []).length, 3, preset.name)
+      assert.ok(html.includes(`${pluResPath}/CodeUpdate/icon/branch.svg`))
+      for (const sha of ['F15D6C0', '977665B', '509CE77', 'A26C8D1']) assert.ok(html.includes(sha), `${preset.name}: ${sha}`)
+    }
   }
 })
 

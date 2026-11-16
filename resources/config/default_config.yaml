@@ -12,6 +12,7 @@ CodeUpdate:
   RequestEstimateLog: true
   CronTips: |-
     仓库更新检查Cron表达式
+    支持5/6段，例如每半小时：0 */30 * * * *；第7段年份仅支持通配符*
     Github/Gitee Api 未认证用户每小时限制60 (ip限制), 认证用户每小时限制5000次 (账号限制)
   Cron: "0 */30 * * * *"
   FirstAddTips: |-

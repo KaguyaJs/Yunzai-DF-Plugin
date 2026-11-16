@@ -20,6 +20,7 @@ async function main () {
   const newThemeCount = CODE_UPDATE_THEMES.filter(preset => preset.name !== 'classic').length
   const data = {
     lifeData: displayFixtures(),
+    _res_path: path.join(project, 'resources'),
     pluResPath: pathToFileURL(path.join(project, 'resources')).href,
     sys: { scale: '', copyright: 'Created By Yunzai &amp; DF-Plugin' },
     renderInfo: { repositories: 2, updates: 4 }

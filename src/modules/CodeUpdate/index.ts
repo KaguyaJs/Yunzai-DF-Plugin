@@ -134,6 +134,10 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
       }
     }
   }
+  if (failed.size && e) {
+    await e.reply(`检查完成，共有${repositoryCount}个仓库有更新，推送未全部成功，请稍后重试`)
+    return false
+  }
   return repositoryCount
 }
 

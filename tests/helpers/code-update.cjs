@@ -70,6 +70,8 @@ function createHarness (options = {}) {
     URL,
     setTimeout,
     clearTimeout,
+    setInterval,
+    clearInterval,
     structuredClone,
     Buffer,
     Date: class extends Date {

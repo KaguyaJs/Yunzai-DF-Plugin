@@ -1361,6 +1361,34 @@ function requestEstimateRow (report, label) {
   return line.trim().split(/\s+/)
 }
 
+test('七段Cron仅在年份为通配符时兼容，定时任务与请求量估算使用相同的六段表达式', () => {
+  const h = createHarness()
+  const { normalizeCodeUpdateCron } = h.load('@/config/codeUpdateCron')
+  const { cronRequestRates } = h.load('@/utils/gitRequestEstimate')
+  const { GitRepoUpdate } = h.load('@/apps/CodeUpdate')
+  for (const cron of ['0 */30 * * * *', '*/30 * * * *', '0 */30 * * * ? *', '  0  */30 * * * ? *  ']) {
+    h.config.CodeUpdate.Cron = cron
+    assert.equal(new GitRepoUpdate().task.cron, normalizeCodeUpdateCron(cron))
+    assert.equal(cronRequestRates(cron).checksPerHour, 2)
+  }
+  assert.equal(normalizeCodeUpdateCron('0 */30 * * * ? *'), '0 */30 * * * ?')
+  assert.equal(normalizeCodeUpdateCron('0 */30 * * * ? 2026'), '0 */30 * * * ? 2026')
+  assert.throws(() => cronRequestRates('0 */30 * * * ? 2026'), /Invalid cron expression/)
+})
+
+test('无效七段Cron日志包含原始配置与格式提示，手动检查仍能推送', async () => {
+  const h = createHarness({ config: { FirstAdd: true, Cron: '0 */30 * * * ? 2026' } })
+  subscribe(h, 'issues')
+  installRouter(h, { issues: [item(1)] })
+  const replies = []
+  assert.equal(await h.load('@CodeUpdate').CodeUpdate(true, { user_id: 999, reply: async message => { replies.push(message); return true } }), 1)
+  assert.equal(h.deliveries.length, 1)
+  const warning = requestEstimateLogs(h).find(log => log.name === 'warn')
+  assert.ok(warning)
+  assert.match(warning.args[0], /CodeUpdate\.Cron="0 \*\/30 \* \* \* \? 2026"/)
+  assert.match(warning.args[0], /5.*6.*通配年份/)
+})
+
 test('请求量日志一次输出多行，处理关闭/空配置/无效Cron并避免重复刷屏', () => {
   const h = createHarness({ config: { Auto: false, Cron: 'bad cron' } })
   const { logGitRequestEstimate } = h.load('@/utils/gitRequestEstimate')
