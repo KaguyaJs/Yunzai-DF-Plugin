@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.14.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.13.0...yunzai-df-plugin-v2.14.0) (2026-11-21)
+
+
+### ✨ 新功能
+
+* 为多条提交推送标记最新提交 ([1df7739](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/1df7739a786d60baf2ef705491de71f85b048b7d))
+
+
+### 🐛 Bug 修复
+
+* **CodeUpdate:** 修复多提交卡片渲染、Cron兼容和失败提示 ([dd536d3](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/dd536d3e1748ae5255d03cda3ea17e145ceb6787))
+
 ## [2.13.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.12.1...yunzai-df-plugin-v2.13.0) (2026-11-14)
 
 
