@@ -11,10 +11,12 @@ function createHarness (options = {}) {
   const requests = []
   const deliveries = []
   const screenshots = []
+  const downloads = []
   const logs = []
   const failures = new Set()
   const redisWrites = []
   const config = {
+    proxy: { open: false, url: 'http://127.0.0.1:7890' },
     CodeUpdate: {
       FirstAdd: false,
       Auto: true,
@@ -28,7 +30,7 @@ function createHarness (options = {}) {
       ...options.config
     }
   }
-  const harness = { store, requests, deliveries, screenshots, logs, failures, redisWrites, config, localRepos: [], failWrite: false, render: true, router: () => ({ data: [] }) }
+  const harness = { store, requests, deliveries, screenshots, downloads, logs, failures, redisWrites, config, localRepos: [], failWrite: false, render: true, router: () => ({ data: [] }), download: async () => false }
   const logger = Object.fromEntries(['error', 'warn', 'trace', 'debug', 'info', 'mark'].map(name => [name, (...args) => logs.push({ name, args })]))
   for (const name of ['cyan', 'magenta', 'yellow', 'green']) logger[name] = value => value
   const utils = {
@@ -42,6 +44,10 @@ function createHarness (options = {}) {
       return harness.render ? (options.multiPage ? [{ type: 'image', file: 'page1' }, { type: 'image', file: 'page2' }] : { type: 'image', file: 'page1' }) : false
     },
     request: {
+      download: async (url, options) => {
+        downloads.push({ url, options })
+        return harness.download(url, options)
+      },
       get: async (input, type, options) => {
         const url = new URL(input)
         requests.push({ url, headers: options.headers })

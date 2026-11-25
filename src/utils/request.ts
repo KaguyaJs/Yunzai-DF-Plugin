@@ -1,7 +1,13 @@
 import config from '@/config'
 import fetch, { type RequestInit, type Response } from 'node-fetch'
 import { HttpsProxyAgent } from 'https-proxy-agent'
+import type { Readable } from 'node:stream'
 import logger from './logger'
+
+export interface DownloadResult {
+  data: Buffer
+  contentType: string
+}
 
 interface OptionsType extends RequestInit {
   /**
@@ -27,6 +33,29 @@ export class Request {
     options: OptionsType = {}
   ): Promise<T | string | Response | false> {
     return this.request<T>('GET', url, responseType, options)
+  }
+
+  /**
+   * 下载二进制资源，沿用项目代理与超时设置。
+   * @param url 资源URL
+   * @param options 请求参数，size 可限制最大下载字节数
+   * @returns 内容及媒体类型；可保存为文件或转换为 data URL，失败返回 false
+   */
+  async download (url: Parameters<typeof fetch>[0], options: OptionsType = {}): Promise<DownloadResult | false> {
+    const response = await this.get(url, 'raw', options)
+    if (!response) return false
+    const { log = true } = options
+    try {
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
+      return {
+        data: Buffer.from(await response.arrayBuffer()),
+        contentType: response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() || 'application/octet-stream'
+      }
+    } catch (error) {
+      (response.body as Readable | null)?.destroy()
+      if (log) logger[typeof log === 'boolean' ? 'error' : log]('资源下载失败:', error)
+      return false
+    }
   }
 
   /**

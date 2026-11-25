@@ -4,6 +4,7 @@ import { ImageElem } from 'trss-yunzai/icqq'
 import config from '@/config'
 import { resolveCodeUpdateTheme } from '../utils/theme'
 import { groupCommitCards } from '../utils/cards'
+import { prepareMarkdownImages } from '../utils/images'
 
 /**
  * 按所选主题渲染仓库更新；自动推送与手动汇总均按配置决定是否分片
@@ -13,10 +14,11 @@ import { groupCommitCards } from '../utils/cards'
  */
 export async function generateScreenshot (content: RepositoryInfo[], saveId: string): Promise<false | ImageElem | ImageElem[]> {
   const theme = resolveCodeUpdateTheme(config.CodeUpdate.Theme)
+  const lifeData = await prepareMarkdownImages(content)
   return screenshot(theme.name === 'classic' ? 'CodeUpdate/classic' : 'CodeUpdate/index', {
     saveId,
-    lifeData: content,
-    renderCards: groupCommitCards(content),
+    lifeData,
+    renderCards: groupCommitCards(lifeData),
     theme,
     renderInfo: {
       repositories: new Set(content.map(item => JSON.stringify([item.name.source.toLowerCase(), item.name.repo]))).size,
