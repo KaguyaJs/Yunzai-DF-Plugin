@@ -297,19 +297,6 @@ body {
   break-inside: avoid;
 }
 
-.item::before {
-  position: absolute;
-  top: 22px;
-  bottom: 22px;
-  left: -1px;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--git-accent);
-  content: "";
-}
-
-.item.release-card::before { background: var(--git-purple); }
-.item.activity-card::before { background: var(--git-success); }
 .title { width: 100%; min-width: 0; }
 
 .text {
