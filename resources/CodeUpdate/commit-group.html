@@ -41,6 +41,9 @@
         {{/if}}
       </div>
       {{/if}}
+      {{if commit.diff}}
+      {{@include((_res_path || pluResPath) + '/CodeUpdate/diff.html', {diff: commit.diff, kind: '提交'})}}
+      {{/if}}
     </div>
   </div>
   {{/each}}

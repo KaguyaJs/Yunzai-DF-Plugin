@@ -63,6 +63,17 @@ CodeUpdate:
   Release:
     ShowAssets: true
     AssetLimit: 5
+  CommitTips: |-
+    提交diff展示设置，自动推送与手动预览共用
+    ShowDiff: 在提交卡片中展示代码diff，默认关闭；仅确认需要推送新提交后额外请求，不在无更新检查或失败重试时获取
+    DiffMaxFiles: 每条提交最多展开的文件数，超过后自动收起为文件摘要
+    DiffMaxLines: 每条提交最多展开的总行数（含上下文），超过后自动收起
+    同仓库同SHA的多个分支和接收者共用一次diff获取；失败消息保存当时的diff
+    diff不可用时回退到未开启diff的样式，沿用commit返回的文件数和增删统计
+  Commit:
+    ShowDiff: false
+    DiffMaxFiles: 3
+    DiffMaxLines: 40
   ActivityTips: |-
     PR/Issue推送设置（GitHub、Gitee、Gitcode及Gitea兼容接口）；分页和批次上限也用于提交
     PageSize: 提交/PR/Issue每页获取数量（1-100）
@@ -71,7 +82,7 @@ CodeUpdate:
     BatchSize: 自动推送包含提交/PR/Issue时每条消息的条目上限；手动预览汇总后一次回复，仍按multiPage决定是否分片
     BodyLimit: 正文/评论摘要最大字符数，0为隐藏正文
     OverlapSeconds: 增量查询回看秒数，避免时间边界遗漏
-    SendLinks: PR/Issue图片后附可点击的原始链接
+    SendLinks: PR/Issue图片后附可点击的原始链接；提交展示diff时也会附完整diff链接
     ShowDiff: 在PR卡片中展示代码diff，默认关闭；不用于评论通知
     DiffMaxFiles: 展开diff最多包含的文件数，超过后自动收起为文件摘要
     DiffMaxLines: 展开diff最多显示的总行数（含上下文），超过后自动收起
