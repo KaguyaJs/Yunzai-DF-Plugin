@@ -6,7 +6,7 @@ const { pathToFileURL } = require('node:url')
 const template = require('art-template')
 const puppeteer = require('puppeteer')
 const { createHarness, project } = require('./helpers/code-update.cjs')
-const { displayFixtures, commitDisplayFixtures } = require('./helpers/git-theme-fixtures.cjs')
+const { displayFixtures, commitDisplayFixtures, commitDiffDisplayFixtures } = require('./helpers/git-theme-fixtures.cjs')
 
 const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
 
@@ -61,7 +61,13 @@ async function main () {
       { name: 'classic-commits-2x', label: '经典原版 · 连续提交', themeName: 'classic', scale: 2, grouped: true },
       { name: 'pink-commits-compact', label: '樱花粉 · 紧凑', themeName: 'pink', scale: 1, settings: { Width: 520, Radius: 0 }, grouped: true, longCommits: true },
       { name: 'dark-commits-wide', label: '深空 · 宽版', themeName: 'dark', scale: 2, settings: { Width: 1000, Radius: 28 }, grouped: true },
-      { name: 'light-commits-backlog', label: '晨光 · 提交积压', themeName: 'light', scale: 1, grouped: true, backlog: true }
+      { name: 'light-commits-backlog', label: '晨光 · 提交积压', themeName: 'light', scale: 1, grouped: true, backlog: true },
+      { name: 'classic-commits-diff', label: '经典原版 · 提交diff', themeName: 'classic', scale: 1, grouped: true, commitDiff: true },
+      { name: 'ocean-commits-diff', label: '海盐蓝 · 提交diff', themeName: 'ocean', scale: 1, grouped: true, commitDiff: true, focused: true },
+      { name: 'light-commits-diff-compact', label: '晨光 · 紧凑提交diff', themeName: 'light', scale: 1, settings: { Width: 520, Radius: 0 }, grouped: true, commitDiff: true },
+      { name: 'ocean-commit-diff', label: '海盐蓝 · 单条提交diff', themeName: 'ocean', scale: 1, commitDiff: true, single: true },
+      { name: 'classic-commit-fallback', label: '经典原版 · diff回退', themeName: 'classic', scale: 1, commitDiff: true, single: true, fallback: true },
+      { name: 'ocean-commit-fallback', label: '海盐蓝 · diff回退', themeName: 'ocean', scale: 1, commitDiff: true, single: true, fallback: true }
     ]
     for (const preset of cases) {
       const classic = preset.themeName === 'classic'
@@ -71,7 +77,11 @@ async function main () {
       await page.setViewport({ width: preset.scale > 1 ? 1440 : 1200, height: 900, deviceScaleFactor: 1 })
       // The original stylesheet has its own default scale; runtime always overrides it too.
       const sys = { ...data.sys, scale: `style="transform:scale(${preset.scale})"` }
-      let lifeData = structuredClone(preset.grouped ? commitDisplayFixtures() : data.lifeData)
+      let lifeData = structuredClone(preset.commitDiff ? commitDiffDisplayFixtures() : preset.grouped ? commitDisplayFixtures() : data.lifeData)
+      if (preset.single) {
+        const index = preset.fallback ? 2 : 4
+        lifeData = lifeData.slice(index, index + 1)
+      }
       if (preset.focused) lifeData = lifeData.filter(item => item.name.branch === 'main')
       if (preset.longCommits) {
         for (const item of lifeData.filter(item => item.name.branch === 'main')) {

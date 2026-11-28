@@ -1,7 +1,7 @@
 import { request, logger } from '@/utils'
 import config from '@/config'
 import type { Response } from 'node-fetch'
-import type { Commit, GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment, GitPullRequestDiff, GitPullRequestFile } from '@/types'
+import type { Commit, DiffStats, GitDiff, GitDiffFile, GitApiMethod, GitCommitDataType, GitReleaseDataType, GitActivityMethod, GitActivityItem, GitActivityComment, GitPullRequestDiff, GitPullRequestFile } from '@/types'
 import { releaseIdentity } from '../CodeUpdate/utils/release'
 type Provider = 'GitHub' | 'Gitee' | 'Gitcode' | 'CNB' | string
 
@@ -442,6 +442,46 @@ export default new class RepoService {
     return this.fetchData<GitActivityItem>(url, headers, repo, source)
   }
 
+  /** Called only for outgoing commits; the immutable SHA keeps retries tied to the observed code. */
+  async getCommitDiff (source: Provider, repo: string, sha: string, maxFiles: number): Promise<GitDiff | false> {
+    const { apiUrl, token } = apiUrlFor(source)
+    if (!apiUrl) return false
+    const url = new URL(apiUrl)
+    const path = /gitea/i.test(source) ? `git/commits/${encodeURIComponent(sha)}.diff` : `${/cnb/i.test(source) ? '-/git/' : ''}commits/${encodeURIComponent(sha)}`
+    url.pathname = `${basePath(url.pathname)}/${repo.split('/').map(encodeURIComponent).join('/')}/${path}`
+    if (/gitee/i.test(source) && token) url.searchParams.set('access_token', token)
+    if (/gitcode/i.test(source)) url.searchParams.set('show_diff', 'true')
+    const headers = this.getHeaders(source, token)
+    if (/gitea/i.test(source)) return this.fetchUnifiedDiff(source, repo, url, headers, `commit ${sha}`)
+
+    const pageSize = Math.max(2, Math.min(21, maxFiles + 1))
+    url.searchParams.set('per_page', String(pageSize))
+    const files = new Map<string, GitDiffFile>()
+    let stats: DiffStats | undefined
+    for (let page = 1; page <= pageSize + 1; page++) {
+      url.searchParams.set('page', String(page))
+      const pagination: { hasNext?: boolean } = {}
+      const data = await this.fetchData<Commit>(url, headers, repo, source, pagination, 512 * 1024)
+      if (data === false || data?.sha !== sha || !Array.isArray(data.files)) return false
+      stats ??= {
+        files: typeof data.stats?.files === 'number' ? data.stats.files : typeof data.changed_files === 'number' ? data.changed_files : undefined,
+        additions: data.stats?.additions,
+        deletions: data.stats?.deletions
+      }
+      const size = files.size
+      for (const file of data.files) {
+        const filename = file?.filename || file?.new_path || file?.old_path
+        if (typeof filename !== 'string' || !filename) return false
+        files.set(filename, file as GitDiffFile)
+      }
+      if (files.size > maxFiles) return { kind: 'files', files: Array.from(files.values()).slice(0, pageSize), hasMore: true, stats }
+      // GitHub signals further file pages with Link; the other detail endpoints return a complete object.
+      if (!data.files.length || pagination.hasNext !== true) return { kind: 'files', files: Array.from(files.values()), hasMore: false, stats }
+      if (files.size === size) return false
+    }
+    return false
+  }
+
   /** Optional enrichment: read only enough files to decide whether the image should collapse. */
   async getPullRequestDiff (source: Provider, repo: string, number: string, maxFiles: number): Promise<GitPullRequestDiff | false> {
     const { url, headers } = this.activityUrl(source, repo, /gitea/i.test(source)
@@ -449,16 +489,7 @@ export default new class RepoService {
       : `pulls/${encodeURIComponent(number)}/files`)
     if (/gitea/i.test(source)) {
       // Gitea's file-list API omits patches; its raw diff endpoint supplies the actual code.
-      try {
-        const response = await request.get(url, 'raw', { headers: { ...headers, Accept: 'text/plain' }, log: false })
-        if (!response || !response.ok) return false
-        const { text, truncated } = await this.readLimitedBody(response, 512 * 1024)
-        if (text.trim() && !/^diff --git /m.test(text)) return false
-        return { kind: 'unified', text, truncated }
-      } catch (error: any) {
-        logger.warn(`获取 ${source} ${repo} PR #${number} diff 失败: ${error?.name ?? 'Error'}`)
-        return false
-      }
+      return this.fetchUnifiedDiff(source, repo, url, headers, `PR #${number}`)
     }
     const pageSize = Math.max(2, Math.min(21, maxFiles + 1))
     url.searchParams.set('per_page', String(pageSize))
@@ -479,6 +510,19 @@ export default new class RepoService {
       if (files.size === size) return false
     }
     return false
+  }
+
+  private async fetchUnifiedDiff (source: Provider, repo: string, url: URL, headers: Record<string, string>, label: string): Promise<GitDiff | false> {
+    try {
+      const response = await request.get(url, 'raw', { headers: { ...headers, Accept: 'text/plain' }, log: false })
+      if (!response || !response.ok) return false
+      const { text, truncated } = await this.readLimitedBody(response, 512 * 1024)
+      if (text.trim() && !/^diff --git /m.test(text)) return false
+      return { kind: 'unified', text, truncated }
+    } catch (error: any) {
+      logger.warn(`获取 ${source} ${repo} ${label} diff 失败: ${error?.name ?? 'Error'}`)
+      return false
+    }
   }
 
   private async readLimitedBody (response: Response, limit: number) {
@@ -619,7 +663,7 @@ export default new class RepoService {
       if (maxBytes && response.body) {
         const { text, truncated } = await this.readLimitedBody(response, maxBytes)
         if (truncated) {
-          logger.warn(`${source} ${repo} diff响应过大，改用PR原文查看`)
+          logger.warn(`${source} ${repo} diff响应过大，改用原文查看`)
           return false
         }
         return JSON.parse(text) as T

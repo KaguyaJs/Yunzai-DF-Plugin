@@ -24,7 +24,7 @@ const DEFAULT_EVENTS: Record<GitActivityMethod, GitActivityAction[]> = {
   issues: ['opened', 'closed', 'reopened']
 }
 
-function integerOption (value: unknown, fallback: number, min: number, max: number) {
+export function integerOption (value: unknown, fallback: number, min: number, max: number) {
   const number = Number(value)
   return Number.isFinite(number) ? Math.min(max, Math.max(min, Math.floor(number))) : fallback
 }

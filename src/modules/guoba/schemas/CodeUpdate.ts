@@ -343,6 +343,29 @@ export const CodeUpdate: GuobaSchemas = [
     bottomHelpMessage: '默认5；超出部分显示“已折叠N个文件”。0折叠全部，-1展示全部。'
   },
   {
+    field: 'CodeUpdate.Commit.ShowDiff',
+    label: '提交展示代码diff',
+    component: 'Switch',
+    defaultValue: false,
+    bottomHelpMessage: '默认关闭。仅确认需要推送新提交后额外获取diff；无更新检查和失败重试不重复获取。不可用时回退原提交样式，保留commit变更统计。自动推送与手动预览共用。'
+  },
+  {
+    field: 'CodeUpdate.Commit.DiffMaxFiles',
+    label: '提交diff展开文件上限',
+    component: 'InputNumber',
+    defaultValue: 3,
+    componentProps: { min: 1, max: 20 },
+    bottomHelpMessage: '每条提交默认3个文件；超过上限时展示部分文件列表并收起代码。'
+  },
+  {
+    field: 'CodeUpdate.Commit.DiffMaxLines',
+    label: '提交diff展开行数上限',
+    component: 'InputNumber',
+    defaultValue: 40,
+    componentProps: { min: 1, max: 200 },
+    bottomHelpMessage: '每条提交默认40行，包含代码及上下文；超过时收起为摘要。完整内容可通过提交原文查看。'
+  },
+  {
     field: 'CodeUpdate.Activity.PageSize',
     label: '提交/PR/Issue每页数量',
     component: 'InputNumber',
@@ -385,9 +408,9 @@ export const CodeUpdate: GuobaSchemas = [
   },
   {
     field: 'CodeUpdate.Activity.SendLinks',
-    label: 'PR/Issue附带原始链接',
+    label: '提交diff/PR/Issue附带原始链接',
     component: 'Switch',
-    bottomHelpMessage: '图片消息后附可点击链接。'
+    bottomHelpMessage: '图片消息后附可点击链接；提交开启diff时也会附完整差异链接。'
   },
   {
     field: 'CodeUpdate.Activity.ShowDiff',

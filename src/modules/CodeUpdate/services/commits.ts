@@ -1,11 +1,12 @@
 import config from '@/config'
 import GitApi from '@/modules/GitApi'
 import { logger } from '@/utils'
-import type { Commit } from '@/types'
+import type { CodeDiff, Commit } from '@/types'
 import type { RepoConfig, SubscriptionTarget } from '../utils/repo'
 import { getRepoKey, getRepoRedisKey } from '../utils/repo'
 import { resolveBranch } from '../utils/autoBranch'
-import { activityOptions } from '../utils/activity'
+import { activityOptions, safeActivityUrl } from '../utils/activity'
+import { commitDiffOptions, normalizeCodeDiff } from '../utils/diff'
 import { redisHeler } from '../utils/redis'
 
 export interface PendingCommit {
@@ -13,6 +14,36 @@ export interface PendingCommit {
   branch: string
   journalKey: string
   targets: string[]
+  diff?: CodeDiff
+}
+
+export type CommitDiffCache = Map<string, Promise<CodeDiff>>
+
+async function readCommitDiff (rule: RepoConfig, commit: Commit, options: ReturnType<typeof commitDiffOptions>): Promise<CodeDiff> {
+  const url = safeActivityUrl(commit.html_url)
+  try {
+    const data = await GitApi.getCommitDiff(rule.provider, rule.repo, commit.sha, options.diffMaxFiles)
+    if (data === false) throw new Error('暂时无法获取diff')
+    const stats = data.stats ?? { ...commit.stats, files: commit.files?.length }
+    const diff = normalizeCodeDiff(data, url, options, stats)
+    if (!diff.files.length && (diff.fileCount > 0 || (stats.additions ?? 0) + (stats.deletions ?? 0) > 0)) throw new Error('接口未提供文件diff，请查看原文')
+    return diff
+  } catch (error) {
+    logger.warn(`获取 ${rule.provider} ${rule.repo} commit ${commit.sha} diff 失败: `, error)
+    return { url, fileCount: commit.files?.length ?? 0, hasMoreFiles: false, collapsed: true, files: [], unavailable: 'Diff暂不可用，请查看提交原文' }
+  }
+}
+
+async function enrichCommitDiff (rule: RepoConfig, commit: Commit, cache: CommitDiffCache) {
+  const options = commitDiffOptions()
+  if (!options.showDiff) return
+  const key = JSON.stringify([rule.provider.toLowerCase(), rule.repo, commit.sha])
+  let pending = cache.get(key)
+  if (!pending) {
+    pending = readCommitDiff(rule, commit, options)
+    cache.set(key, pending)
+  }
+  return pending
 }
 
 function commitPayload (commit: Commit) {
@@ -27,7 +58,8 @@ export async function fetchCommits (
   rule: RepoConfig,
   isAuto: boolean,
   targets: Map<string, SubscriptionTarget>,
-  previousRules: RepoConfig[]
+  previousRules: RepoConfig[],
+  diffCache: CommitDiffCache = new Map()
 ): Promise<PendingCommit[]> {
   const redisKey = getRepoRedisKey(rule)
   const journalKey = redisHeler.getCommitKey(redisKey)
@@ -49,7 +81,7 @@ export async function fetchCommits (
     if (result === false) throw new Error('无法获取分支最新提交，保留检查进度')
     const head = Array.isArray(result) ? result[0] : result
     if (!head || typeof head.sha !== 'string' || !head.sha) throw new Error('分支未返回有效提交标识，保留检查进度')
-    if (!isAuto) return [{ commit: commitPayload(head), branch, journalKey, targets: recipients }]
+    if (!isAuto) return [{ commit: commitPayload(head), branch, journalKey, targets: recipients, diff: await enrichCommitDiff(rule, head, diffCache) }]
 
     const legacyKeys = Array.from(new Set([redisKey, ...previousRules.map(candidate =>
       redisHeler.getLegacyRedisKey(candidate.provider, 'commits', candidate.repo, candidate.branch))]))
@@ -96,7 +128,7 @@ export async function fetchCommits (
     for (const [index, commit] of commits.entries()) {
       if (journal.pending[commit.sha]) continue
       const assigned = recipients.filter(target => index > (delivered.get(target) ?? -1))
-      if (assigned.length) journal.pending[commit.sha] = { commit, branch, targets: assigned }
+      if (assigned.length) journal.pending[commit.sha] = { commit, branch, targets: assigned, diff: await enrichCommitDiff(rule, commit, diffCache) }
     }
     scanned = !existing || journal.cursor !== head.sha || journal.branch !== branch
     journal.cursor = head.sha

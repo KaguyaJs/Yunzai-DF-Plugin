@@ -4,7 +4,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const { createHarness, item, subscribe, project, plain } = require('./helpers/code-update.cjs')
-const { displayFixtures, commitDisplayFixtures } = require('./helpers/git-theme-fixtures.cjs')
+const { displayFixtures, commitDisplayFixtures, commitDiffDisplayFixtures } = require('./helpers/git-theme-fixtures.cjs')
 
 function declarations (style) {
   return Object.fromEntries(style.split(';').filter(value => value.trim()).map(value => {
@@ -221,6 +221,34 @@ test('全部主题将同分支四条提交显示为一张卡片，逐条详情�
       assert.ok(html.includes(text), `${preset.name}: ${text}`)
     }
     assert.ok(html.indexOf('F15D6C0') < html.indexOf('977665B') && html.indexOf('977665B') < html.indexOf('509CE77'))
+  }
+})
+
+test('所有主题的合并和单条提交支持diff展开、折叠、不可用时回退旧样式和原文安全转义', async () => {
+  const h = createHarness({ config: { multiPage: -1 } })
+  const { CODE_UPDATE_THEMES } = h.load('@CodeUpdate/utils/theme')
+  const { generateScreenshot } = h.load('@CodeUpdate/services/screenshot')
+  const template = require('art-template')
+  const resources = path.join(project, 'resources')
+  const content = [...commitDiffDisplayFixtures(), displayFixtures()[2]]
+  content[0].diff.files[0].filename = '<img src=x>.ts'
+  content[0].diff.files[0].lines[3].text = '+<script>alert("code")</script>'
+  for (const preset of CODE_UPDATE_THEMES) {
+    h.config.CodeUpdate.Theme = { Name: preset.name }
+    await generateScreenshot(content, preset.name)
+    const { data, template: name } = h.screenshots.at(-1)
+    const source = fs.readFileSync(path.join(resources, `${name}.html`), 'utf8')
+    for (const useString of [false, true]) {
+      const values = { ...data, _res_path: resources, pluResPath: useString ? pathToFileURL(resources).href : resources, sys: { scale: '', copyright: 'fixture' } }
+      const html = useString ? template.render(source, values) : template(path.join(resources, `${name}.html`), values)
+      assert.equal((html.match(/class="pr-diff /g) || []).length, 5, preset.name)
+      for (const text of ['已展开', '已收起', 'resources/logo.png', '未提供文本diff', '提交原文', 'PR原文']) assert.ok(html.includes(text), `${preset.name}: ${text}`)
+      assert.doesNotMatch(html, /Diff暂不可用|<script>|<img src=x>/)
+      assert.deepEqual(data.lifeData[2].stats, { files: 3, additions: 48, deletions: 16 })
+      assert.match(html, /(?:&lt;|&#60;)script(?:&gt;|&#62;)/)
+      assert.match(html, /(?:&lt;|&#60;)img src=x(?:&gt;|&#62;)\.ts/)
+      assert.equal((html.match(/class="commit-entry"/g) || []).length, 4)
+    }
   }
 })
 

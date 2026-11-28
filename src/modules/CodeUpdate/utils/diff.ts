@@ -1,5 +1,20 @@
-import type { ActivityEvent, GitPullRequestDiff, GitPullRequestFile, PullRequestDiff } from '@/types'
-import { activityOptions, safeActivityUrl } from './activity'
+import config from '@/config'
+import type { ActivityEvent, CodeDiff, DiffStats, GitDiff, GitDiffFile, GitPullRequestDiff, PullRequestDiff } from '@/types'
+import { activityOptions, integerOption, safeActivityUrl } from './activity'
+
+interface DiffLimits {
+  diffMaxFiles: number
+  diffMaxLines: number
+}
+
+export function commitDiffOptions () {
+  const options = config.CodeUpdate.Commit
+  return {
+    showDiff: options?.ShowDiff === true,
+    diffMaxFiles: integerOption(options?.DiffMaxFiles, 3, 1, 20),
+    diffMaxLines: integerOption(options?.DiffMaxLines, 40, 1, 200)
+  }
+}
 
 const STATUS: Record<string, string> = {
   added: '新增', removed: '删除', deleted: '删除', renamed: '重命名', copied: '复制', modified: '修改', changed: '修改'
@@ -29,9 +44,9 @@ function gitPath (value: string) {
 }
 
 /** Gitea exposes patches as unified text, including quoted Unicode/space-containing paths. */
-export function parseUnifiedDiff (text: string, maxFiles: number): GitPullRequestFile[] {
+export function parseUnifiedDiff (text: string, maxFiles: number): GitDiffFile[] {
   const sections = text.replace(/\r\n/g, '\n').split(/(?=^diff --git )/m)
-  const files: GitPullRequestFile[] = []
+  const files: GitDiffFile[] = []
   for (const section of sections) {
     if (!section.startsWith('diff --git ')) continue
     const header = section.match(/^diff --git ("(?:\\.|[^"])*"|a\/.*?) ("(?:\\.|[^"])*"|b\/.*)$/m)
@@ -57,13 +72,16 @@ export function parseUnifiedDiff (text: string, maxFiles: number): GitPullReques
 
 /** Persist bounded, escaped-at-template-time data; code is never passed through Markdown/translation. */
 export function normalizePullRequestDiff (data: GitPullRequestDiff, event: ActivityEvent): PullRequestDiff {
-  const { diffMaxFiles, diffMaxLines } = activityOptions()
+  return normalizeCodeDiff(data, pullRequestDiffUrl(event), activityOptions(), event.item.stats)
+}
+
+export function normalizeCodeDiff (data: GitDiff, url: string, { diffMaxFiles, diffMaxLines }: DiffLimits, stats: DiffStats | undefined = data.stats): CodeDiff {
   const raw = data.kind === 'files' ? data.files : parseUnifiedDiff(data.text, diffMaxFiles + 1)
   const hasMore = data.kind === 'files' ? data.hasMore : data.truncated
-  const fileCount = Math.max(event.item.stats?.files ?? 0, raw.length)
-  let collapsed = hasMore || fileCount > diffMaxFiles || (event.item.stats ? event.item.stats.additions + event.item.stats.deletions > diffMaxLines : false)
+  const fileCount = Math.max(count(stats?.files), raw.length)
+  let collapsed = hasMore || fileCount > diffMaxFiles || count(stats?.additions) + count(stats?.deletions) > diffMaxLines
   let remaining = diffMaxLines
-  const files: PullRequestDiff['files'] = raw.slice(0, diffMaxFiles).map(file => {
+  const files: CodeDiff['files'] = raw.slice(0, diffMaxFiles).map(file => {
     const original = typeof file.patch === 'string' ? file.patch : typeof file.diff === 'string' ? file.diff : ''
     // Keep a single huge patch or code line from growing Redis payloads and screenshots indefinitely.
     const patch = original.slice(0, 200_000).replace(/\r\n?/g, '\n').replace(/\n$/, '')
@@ -74,7 +92,7 @@ export function normalizePullRequestDiff (data: GitPullRequestDiff, event: Activ
     if (rawLines.length > remaining || original.length > 200_000) collapsed = true
     let oldNumber = 0
     let newNumber = 0
-    const lines: PullRequestDiff['files'][number]['lines'] = []
+    const lines: CodeDiff['files'][number]['lines'] = []
     for (const line of rawLines.slice(0, remaining)) {
       const hunk = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/)
       const kind = hunk ? 'hunk' : line.startsWith('+') ? 'add' : line.startsWith('-') ? 'delete' : 'context'
@@ -103,12 +121,15 @@ export function normalizePullRequestDiff (data: GitPullRequestDiff, event: Activ
     }
   })
   if (raw.length && !files.length) collapsed = true
-  return { url: pullRequestDiffUrl(event), fileCount, hasMoreFiles: hasMore || fileCount > files.length, collapsed, files }
+  return { url: safeActivityUrl(url), fileCount, hasMoreFiles: hasMore || fileCount > files.length, collapsed, files }
 }
 
 /** Apply current display limits to payloads queued under an earlier configuration. */
 export function displayPullRequestDiff (diff: PullRequestDiff): PullRequestDiff {
-  const { diffMaxFiles, diffMaxLines } = activityOptions()
+  return displayCodeDiff(diff, activityOptions())
+}
+
+export function displayCodeDiff (diff: CodeDiff, { diffMaxFiles, diffMaxLines }: DiffLimits): CodeDiff {
   const collapsed = diff.collapsed || diff.fileCount > diffMaxFiles || diff.files.reduce((total, file) => total + file.lines.length, 0) > diffMaxLines
   return { ...diff, collapsed, files: diff.files.slice(0, diffMaxFiles).map(file => ({ ...file, lines: collapsed ? [] : file.lines })), hasMoreFiles: diff.hasMoreFiles || diff.files.length > diffMaxFiles }
 }

@@ -1,7 +1,8 @@
-import type { ActivityLabel, ActivityItem, PullRequestDiff } from './activity'
+import type { ActivityLabel, ActivityItem, CodeDiff, PullRequestDiff } from './activity'
 
 export interface CommitInfo {
   url?: string
+  diff?: CodeDiff
   avatar: {
     is: boolean
     author?: string

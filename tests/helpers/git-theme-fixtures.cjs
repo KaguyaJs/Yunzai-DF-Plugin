@@ -125,4 +125,29 @@ function commitDisplayFixtures () {
   return [first, second, third, fourth, development, release]
 }
 
-module.exports = { displayFixtures, commitDisplayFixtures }
+/** 提交diff的展开、折叠、旧样式回退及二进制文件，包含合并和单条卡片。 */
+function commitDiffDisplayFixtures () {
+  const content = commitDisplayFixtures()
+  const sample = displayFixtures()[2].diff
+  for (const item of content.filter(item => !item.release)) {
+    item.diff = structuredClone(sample)
+    item.diff.url = `https://example.invalid/commit/${item.name.sha}`
+    item.diff.files[0].filename = 'src/modules/CodeUpdate/services/commits.ts'
+    item.diff.files[0].status = '修改'
+    item.diff.files[0].additions = 2
+    item.diff.files[0].lines[0].text = '@@ -12,2 +12,3 @@'
+    item.stats = { files: 1, additions: 2, deletions: 1 }
+  }
+  content[1].diff.collapsed = true
+  content[1].diff.fileCount = 8
+  content[1].diff.hasMoreFiles = true
+  content[1].diff.files[0].lines = []
+  content[1].stats = { files: 8, additions: 86, deletions: 24 }
+  delete content[2].diff
+  content[2].stats = { files: 3, additions: 48, deletions: 16 }
+  content[3].diff.files[0] = { filename: 'resources/logo.png', status: '修改', additions: 0, deletions: 0, missingPatch: true, lines: [] }
+  content[3].stats = { files: 1, additions: 0, deletions: 0 }
+  return content
+}
+
+module.exports = { displayFixtures, commitDisplayFixtures, commitDiffDisplayFixtures }

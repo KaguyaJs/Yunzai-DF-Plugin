@@ -70,6 +70,243 @@ function journal (h) {
   return JSON.parse(h.store.get(journalKey))
 }
 
+const SMALL_PATCH = '@@ -1,2 +1,2 @@\n-oldValue()\n+newValue()\n unchanged()'
+const diffRequests = h => h.requests.filter(({ url }) => /\/commits\/[^/]+$/.test(url.pathname) && url.searchParams.has('per_page'))
+const diffFiles = (count = 1, patch = SMALL_PATCH) => Array.from({ length: count }, (_, index) => ({ filename: `src/file${index}.ts`, status: 'modified', additions: 1, deletions: 1, patch }))
+
+function installDiffRouter (h, respond = sha => ({ data: { sha, files: diffFiles(), stats: { additions: 1, deletions: 1 } } })) {
+  const router = h.router
+  h.router = (url, headers) => {
+    const sha = url.pathname.match(/\/commits\/([^/]+)$/)?.[1]
+    return sha && url.searchParams.has('per_page') ? respond(decodeURIComponent(sha), url) : router(url, headers)
+  }
+}
+
+test('提交diff默认关闭且独立于PR开关，仅发现新提交后请求，无更新与静默基线不请求', async () => {
+  for (const settings of [undefined, { ShowDiff: false }, { ShowDiff: true }]) {
+    const enabled = settings?.ShowDiff === true
+    const h = createHarness({ config: { Commit: settings, Activity: { ShowDiff: !enabled } } })
+    subscribe(h, 'commits', { branch: 'main' }, 1)
+    subscribe(h, 'commits', { branch: 'main' }, 2)
+    const state = fixture(h)
+    installDiffRouter(h)
+    const { CodeUpdate } = h.load('@CodeUpdate')
+    assert.equal(await CodeUpdate(true), 0)
+    assert.equal(await CodeUpdate(true), 0)
+    assert.equal(diffRequests(h).length, 0)
+    append(state, 'bbbbbb', 'cccccc')
+    assert.equal(await CodeUpdate(true), 1)
+    assert.equal(h.deliveries.length, 2)
+    assert.deepEqual(diffRequests(h).map(({ url }) => url.pathname.split('/').at(-1)), enabled ? ['bbbbbb', 'cccccc'] : [])
+    const infos = h.screenshots[0].data.renderCards[0].commits
+    assert.equal(infos.length, 2)
+    for (const info of infos) {
+      if (!enabled) { assert.equal(info.diff, undefined); continue }
+      assert.equal(info.diff.collapsed, false)
+      assert.equal(info.diff.fileCount, 1)
+      assert.deepEqual(info.diff.files[0].lines.map(line => [line.kind, line.oldNumber, line.newNumber]), [
+        ['hunk', undefined, undefined], ['delete', 1, undefined], ['add', undefined, 1], ['context', 2, 2]
+      ])
+      assert.match(info.diff.url, /\/commit\/(?:bbbbbb|cccccc)$/)
+      assert.ok(h.deliveries[0].message.some(value => typeof value === 'string' && value.includes(info.diff.url)))
+    }
+    assert.equal(await CodeUpdate(true), 0)
+    assert.equal(diffRequests(h).length, enabled ? 2 : 0, '已发送后的空检查不重复获取diff')
+  }
+})
+
+test('提交diff按独立文件与总行数上限折叠，边界值可以展开', async () => {
+  for (const { files, lines, collapsed } of [
+    { files: 2, lines: 8, collapsed: false },
+    { files: 3, lines: 40, collapsed: true },
+    { files: 1, lines: 4, collapsed: false },
+    { files: 1, lines: 3, collapsed: true }
+  ]) {
+    const h = createHarness({ config: { FirstAdd: true, Commit: { ShowDiff: true, DiffMaxFiles: 2, DiffMaxLines: lines }, Activity: { DiffMaxFiles: 20, DiffMaxLines: 200 } } })
+    subscribe(h, 'commits', { branch: 'main' })
+    fixture(h)
+    installDiffRouter(h, sha => ({ data: { sha, files: diffFiles(files) } }))
+    await h.load('@CodeUpdate').CodeUpdate(true)
+    const diff = h.screenshots[0].data.lifeData[0].diff
+    assert.equal(diff.collapsed, collapsed)
+    assert.equal(diff.files.length, Math.min(2, files))
+    assert.equal(diff.hasMoreFiles, files > 2)
+    assert.ok(diff.files.every(file => collapsed ? file.lines.length === 0 : file.lines.length === 4))
+    assert.equal(diffRequests(h).length, 1)
+  }
+})
+
+test('diff接口失败、SHA不匹配或缺少文件时回退关闭diff的样式，保留commit统计且重试不再请求', async () => {
+  for (const response of [false, { status: 500 }, { data: { sha: 'different-sha', files: diffFiles() } }, { data: { sha: 'aaaaaa' } }]) {
+    const h = createHarness({ config: { FirstAdd: true, Commit: { ShowDiff: true } } })
+    subscribe(h, 'commits', { branch: 'main' })
+    fixture(h, { values: [commit('aaaaaa', [], { stats: { additions: 7, deletions: 2 }, files: diffFiles(2) })] })
+    installDiffRouter(h, () => response)
+    h.failures.add('Group:10001')
+    const { CodeUpdate } = h.load('@CodeUpdate')
+    assert.equal(await CodeUpdate(true), 1)
+    assert.equal(h.deliveries.length, 1)
+    const info = h.screenshots[0].data.lifeData[0]
+    assert.equal(info.diff, undefined)
+    assert.deepEqual(info.stats, { files: 2, additions: 7, deletions: 2 })
+    const pending = journal(h).pending.aaaaaa
+    assert.match(pending.diff.unavailable, /Diff暂不可用/)
+    h.config.CodeUpdate.Commit.ShowDiff = false
+    const disabled = await h.load('@CodeUpdate/utils/format').formatCommitInfo(pending.commit, 'GitHub', 'owner/repo', 'main', pending.diff)
+    assert.deepEqual(info, plain(disabled), '完整卡片数据与关闭diff时一致')
+    h.config.CodeUpdate.Commit.ShowDiff = true
+    assert.equal(journal(h).cursor, 'aaaaaa')
+    h.failures.clear()
+    assert.equal(await CodeUpdate(true), 1)
+    assert.deepEqual(h.screenshots.at(-1).data.lifeData[0], info)
+    const message = h.deliveries.at(-1).message
+    assert.equal(Array.isArray(message) && message.some(value => typeof value === 'string' && value.includes('/commit/aaaaaa')), false)
+    assert.deepEqual(journal(h).pending, {})
+    assert.equal(await CodeUpdate(true), 0)
+    assert.equal(diffRequests(h).length, 1)
+  }
+})
+
+test('失败提交保存当时diff，重启后的重试不访问旧diff接口，只获取新HEAD的差异', async () => {
+  const h = createHarness({ config: { Commit: { ShowDiff: true } } })
+  subscribe(h, 'commits', { branch: 'main' }, 1)
+  subscribe(h, 'commits', { branch: 'main' }, 2)
+  const state = fixture(h)
+  installDiffRouter(h)
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  await CodeUpdate(true)
+  append(state, 'bbbbbb')
+  h.failures.add('Group:2')
+  await CodeUpdate(true)
+  assert.match(journal(h).pending.bbbbbb.diff.files[0].lines[2].text, /newValue/)
+  assert.equal(diffRequests(h).length, 1)
+  append(state, 'cccccc')
+  const restarted = createHarness({ config: plain(h.config.CodeUpdate) })
+  for (const [key, value] of h.store) restarted.store.set(key, value)
+  fixture(restarted, { head: state.head, values: plain(state.values) })
+  installDiffRouter(restarted, sha => ({ data: { sha, files: diffFiles(1, SMALL_PATCH.replace('newValue', 'laterValue')) } }))
+  await restarted.load('@CodeUpdate').CodeUpdate(true)
+  assert.deepEqual(diffRequests(restarted).map(({ url }) => url.pathname.split('/').at(-1)), ['cccccc'])
+  const infos = restarted.screenshots.find(value => value.data.saveId === '2').data.lifeData
+  assert.deepEqual(infos.map(info => info.name.sha), ['BBBBB', 'CCCCC'])
+  assert.match(infos[0].diff.files[0].lines[2].text, /newValue/)
+  assert.match(infos[1].diff.files[0].lines[2].text, /laterValue/)
+  assert.deepEqual(journal(restarted).pending, {})
+})
+
+test('失败重试应用当前展示上限，关闭提交diff后隐藏已保存差异且不重新获取', async () => {
+  const h = createHarness({ config: { FirstAdd: true, Commit: { ShowDiff: true, DiffMaxFiles: 3, DiffMaxLines: 40 } } })
+  subscribe(h, 'commits', { branch: 'main' })
+  fixture(h)
+  installDiffRouter(h, sha => ({ data: { sha, files: diffFiles(2) } }))
+  h.failures.add('Group:10001')
+  const { CodeUpdate } = h.load('@CodeUpdate')
+  await CodeUpdate(true)
+  h.config.CodeUpdate.Commit.DiffMaxFiles = 1
+  await CodeUpdate(true)
+  const diff = h.screenshots.at(-1).data.lifeData[0].diff
+  assert.equal(diff.collapsed, true)
+  assert.equal(diff.files.length, 1)
+  assert.equal(diff.files[0].lines.length, 0)
+  h.config.CodeUpdate.Commit.ShowDiff = false
+  h.failures.clear()
+  await CodeUpdate(true)
+  assert.equal(h.screenshots.at(-1).data.lifeData[0].diff, undefined)
+  assert.equal(diffRequests(h).length, 1)
+})
+
+test('手动提交预览按需获取diff，不修改自动进度，链接遵循SendLinks', async () => {
+  for (const sendLinks of [false, true]) {
+    const h = createHarness({ config: { Commit: { ShowDiff: true }, Activity: { SendLinks: sendLinks } } })
+    subscribe(h, 'commits', { branch: 'main' })
+    const state = fixture(h)
+    installDiffRouter(h)
+    const { CodeUpdate } = h.load('@CodeUpdate')
+    await CodeUpdate(true)
+    append(state, 'bbbbbb')
+    const before = [...h.store]
+    const replies = []
+    await CodeUpdate(false, { user_id: 999, reply: async value => replies.push(value) })
+    assert.deepEqual([...h.store], before)
+    assert.equal(diffRequests(h).length, 1)
+    assert.equal(h.screenshots.at(-1).data.lifeData[0].diff.collapsed, false)
+    assert.equal(Array.isArray(replies.at(-1)) && replies.at(-1).some(value => typeof value === 'string' && value.includes('/commit/bbbbbb')), sendLinks)
+    h.config.CodeUpdate.Commit.ShowDiff = false
+    await CodeUpdate(false, { user_id: 999, reply: async value => replies.push(value) })
+    assert.equal(diffRequests(h).length, 1)
+    assert.equal(h.screenshots.at(-1).data.lifeData[0].diff, undefined)
+    assert.deepEqual([...h.store], before)
+  }
+})
+
+test('多分支和多接收者监听同一SHA仅共享一次diff请求，无接收者时不请求', async () => {
+  const h = createHarness({ config: { FirstAdd: true, Commit: { ShowDiff: true } } })
+  subscribe(h, 'commits', { branch: ['main', 'dev'] }, 1)
+  subscribe(h, 'commits', { branch: ['main', 'dev'] }, 2)
+  const state = fixture(h)
+  const router = h.router
+  h.router = url => url.pathname.endsWith('/commits/dev') ? { data: state.values[0] } : router(url)
+  installDiffRouter(h)
+  await h.load('@CodeUpdate').CodeUpdate(true)
+  assert.equal(diffRequests(h).length, 1)
+  assert.equal(h.deliveries.length, 2)
+  assert.deepEqual(h.screenshots[0].data.lifeData.map(info => info.name.branch).sort(), ['dev', 'main'])
+
+  const silent = createHarness({ config: { FirstAdd: true, Commit: { ShowDiff: true } } })
+  fixture(silent)
+  installDiffRouter(silent)
+  const pending = await silent.load('@CodeUpdate/services/commits').fetchCommits({ provider: 'GitHub', repo: 'owner/repo', type: 'commits', branch: 'main' }, true, new Map(), [])
+  assert.equal(pending.length, 0)
+  assert.equal(diffRequests(silent).length, 0)
+})
+
+test('提交diff接口固定SHA，兼容GitHub文件分页及Gitee、Gitcode、CNB认证和路径', async () => {
+  for (const provider of ['GitHub', 'Gitee', 'Gitcode', 'CNB']) {
+    const h = createHarness()
+    h.config.CodeUpdate.repos.push({ provider, token: 'test-token' })
+    h.router = url => {
+      const page = Number(url.searchParams.get('page'))
+      return { data: { sha: 'aaaaaa', files: [{ new_path: `new${page}.ts`, old_path: `old${page}.ts`, renamed_file: true, diff: '@@ -0,0 +1 @@\n+new' }] }, link: provider === 'GitHub' && page === 1 ? nextPage : lastPage }
+    }
+    const data = await h.load('@/modules/GitApi').default.getCommitDiff(provider, 'owner/repo', 'aaaaaa', 3)
+    assert.equal(data.kind, 'files', provider)
+    assert.equal(data.files.length, provider === 'GitHub' ? 2 : 1, provider)
+    assert.ok(h.requests.every(({ url }) => url.pathname.endsWith('/commits/aaaaaa')))
+    assert.ok(h.requests.every(({ url }) => url.searchParams.get('per_page') === '4'))
+    assert.equal(h.requests[0].headers.Authorization, 'Bearer test-token')
+    if (provider === 'Gitee') assert.equal(h.requests[0].url.searchParams.get('access_token'), 'test-token')
+    if (provider === 'Gitcode') assert.equal(h.requests[0].url.searchParams.get('show_diff'), 'true')
+    if (provider === 'CNB') assert.ok(h.requests[0].url.pathname.includes('/-/git/commits/'))
+    const utils = h.load('@CodeUpdate/utils/diff')
+    const diff = utils.normalizeCodeDiff(data, 'https://example.invalid/commit/aaaaaa', utils.commitDiffOptions())
+    assert.equal(diff.files[0].status, '重命名')
+    assert.equal(diff.files[0].previousFilename, 'old1.ts')
+  }
+})
+
+test('Gitea提交diff使用固定SHA原始接口，二进制文件保留提示，巨大响应在读取上限停止', async () => {
+  const h = createHarness({ config: { Commit: { ShowDiff: true } } })
+  h.config.CodeUpdate.repos.push({ provider: 'MyGitea', ApiUrl: 'https://gitea.example/api/v1/repos' })
+  h.router = () => ({ text: 'diff --git a/main.ts b/main.ts\n--- a/main.ts\n+++ b/main.ts\n' + SMALL_PATCH + '\ndiff --git a/logo.png b/logo.png\nBinary files a/logo.png and b/logo.png differ\n' })
+  const api = h.load('@/modules/GitApi').default
+  const data = await api.getCommitDiff('MyGitea', 'owner/repo', 'aaaaaa', 3)
+  assert.ok(h.requests[0].url.pathname.endsWith('/git/commits/aaaaaa.diff'))
+  assert.equal(h.requests[0].headers.Accept, 'text/plain')
+  const utils = h.load('@CodeUpdate/utils/diff')
+  const diff = utils.normalizeCodeDiff(data, 'https://gitea.example/owner/repo/commit/aaaaaa', utils.commitDiffOptions())
+  assert.equal(diff.files[0].lines.length, 4)
+  assert.equal(diff.files[1].missingPatch, true)
+  let reads = 0
+  h.router = () => ({ chunks: ['diff --git a/big.ts b/big.ts\n--- a/big.ts\n+++ b/big.ts\n@@ -0,0 +1,200000 @@\n' + '+x\n'.repeat(200000), 'must-not-be-read'], onChunk: () => reads++ })
+  const big = await api.getCommitDiff('MyGitea', 'owner/repo', 'aaaaaa', 3)
+  assert.equal(reads, 1)
+  assert.equal(big.truncated, true)
+  assert.equal(utils.normalizeCodeDiff(big, '', utils.commitDiffOptions()).collapsed, true)
+  h.router = () => ({ chunks: [JSON.stringify({ sha: 'aaaaaa', files: [{ filename: 'big.ts', patch: 'x'.repeat(600000) }] }), 'must-not-be-read'], onChunk: () => reads++ })
+  assert.equal(await api.getCommitDiff('GitHub', 'owner/repo', 'aaaaaa', 3), false)
+  assert.equal(reads, 2)
+})
+
 test('连续同秒提交逐条推送，首次静默且成功后不重复', async () => {
   const h = createHarness()
   subscribe(h, 'commits', { branch: 'main' })

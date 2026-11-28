@@ -48,8 +48,8 @@ export interface GitActivityComment {
   author?: ActivityUser
 }
 
-/** File-list variants returned by the supported PR APIs. */
-export interface GitPullRequestFile {
+/** File-list variants returned by the supported commit and PR APIs. */
+export interface GitDiffFile {
   filename?: string
   previous_filename?: string
   new_path?: string
@@ -64,11 +64,18 @@ export interface GitPullRequestFile {
   diff?: string
 }
 
-export type GitPullRequestDiff =
-  | { kind: 'files', files: GitPullRequestFile[], hasMore: boolean }
-  | { kind: 'unified', text: string, truncated: boolean }
+export interface DiffStats {
+  files?: number
+  additions?: number
+  deletions?: number
+}
 
-export interface PullRequestDiff {
+export type GitDiff = (
+  | { kind: 'files', files: GitDiffFile[], hasMore: boolean }
+  | { kind: 'unified', text: string, truncated: boolean }
+) & { stats?: DiffStats }
+
+export interface CodeDiff {
   url: string
   fileCount: number
   hasMoreFiles: boolean
@@ -89,6 +96,10 @@ export interface PullRequestDiff {
     }[]
   }[]
 }
+
+export type GitPullRequestFile = GitDiffFile
+export type GitPullRequestDiff = GitDiff
+export type PullRequestDiff = CodeDiff
 
 export interface ActivityItem {
   number: string

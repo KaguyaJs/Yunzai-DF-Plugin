@@ -67,7 +67,7 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
       await e.reply('截图失败，请稍后再试')
       return false
     }
-    await e.reply(withActivityLinks(image, visible))
+    await e.reply(withUpdateLinks(image, visible))
     return repositoryCount
   }
 
@@ -95,7 +95,7 @@ async function checkUpdates (isAuto: boolean, e?: MessageEvent) {
           image = result
           images.set(imageKey, image)
         }
-        if (!await pushTouser(type, id, withActivityLinks(image, visible))) throw new Error('消息发送失败')
+        if (!await pushTouser(type, id, withUpdateLinks(image, visible))) throw new Error('消息发送失败')
         if (isAuto) {
           const activities = new Map<string, string[]>()
           const commits = new Map<string, RepositoryUpdate[]>()
@@ -166,11 +166,11 @@ function updateBatches (updates: RepositoryUpdate[]) {
   return batches
 }
 
-function withActivityLinks (image: icqq.ImageElem | icqq.ImageElem[], updates: RepositoryUpdate[]): icqq.Sendable {
+function withUpdateLinks (image: icqq.ImageElem | icqq.ImageElem[], updates: RepositoryUpdate[]): icqq.Sendable {
   const links = activityOptions().sendLinks
     ? Array.from(new Set(updates.flatMap(update => 'activity' in update.info
       ? [update.info.url, update.info.diff?.url].filter((url): url is string => !!url)
-      : [])))
+      : 'diff' in update.info && update.info.diff?.url ? [update.info.diff.url] : [])))
     : []
   return links.length ? [...(Array.isArray(image) ? image : [image]), `\n${links.join('\n')}`] : image
 }

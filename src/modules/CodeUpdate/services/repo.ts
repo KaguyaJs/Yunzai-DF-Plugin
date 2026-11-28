@@ -5,7 +5,7 @@ import { releaseCursor, releaseIdentity } from '../utils/release'
 import config from '@/config'
 import { logger } from '@/utils'
 import { fetchActivity } from './activity'
-import { fetchCommits } from './commits'
+import { fetchCommits, type CommitDiffCache } from './commits'
 import { formatActivityInfo } from '../utils/formatActivity'
 import { isActivityMethod } from '../utils/activity'
 import type { RepoConfig, SubscriptionTarget } from '../utils/repo'
@@ -28,6 +28,7 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean, tar
     .map(item => ({ ...item }))
   const repos = new Map(repoList.map(item => [getRepoKey(item), { ...item }]))
   const releases = new Map<string, ReturnType<typeof GitApi.getRepositoryData<'releases'>>>()
+  const commitDiffs: CommitDiffCache = new Map()
   await Promise.all(Array.from(repos, async ([key, item]) => {
     const { provider, repo } = item
     if (!repo) return
@@ -48,11 +49,11 @@ export async function fetchUpdate (repoList: ReposListType, isAuto: boolean, tar
         return
       }
       if (type === 'commits') {
-        const commits = await fetchCommits(item, isAuto, targets, previous.filter(candidate => getRepoKey(candidate) === key))
+        const commits = await fetchCommits(item, isAuto, targets, previous.filter(candidate => getRepoKey(candidate) === key), commitDiffs)
         for (const pending of commits) {
           try {
             const { commit, branch, journalKey, targets } = pending
-            const info = await formatCommitInfo(commit, provider, repo, branch)
+            const info = await formatCommitInfo(commit, provider, repo, branch, pending.diff)
             content.set(JSON.stringify([key, commit.sha]), {
               info,
               sha: commit.sha,

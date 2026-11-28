@@ -174,6 +174,31 @@ export interface Config {
       AssetLimit: number
     }
     /**
+     * 提交代码差异展示配置，自动推送与手动预览共用
+     */
+    Commit: {
+      /**
+       * 是否在提交卡片中展示代码差异，过大时收起为文件摘要
+       *
+       * @default false
+       */
+      ShowDiff: boolean
+      /**
+       * 每条提交最多展开的文件数量，超过后收起代码
+       * 范围：1~20
+       *
+       * @default 3
+       */
+      DiffMaxFiles: number
+      /**
+       * 每条提交最多展开的总行数，包含代码及上下文
+       * 范围：1~200
+       *
+       * @default 40
+       */
+      DiffMaxLines: number
+    }
+    /**
      * PR/Issue获取与展示配置
      * 分页数量、最多页数和消息条目上限也用于提交推送
      */
@@ -227,7 +252,7 @@ export interface Config {
       OverlapSeconds: number
       /**
        * 是否在PR/Issue图片消息后附带可点击的原始链接
-       * 展示代码差异时也会附带对应的完整差异链接
+       * 提交或PR展示代码差异时也会附带对应的完整差异链接
        *
        * @default false
        */

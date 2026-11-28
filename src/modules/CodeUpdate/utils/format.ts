@@ -8,11 +8,13 @@ import { getCodeUpdateTranslateName, translateCodeUpdateTextInfo } from './trans
 import { markdown } from './markdown'
 import { releaseAssets } from './release'
 import { safeActivityUrl } from './activity'
+import { commitDiffOptions, displayCodeDiff } from './diff'
 import {
   GitCommitDataType,
   GitReleaseDataType,
   ReleaseInfo,
-  CommitInfo
+  CommitInfo,
+  CodeDiff
 } from '@/types'
 
 const COMMIT_TYPES = new Set([
@@ -55,10 +57,12 @@ export async function formatCommitInfo (
   data: GitCommitDataType[number],
   source: string,
   repo: string,
-  branch?: string
+  branch?: string,
+  diff?: CodeDiff
 ): Promise<CommitInfo> {
   const { author, committer, commit, stats, files, sha } = data
   const message = await formatMessageInfo(commit.message)
+  const diffOptions = commitDiffOptions()
 
   const authorName = (commit.author?.name && `<span>${commit.author.name}</span>`) ?? ''
   const committerName = (commit.committer?.name && `<span>${commit.committer.name}</span>`) ?? ''
@@ -71,6 +75,8 @@ export async function formatCommitInfo (
       : `${authorName} 编写于 ${authorTime}，并由 ${committerName} 提交于 ${committerTime}`
 
   return {
+    url: safeActivityUrl(data.html_url),
+    diff: diffOptions.showDiff && diff && !diff.unavailable ? displayCodeDiff(diff, diffOptions) : undefined,
     avatar: {
       is: author?.avatar_url !== committer?.avatar_url,
       author: author?.avatar_url,
