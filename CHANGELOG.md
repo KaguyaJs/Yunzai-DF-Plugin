@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.14.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.13.0...yunzai-df-plugin-v2.14.0) (2026-11-28)
+
+
+### ✨ 新功能
+
+* **CodeUpdate:** 为提交推送添加可选diff与失败回退 ([41dbf7a](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/41dbf7a815da42fd2366455614fd3662b18da6ee))
+* **CodeUpdate:** 通过代理下载推送正文图片 ([f75fa6d](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/f75fa6dfb81fda3fce9401cba9b371c760689d5d))
+* 为多条提交推送标记最新提交 ([1df7739](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/1df7739a786d60baf2ef705491de71f85b048b7d))
+
+
+### 🐛 Bug 修复
+
+* **CodeUpdate:** 修复多提交卡片渲染、Cron兼容和失败提示 ([dd536d3](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/dd536d3e1748ae5255d03cda3ea17e145ceb6787))
+
+
+### 🎨 代码风格/格式
+
+* **CodeUpdate:** 移除更新卡片左侧装饰线 ([d734592](https://github.com/KaguyaJs/Yunzai-DF-Plugin/commit/d734592cf223f8da5df9ded234601fe88fe394f7))
+
 ## [2.13.0](https://github.com/KaguyaJs/Yunzai-DF-Plugin/compare/yunzai-df-plugin-v2.12.1...yunzai-df-plugin-v2.13.0) (2026-11-14)
 
 
